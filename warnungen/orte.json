@@ -1,3 +1,5 @@
 {
-  "orte": []
+  "orte": [
+    { "name": "Region Basel", "lat": 47.5596, "lon": 7.5886, "topic": "wetter-psalm-basel-11bf8fa4" }
+  ]
 }
