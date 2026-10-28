@@ -2,12 +2,23 @@
 
 Eine Wetter-App für das iPhone mit einem Psalm für jeden Tag.
 
-- **Aktuelles Wetter** für deinen Standort oder jeden anderen Ort (Suche, gespeicherte Orte)
-- **Stündliche Vorhersage** für die nächsten 24 Stunden und **7-Tage-Vorhersage**
-- **Details:** gefühlte Temperatur, Wind, Luftfeuchte, Luftdruck, Niederschlag, Sonnenauf-/-untergang, UV-Index
-- **Psalm des Tages** aus der Lutherbibel 1912: alle 150 Psalmen der Reihe nach, Psalm 119 aufgeteilt in seine 22 Abschnitte (171 Tageslesungen, danach beginnt der Zyklus von vorne). Mit „Gestern“/„Morgen“ blätterst du, mit „Teilen“ schickst du den Psalm per Nachricht weiter.
-- Hintergrund passt sich dem Wetter und der Tageszeit an
-- Funktioniert offline mit den zuletzt geladenen Daten
+Dunkles Cockpit-Design mit Leuchtakzenten, die sich der Wetterlage anpassen.
+Vier Bereiche über die Tab-Leiste:
+
+- **Wetter:** aktuelle Werte, Warnbanner, Vers des Tages, Niederschlag der nächsten
+  2 Stunden (15-Minuten-Raster), 24-Stunden-Diagramm (Temperatur / Regen / Wind),
+  stündliche und 7-Tage-Vorhersage (Tippen öffnet Details), Kacheln für Wind mit
+  Kompass und Beaufort, Feuchte und Taupunkt, Luftdruck mit Tendenz, Sichtweite,
+  UV-Index, Mondphase, Sonnenbahn, Luftqualität (EU-Index, Feinstaub, Ozon, NO₂)
+  und Pollenflug
+- **Radar:** animiertes Regenradar der letzten 2 Stunden (RainViewer) auf dunkler Karte
+- **Psalm:** Psalm des Tages aus der Lutherbibel 1912: alle 150 Psalmen der Reihe
+  nach, Psalm 119 in seine 22 Abschnitte geteilt (171 Tageslesungen im Zyklus).
+  Blättern, Schriftgröße, Kopieren und Teilen
+- **Warnungen:** aktive Unwetterwarnungen für den gewählten Ort und Abo der
+  Push-Nachrichten
+- Standort per GPS oder Ortssuche, gespeicherte Orte, funktioniert offline mit den
+  zuletzt geladenen Daten
 
 ## Wetterwarnungen per Push-Nachricht
 
@@ -56,7 +67,8 @@ python3 -m http.server 8000
 
 ## Datenquellen
 
-- Wetter: [Open-Meteo](https://open-meteo.com/) (kostenlos, ohne API-Schlüssel, CC BY 4.0)
+- Wetter, Luftqualität, Pollen: [Open-Meteo](https://open-meteo.com/) (kostenlos, ohne API-Schlüssel, CC BY 4.0)
+- Radar: [RainViewer](https://www.rainviewer.com/), Karte © OpenStreetMap, © CARTO
 - Ortsname zum Standort: BigDataCloud Reverse Geocoding (kostenlos, ohne Schlüssel)
 - Psalmen: Lutherbibel 1912 (gemeinfrei), aus dem npm-Paket `xmlbible-lut1912` (CC0).
   `psalms.json` wird mit `scripts/build_psalms.py` erzeugt.

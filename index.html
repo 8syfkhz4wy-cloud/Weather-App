@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Wetter &amp; Psalm</title>
-  <meta name="description" content="Wettervorhersage mit einem Psalm für jeden Tag">
-  <meta name="theme-color" content="#1f4f8a">
+  <meta name="description" content="Wettervorhersage mit Radar, Warnungen und einem Psalm für jeden Tag">
+  <meta name="theme-color" content="#05080f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,69 +15,171 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body data-sky="clear-day">
-  <div class="sky" aria-hidden="true"></div>
+<body data-sky="clear-day" data-tab="wetter">
+  <div class="bg" aria-hidden="true"><div class="bg-glow"></div><div class="bg-grid"></div></div>
 
   <header class="topbar">
+    <div class="loc">
+      <div id="place" class="loc-name">Wetter</div>
+      <div id="updated" class="loc-meta mono">Verbinde …</div>
+    </div>
+    <button class="icon-btn" id="btn-refresh" aria-label="Aktualisieren">
+      <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg>
+    </button>
     <button class="icon-btn" id="btn-locate" aria-label="Aktuellen Standort verwenden">
-      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M21 3 3 10.5l7 2.5 2.5 7z"/></svg>
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
     </button>
     <button class="icon-btn" id="btn-search" aria-label="Ort suchen">
-      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 20 20"/></svg>
+      <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg>
     </button>
   </header>
 
+  <p id="status" class="status" hidden></p>
+
   <main>
-    <section class="hero" aria-live="polite">
-      <h1 id="place">Wetter</h1>
-      <div id="temp" class="temp">–°</div>
-      <div id="condition" class="condition">Wird geladen …</div>
-      <div id="hilo" class="hilo"></div>
-    </section>
-
-    <p id="status" class="status" hidden></p>
-
-    <section class="card psalm" id="psalm-card">
-      <div class="card-head">
-        <span class="label">📖 Psalm des Tages</span>
-        <span id="psalm-date" class="psalm-date"></span>
+    <!-- ===== Wetter ===== -->
+    <section class="view" id="view-wetter">
+      <div class="hero panel">
+        <div class="hero-main">
+          <div id="hero-icon" class="hero-icon">–</div>
+          <div>
+            <div id="temp" class="temp mono">--°</div>
+            <div id="condition" class="condition">Wird geladen …</div>
+          </div>
+        </div>
+        <div class="hero-stats mono">
+          <div><span>MAX</span><b id="h-max">--°</b></div>
+          <div><span>MIN</span><b id="h-min">--°</b></div>
+          <div><span>GEFÜHLT</span><b id="h-feel">--°</b></div>
+          <div><span>REGEN</span><b id="h-rain">--%</b></div>
+        </div>
       </div>
-      <h2 id="psalm-ref" class="psalm-ref"></h2>
-      <div id="psalm-text" class="psalm-text"></div>
-      <div class="psalm-actions">
-        <button class="pill" id="psalm-prev" aria-label="Psalm vom Vortag">‹ Gestern</button>
-        <button class="pill" id="psalm-today" hidden>Heute</button>
-        <button class="pill" id="psalm-share" aria-label="Psalm teilen">Teilen</button>
-        <button class="pill" id="psalm-next" aria-label="Psalm vom nächsten Tag">Morgen ›</button>
+
+      <button id="warn-banner" class="warn-banner" hidden></button>
+
+      <button class="panel verse" id="verse-card">
+        <div class="panel-head"><span class="tag">// VERS DES TAGES</span><span id="verse-ref" class="tag-r mono"></span></div>
+        <p id="verse-text" class="verse-text"></p>
+        <span class="verse-more">Ganzen Psalm lesen ›</span>
+      </button>
+
+      <div class="panel">
+        <div class="panel-head"><span class="tag">// NIEDERSCHLAG 2 STD</span><span id="nowcast-sum" class="tag-r mono"></span></div>
+        <p id="nowcast-text" class="nowcast-text"></p>
+        <div id="nowcast" class="nowcast"></div>
       </div>
-      <p class="source">Lutherbibel 1912 · gemeinfrei</p>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="tag">// VERLAUF 24 STD</span>
+          <div class="seg" id="chart-seg" role="tablist">
+            <button data-m="temp" class="on">Temp</button>
+            <button data-m="rain">Regen</button>
+            <button data-m="wind">Wind</button>
+          </div>
+        </div>
+        <div id="chart" class="chart"></div>
+        <div id="hourly" class="hourly"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="tag">// 7 TAGE</span><span class="tag-r">Tippen für Details</span></div>
+        <ul id="daily" class="daily"></ul>
+      </div>
+
+      <div class="tiles" id="tiles"></div>
+
+      <p class="source">Wetter &amp; Luft: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</p>
     </section>
 
-    <section class="card">
-      <div class="card-head"><span class="label">🕒 Stündliche Vorhersage</span></div>
-      <div id="hourly" class="hourly"></div>
+    <!-- ===== Radar ===== -->
+    <section class="view" id="view-radar" hidden>
+      <div class="panel radar-panel">
+        <div class="panel-head"><span class="tag">// NIEDERSCHLAGSRADAR</span><span id="radar-time" class="tag-r mono">--:--</span></div>
+        <div id="map" class="map"></div>
+        <div class="radar-ctl">
+          <button class="icon-btn" id="radar-play" aria-label="Animation abspielen">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" class="fill"/></svg>
+          </button>
+          <input type="range" id="radar-slider" min="0" max="0" value="0" aria-label="Zeitpunkt">
+        </div>
+        <p id="radar-msg" class="hint"></p>
+      </div>
+      <p class="source">Radar: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a> · Karte: © OpenStreetMap, © CARTO</p>
     </section>
 
-    <section class="card">
-      <div class="card-head"><span class="label">📅 7-Tage-Vorhersage</span></div>
-      <ul id="daily" class="daily"></ul>
+    <!-- ===== Psalm ===== -->
+    <section class="view" id="view-psalm" hidden>
+      <div class="panel psalm">
+        <div class="panel-head">
+          <span class="tag">// PSALM DES TAGES</span>
+          <div class="seg">
+            <button id="font-down" aria-label="Schrift kleiner">A−</button>
+            <button id="font-up" aria-label="Schrift größer">A+</button>
+          </div>
+        </div>
+        <div id="psalm-date" class="psalm-date mono"></div>
+        <h2 id="psalm-ref" class="psalm-ref"></h2>
+        <div id="psalm-text" class="psalm-text"></div>
+        <p class="source">Lutherbibel 1912 · gemeinfrei · Lesung <span id="psalm-num" class="mono"></span></p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="psalm-prev">‹ Gestern</button>
+        <button class="btn" id="psalm-today" hidden>Heute</button>
+        <button class="btn" id="psalm-next">Morgen ›</button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="psalm-copy">Kopieren</button>
+        <button class="btn accent" id="psalm-share">Teilen</button>
+      </div>
     </section>
 
-    <section class="tiles" id="tiles"></section>
+    <!-- ===== Warnungen ===== -->
+    <section class="view" id="view-warn" hidden>
+      <div class="panel">
+        <div class="panel-head"><span class="tag">// AKTIVE WARNUNGEN</span><span id="warn-place" class="tag-r"></span></div>
+        <ul id="warn-list" class="warn-list"></ul>
+      </div>
 
-    <section class="card alerts" id="alerts-card" hidden>
-      <div class="card-head"><span class="label">🔔 Wetterwarnungen aufs Handy</span></div>
-      <p class="alerts-intro">Bei Sturm, Gewitter, Hitze, Kälte, starkem Wind, Schnee oder Glätte bekommst du eine Push-Nachricht – auch wenn die App geschlossen ist.</p>
-      <ol class="steps">
-        <li>Lade die kostenlose App <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener"><b>ntfy</b></a> aus dem App Store (kein Konto nötig) und erlaube Mitteilungen.</li>
-        <li>Tippe unten bei deinem Ort auf <b>„Kopieren“</b>.</li>
-        <li>In ntfy auf <b>„+“</b> tippen, den kopierten Namen bei <i>Topic</i> einfügen und auf <b>„Subscribe“</b> tippen.</li>
-      </ol>
-      <ul id="alerts-list" class="alerts-list"></ul>
+      <div class="panel" id="alerts-card" hidden>
+        <div class="panel-head"><span class="tag">// PUSH-NACHRICHTEN</span></div>
+        <p class="body-text">Bei Gefahr kommt eine Nachricht aufs Handy – auch wenn die App geschlossen ist.</p>
+        <ol class="steps">
+          <li>Kostenlose App <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener"><b>ntfy</b></a> laden (kein Konto nötig), Mitteilungen erlauben.</li>
+          <li>Unten bei deinem Ort auf <b>„Kopieren“</b> tippen.</li>
+          <li>In ntfy auf <b>„+“</b>, den Namen bei <i>Topic</i> einfügen, <b>„Subscribe“</b>.</li>
+        </ol>
+        <ul id="alerts-list" class="alerts-list"></ul>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="tag">// SCHWELLENWERTE</span></div>
+        <table class="thresholds mono">
+          <tr><td>💨 Wind / Sturm</td><td>Böen ≥ 60 / 75 / 120 km/h</td></tr>
+          <tr><td>⛈️ Gewitter</td><td>Vorhersage, Hagel höher</td></tr>
+          <tr><td>🥵 Hitze</td><td>≥ 30 °C / 35 °C</td></tr>
+          <tr><td>🥶 Kälte</td><td>≤ −10 °C / −15 °C</td></tr>
+          <tr><td>❄️ Schnee</td><td>≥ 3 cm in 24 h</td></tr>
+          <tr><td>🧊 Glätte</td><td>Niederschlag ≤ 1 °C</td></tr>
+        </table>
+      </div>
     </section>
-
-    <p class="source footer">Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</p>
   </main>
+
+  <nav class="tabbar" aria-label="Bereiche">
+    <button data-tab="wetter" class="on">
+      <svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"/></svg>Wetter
+    </button>
+    <button data-tab="radar">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/></svg>Radar
+    </button>
+    <button data-tab="psalm">
+      <svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5zM12 6v13"/></svg>Psalm
+    </button>
+    <button data-tab="warn">
+      <svg viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v4M12 17v.5"/></svg>Warnungen<span id="warn-badge" class="badge" hidden></span>
+    </button>
+  </nav>
 
   <dialog id="search-dialog" class="sheet">
     <form method="dialog" class="sheet-head">
