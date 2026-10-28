@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Wetter &amp; Psalm</title>
+  <meta name="description" content="Wettervorhersage mit einem Psalm für jeden Tag">
+  <meta name="theme-color" content="#1f4f8a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Wetter &amp; Psalm">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-sky="clear-day">
+  <div class="sky" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <button class="icon-btn" id="btn-locate" aria-label="Aktuellen Standort verwenden">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M21 3 3 10.5l7 2.5 2.5 7z"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-search" aria-label="Ort suchen">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 20 20"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section class="hero" aria-live="polite">
+      <h1 id="place">Wetter</h1>
+      <div id="temp" class="temp">–°</div>
+      <div id="condition" class="condition">Wird geladen …</div>
+      <div id="hilo" class="hilo"></div>
+    </section>
+
+    <p id="status" class="status" hidden></p>
+
+    <section class="card psalm" id="psalm-card">
+      <div class="card-head">
+        <span class="label">📖 Psalm des Tages</span>
+        <span id="psalm-date" class="psalm-date"></span>
+      </div>
+      <h2 id="psalm-ref" class="psalm-ref"></h2>
+      <div id="psalm-text" class="psalm-text"></div>
+      <div class="psalm-actions">
+        <button class="pill" id="psalm-prev" aria-label="Psalm vom Vortag">‹ Gestern</button>
+        <button class="pill" id="psalm-today" hidden>Heute</button>
+        <button class="pill" id="psalm-share" aria-label="Psalm teilen">Teilen</button>
+        <button class="pill" id="psalm-next" aria-label="Psalm vom nächsten Tag">Morgen ›</button>
+      </div>
+      <p class="source">Lutherbibel 1912 · gemeinfrei</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><span class="label">🕒 Stündliche Vorhersage</span></div>
+      <div id="hourly" class="hourly"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><span class="label">📅 7-Tage-Vorhersage</span></div>
+      <ul id="daily" class="daily"></ul>
+    </section>
+
+    <section class="tiles" id="tiles"></section>
+
+    <p class="source footer">Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</p>
+  </main>
+
+  <dialog id="search-dialog" class="sheet">
+    <form method="dialog" class="sheet-head">
+      <input id="search-input" type="search" placeholder="Stadt oder Ort suchen" autocomplete="off" enterkeyhint="search">
+      <button class="link-btn" value="cancel">Fertig</button>
+    </form>
+    <ul id="search-results" class="list"></ul>
+    <h3 class="list-title" id="saved-title">Gespeicherte Orte</h3>
+    <ul id="saved-list" class="list"></ul>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
