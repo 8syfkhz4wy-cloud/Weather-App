@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#10284a"/><stop offset="0.6" stop-color="#081224"/><stop offset="1" stop-color="#04070d"/>
+    </radialGradient>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M64 0H0V64" fill="none" stroke="#1b3d66" stroke-width="2"/>
+    </pattern>
+    <radialGradient id="fade" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="gm"><rect width="1024" height="1024" fill="url(#fade)"/></mask>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="14" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7ff6ff"/><stop offset="1" stop-color="#00b8ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#grid)" mask="url(#gm)"/>
+
+  <!-- HUD-Ring -->
+  <g fill="none" stroke="#00e5ff" filter="url(#soft)">
+    <circle cx="512" cy="470" r="360" stroke-opacity="0.18" stroke-width="3"/>
+    <circle cx="512" cy="470" r="384" stroke-opacity="0.35" stroke-width="10" stroke-dasharray="3 22"/>
+    <path d="M 196 300 A 360 360 0 0 1 400 128" stroke-width="10" stroke-linecap="round" stroke-opacity="0.85"/>
+    <path d="M 828 640 A 360 360 0 0 1 700 778" stroke-width="10" stroke-linecap="round" stroke-opacity="0.85"/>
+  </g>
+
+  <!-- Sonne -->
+  <g filter="url(#glow)" stroke="#ffc23d" stroke-linecap="round" fill="none">
+    <circle cx="640" cy="330" r="92" stroke-width="22" fill="#2a1c05" fill-opacity="0.6"/>
+    <g stroke-width="18">
+      <path d="M640 196v-36M640 500v-0M774 330h36M734 236l26-26M546 236l-26-26M734 424l26 26"/>
+    </g>
+  </g>
+
+  <!-- Wolke -->
+  <path filter="url(#glow)" fill="#071a2e" fill-opacity="0.92" stroke="url(#cloud)" stroke-width="26" stroke-linejoin="round"
+        d="M300 620 H690 A105 105 0 0 0 700 410 A160 160 0 0 0 410 380 A125 125 0 0 0 300 620 Z"/>
+  <!-- Datenlinien in der Wolke -->
+  <g stroke="#00e5ff" stroke-width="12" stroke-linecap="round" opacity="0.75" filter="url(#soft)">
+    <path d="M380 540 H520"/><path d="M560 540 H620"/><path d="M420 488 H600"/>
+  </g>
+
+  <!-- Aufgeschlagenes Buch -->
+  <g filter="url(#glow)" fill="#04101d" stroke="#e8f6ff" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M512 742 C 450 704 360 696 290 708 V 860 C 360 848 450 856 512 892 Z"/>
+    <path d="M512 742 C 574 704 664 696 734 708 V 860 C 664 848 574 856 512 892 Z"/>
+  </g>
+  <g stroke="#00e5ff" stroke-width="9" stroke-linecap="round" opacity="0.9">
+    <path d="M335 756 C 385 750 430 756 470 772"/><path d="M335 800 C 385 794 430 800 470 816"/>
+    <path d="M689 756 C 639 750 594 756 554 772"/><path d="M689 800 C 639 794 594 800 554 816"/>
+  </g>
+</svg>
