@@ -273,6 +273,29 @@ main {
 .tile .big { font-size: 30px; font-weight: 500; }
 .tile .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
+/* Wetterwarnungen */
+.alerts-intro { margin: 0 0 10px; font-size: 15px; line-height: 1.4; }
+.steps { margin: 0 0 12px; padding-left: 20px; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.steps li { margin-bottom: 4px; }
+.steps a, .steps b { color: var(--text); }
+.alerts-list { list-style: none; margin: 0; padding: 0; }
+.alerts-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--divider);
+}
+.alerts-list .grow { flex: 1; min-width: 0; }
+.alerts-list .name { font-size: 17px; font-weight: 600; }
+.alerts-list .topic {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.alerts-list .pill { flex: 0 0 auto; }
+
 /* Suche */
 .sheet {
   width: 100%;

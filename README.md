@@ -9,6 +9,32 @@ Eine Wetter-App für das iPhone mit einem Psalm für jeden Tag.
 - Hintergrund passt sich dem Wetter und der Tageszeit an
 - Funktioniert offline mit den zuletzt geladenen Daten
 
+## Wetterwarnungen per Push-Nachricht
+
+Ein GitHub-Actions-Ablauf (`.github/workflows/warnungen.yml`) prüft **stündlich** die
+Vorhersage der nächsten 24 Stunden für die Orte in `warnungen/orte.json`. Bei Gefahr
+schickt er über [ntfy.sh](https://ntfy.sh) eine Push-Nachricht, auch wenn die App geschlossen ist.
+
+| Warnung | Schwelle |
+|---|---|
+| Wind / Sturm | Böen ab 60 km/h (Sturm ab 75, Orkan ab 120 km/h) |
+| Gewitter | Gewitter in der Vorhersage, mit Hagel höhere Stufe |
+| Hitze | ab 30 °C (starke Hitze ab 35 °C) |
+| Kälte | ab −10 °C (sehr strenger Frost ab −15 °C) |
+| Schnee | ab 3 cm Neuschnee in 24 Stunden |
+| Glätte / Eis | gefrierender Regen oder Niederschlag bei höchstens 1 °C |
+
+Jede Warnung kommt pro Ort und Tag nur einmal, außer sie wird schlimmer.
+
+**Abonnieren:** kostenlose App *ntfy* aus dem App Store laden, in der Wetter-App unten
+bei „Wetterwarnungen“ den Namen des Orts kopieren und in ntfy über „+“ abonnieren.
+
+**Ort hinzufügen:** einen Eintrag mit Name, Koordinaten und einem schwer zu erratenden
+`topic` in `warnungen/orte.json` ergänzen.
+
+**Test:** unter *Actions → Wetterwarnungen → Run workflow* die Option
+„Testnachricht“ anhaken und starten.
+
 ## Auf dem iPhone installieren
 
 Die App ist eine Web-App (PWA). Sie braucht keinen Mac, kein Xcode und keinen App Store.

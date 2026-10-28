@@ -1,0 +1,48 @@
+name: Wetterwarnungen
+
+on:
+  schedule:
+    - cron: "17 * * * *" # stündlich
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Testnachricht an alle Orte senden"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: warnungen
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Merkt sich, welche Warnungen schon verschickt wurden
+      - uses: actions/cache/restore@v4
+        with:
+          path: status.json
+          key: warnungen-status-${{ github.run_id }}
+          restore-keys: warnungen-status-
+
+      - name: Wetter prüfen und Warnungen senden
+        run: python3 scripts/warnungen.py warnungen/orte.json status.json ${{ inputs.test && '--test' || '' }}
+
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: status.json
+          key: warnungen-status-${{ github.run_id }}
+
+      # GitHub pausiert zeitgesteuerte Abläufe nach 60 Tagen ohne Änderungen
+      # am Repository. Das erneute Aktivieren hält die Warnungen am Laufen.
+      - name: Ablauf aktiv halten
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/warnungen.yml/enable" || true

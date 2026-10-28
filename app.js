@@ -406,6 +406,36 @@ function openSearch() {
   $("#search-input").focus();
 }
 
+// ---------- Wetterwarnungen (ntfy) ----------
+
+async function copyTopic(topic, btn) {
+  try {
+    await navigator.clipboard.writeText(topic);
+    btn.textContent = "Kopiert ✓";
+  } catch {
+    btn.textContent = "Fehler";
+  }
+  setTimeout(() => (btn.textContent = "Kopieren"), 2500);
+}
+
+async function loadAlerts() {
+  const res = await fetch("warnungen/orte.json");
+  const { orte } = await res.json();
+  if (!orte.length) return;
+  $("#alerts-list").replaceChildren(
+    ...orte.map((ort) => {
+      const li = el("li");
+      const grow = el("div", "grow");
+      grow.append(el("div", "name", ort.name), el("div", "topic", ort.topic));
+      const btn = el("button", "pill", "Kopieren");
+      btn.addEventListener("click", () => copyTopic(ort.topic, btn));
+      li.append(grow, btn);
+      return li;
+    })
+  );
+  $("#alerts-card").hidden = false;
+}
+
 // ---------- Start ----------
 
 $("#psalm-prev").addEventListener("click", () => shiftPsalm(-1));
@@ -419,6 +449,7 @@ $("#search-input").addEventListener("input", onSearchInput);
 loadPsalms().catch(() => {
   $("#psalm-ref").textContent = "Psalm konnte nicht geladen werden";
 });
+loadAlerts().catch(() => {});
 
 const lastPlace = store("place");
 if (lastPlace) {
