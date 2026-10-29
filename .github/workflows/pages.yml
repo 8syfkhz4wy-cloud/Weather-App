@@ -22,13 +22,30 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Webseite zusammenstellen
         run: |
           mkdir _site
           cp -r index.html styles.css app.js weather-fx.js sw.js psalms.json manifest.webmanifest icons warnungen _site/
+          git log -1 --format='%cI%n%s' | python3 -c 'import json,sys; d,t=sys.stdin.read().splitlines()[:2]; print(json.dumps({"date": d, "title": t}, ensure_ascii=False))' > _site/version.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # Nur wenn sich die App selbst geändert hat (nicht bei README o. ä.)
+      - name: Update-Nachricht senden
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null && \
+             git diff --quiet "$BEFORE" HEAD -- index.html styles.css app.js weather-fx.js sw.js psalms.json manifest.webmanifest icons; then
+            echo "Keine Änderung an der App – keine Nachricht."
+          else
+            python3 scripts/update_nachricht.py warnungen/orte.json "$COMMIT_MESSAGE"
+          fi

@@ -1019,6 +1019,14 @@ loadPsalms().catch(() => {
   $("#psalm-ref").textContent = "Psalm konnte nicht geladen werden";
 });
 loadAlerts().catch(() => {});
+fetch("version.json")
+  .then((res) => res.json())
+  .then((v) => {
+    const date = new Date(v.date).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+    $("#version").textContent = `Version ${date} · Neu: ${v.title}`;
+    $("#version").hidden = false;
+  })
+  .catch(() => {});
 
 setTab(store("tab") || "wetter");
 

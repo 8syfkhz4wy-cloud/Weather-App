@@ -47,6 +47,10 @@ bei „Wetterwarnungen“ den Namen des Orts kopieren und in ntfy über „+“ 
 **Ort hinzufügen:** einen Eintrag mit Name, Koordinaten und einem schwer zu erratenden
 `topic` in `warnungen/orte.json` ergänzen.
 
+**Update-Nachrichten:** Nach jeder Veröffentlichung, die die App selbst ändert, schickt
+der Pages-Ablauf eine Push-Nachricht an dieselben ntfy-Themen. Titel ist die erste Zeile
+der Commit-Nachricht, der Text kommt aus einer Zeile `Info: …` in der Commit-Nachricht.
+
 **Test:** unter *Actions → Wetterwarnungen → Run workflow* die Option
 „Testnachricht“ anhaken und starten.
 
