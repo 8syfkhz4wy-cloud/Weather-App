@@ -3,6 +3,10 @@
 Eine Wetter-App für das iPhone mit einem Psalm für jeden Tag.
 
 Dunkles Cockpit-Design mit Leuchtakzenten, die sich der Wetterlage anpassen.
+Im Hintergrund läuft eine Animation des aktuellen Wetters (Regen, Schnee, Gewitter
+mit Blitzen, ziehende Wolken, Nebel, Sonnenstrahlen, Sterne und Windlinien), deren
+Stärke sich nach Niederschlag, Wind und Bewölkung richtet. Bei aktivierter Einstellung
+„Bewegung reduzieren“ auf dem iPhone bleibt sie ruhig stehen.
 Vier Bereiche über die Tab-Leiste:
 
 - **Wetter:** aktuelle Werte, Warnbanner, Vers des Tages, Niederschlag der nächsten

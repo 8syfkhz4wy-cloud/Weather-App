@@ -366,6 +366,13 @@ function renderHero(w) {
   const cur = w.current;
   const now = wmo(cur.weather_code, cur.is_day === 1);
   document.body.dataset.sky = now.sky;
+  WeatherFx.set({
+    code: cur.weather_code,
+    isDay: cur.is_day === 1,
+    wind: cur.wind_speed_10m,
+    windDir: cur.wind_direction_10m,
+    cloud: cur.cloud_cover,
+  });
   $("#hero-icon").textContent = now.icon;
   $("#temp").textContent = `${round(cur.temperature_2m)}°`;
   $("#condition").textContent = now.text;

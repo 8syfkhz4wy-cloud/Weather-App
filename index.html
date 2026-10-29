@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-sky="clear-day" data-tab="wetter">
-  <div class="bg" aria-hidden="true"><div class="bg-glow"></div><div class="bg-grid"></div></div>
+  <div class="bg" aria-hidden="true"><div class="bg-glow"></div><canvas id="fx"></canvas><div class="bg-grid"></div></div>
 
   <header class="topbar">
     <div class="loc">
@@ -191,6 +191,7 @@
     <ul id="saved-list" class="list"></ul>
   </dialog>
 
+  <script src="weather-fx.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

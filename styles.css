@@ -1,6 +1,6 @@
 :root {
   --bg: #05080f;
-  --panel: rgba(13, 20, 34, 0.72);
+  --panel: rgba(13, 20, 34, 0.66);
   --panel-solid: #0d1422;
   --line: rgba(120, 200, 255, 0.14);
   --line-strong: rgba(120, 200, 255, 0.28);
@@ -53,6 +53,7 @@ button { font: inherit; color: inherit; }
   filter: blur(30px);
   transition: background 1s;
 }
+#fx { position: absolute; inset: 0; width: 100%; height: 100%; }
 .bg-grid {
   position: absolute;
   inset: 0;
@@ -168,9 +169,32 @@ main {
 .tag-r { font-size: 11px; color: var(--muted); text-align: right; }
 
 /* Hero */
-.hero { padding: 16px; }
+.hero {
+  padding: 40px 16px 16px;
+  background: linear-gradient(180deg, rgba(13, 20, 34, 0) 0%, rgba(13, 20, 34, 0.55) 100%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
 .hero-main { display: flex; align-items: center; gap: 14px; }
-.hero-icon { font-size: 64px; line-height: 1; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 60%, transparent)); }
+.hero-icon {
+  font-size: 64px;
+  line-height: 1;
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 60%, transparent));
+  animation: float 5s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+body[data-sky^="storm"] .hero-icon { animation: float 5s ease-in-out infinite, zap 6s steps(1) infinite; }
+@keyframes zap {
+  0%, 92%, 96%, 100% { filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 60%, transparent)); }
+  94%, 98% { filter: drop-shadow(0 0 28px #fff) brightness(1.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-icon { animation: none !important; }
+}
 .temp {
   font-size: 76px;
   font-weight: 300;
