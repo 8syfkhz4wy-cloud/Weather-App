@@ -1,0 +1,15 @@
+name: Datencheck
+
+# Prüft manuell, ob alle Datenquellen der App vollständige und plausible Werte liefern.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/datencheck.py
