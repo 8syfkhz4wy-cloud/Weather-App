@@ -56,8 +56,10 @@ SNOW_LEVELS = [(3, "Schneefall"), (10, "Starker Schneefall"), (25, "Extrem stark
 
 def find_warnings(forecast):
     h = forecast["hourly"]
-    now = forecast["current"]["time"][:13]
-    start = next((i for i, t in enumerate(h["time"]) if t[:13] >= now), 0)
+    # Ab der nächsten vollen Stunde: Mengen wie Niederschlag gelten bei Open-Meteo
+    # für die vorausgehende Stunde, der Wert um 15:00 also für 14–15 Uhr.
+    now = forecast["current"]["time"]
+    start = next((i for i, t in enumerate(h["time"]) if t > now), len(h["time"]) - 1)
     hours = range(start, min(start + HOURS_AHEAD, len(h["time"])))
 
     def first(pred):

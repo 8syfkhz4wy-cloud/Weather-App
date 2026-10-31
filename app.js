@@ -230,7 +230,7 @@ async function fetchWeather(place) {
     hourly: [
       "temperature_2m", "weather_code", "precipitation_probability", "precipitation", "is_day",
       "wind_speed_10m", "wind_gusts_10m", "snowfall", "rain", "showers", "dew_point_2m",
-      "visibility", "pressure_msl",
+      "visibility", "pressure_msl", "uv_index",
     ].join(","),
     daily: [
       "weather_code", "temperature_2m_max", "temperature_2m_min", "precipitation_probability_max",
@@ -254,18 +254,37 @@ async function fetchAir(place) {
   return res.json();
 }
 
-// Index der aktuellen Stunde in den stündlichen Daten
+// Index der zuletzt begonnenen Stunde (z. B. 14:00 bei 14:45)
 function hourStart(w) {
   const key = w.current.time.slice(0, 13);
   const i = w.hourly.time.findIndex((t) => t.slice(0, 13) >= key);
   return i < 0 ? 0 : i;
 }
 
+// Index der nächsten vollen Stunde nach "jetzt". Mengen wie Niederschlag gelten
+// bei Open-Meteo für die vorausgehende Stunde, der Wert um 15:00 also für 14–15 Uhr.
+function nextHour(w) {
+  const i = w.hourly.time.findIndex((t) => t > w.current.time);
+  return i < 0 ? w.hourly.time.length - 1 : i;
+}
+
+// Stündlichen Wert auf die aktuelle Uhrzeit interpolieren (z. B. Taupunkt, UV)
+function nowValue(w, key) {
+  const h = w.hourly;
+  if (!h[key]) return null; // z. B. ältere zwischengespeicherte Daten ohne dieses Feld
+  const s = hourStart(w);
+  const a = h[key][s];
+  const b = h[key][Math.min(s + 1, h[key].length - 1)];
+  if (a == null || b == null) return a ?? b ?? null;
+  const frac = (parseLocal(w.current.time) - parseLocal(h.time[s])) / 3600000;
+  return a + (b - a) * clamp(frac, 0, 1);
+}
+
 // ---------- Warnungen (gleiche Schwellen wie scripts/warnungen.py) ----------
 
 function computeWarnings(w) {
   const h = w.hourly;
-  const start = hourStart(w);
+  const start = nextHour(w);
   const idx = [];
   for (let i = start; i < Math.min(start + 24, h.time.length); i++) idx.push(i);
   const first = (pred) => {
@@ -379,25 +398,38 @@ function renderHero(w) {
   $("#h-max").textContent = `${round(w.daily.temperature_2m_max[0])}°`;
   $("#h-min").textContent = `${round(w.daily.temperature_2m_min[0])}°`;
   $("#h-feel").textContent = `${round(cur.apparent_temperature)}°`;
-  $("#h-rain").textContent = `${w.daily.precipitation_probability_max[0] ?? 0}%`;
+  // Regenwahrscheinlichkeit für den Rest des heutigen Tages (nicht für bereits vergangene Stunden)
+  const h = w.hourly;
+  const today = w.current.time.slice(0, 10);
+  const rest = [];
+  for (let i = nextHour(w); i < h.time.length && h.time[i].slice(0, 10) === today; i++) rest.push(h.precipitation_probability[i] ?? 0);
+  if (h.time[nextHour(w)]?.slice(0, 10) !== today) rest.push(h.precipitation_probability[nextHour(w)] ?? 0);
+  $("#h-rain").textContent = `${Math.max(0, ...rest)}%`;
 }
 
 function renderNowcast(w) {
   const m = w.minutely_15;
   if (!m) return;
-  const key = w.current.time.slice(0, 16);
-  let start = m.time.findIndex((t) => t > key);
-  start = start <= 0 ? 0 : start - 1;
-  const slots = m.time.slice(start, start + 8).map((t, k) => ({ t: fmtTime(t), v: m.precipitation[start + k] || 0 }));
-  const max = Math.max(1, ...slots.map((s) => s.v));
+  // Jeder Wert gilt für die vorausgehenden 15 Minuten: "15:15" = 15:00–15:15.
+  // Angezeigt wird deshalb der Beginn des Zeitfensters.
+  let start = m.time.findIndex((t) => t > w.current.time);
+  if (start < 0) return;
+  const begin = (t) => {
+    const d = new Date(parseLocal(t).getTime() - 15 * 60000);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+  const slots = m.time.slice(start, start + 8).map((t, k) => ({ t: begin(t), v: m.precipitation[start + k] || 0 }));
+  const max = Math.max(0.5, ...slots.map((s) => s.v));
   const sum = slots.reduce((s, x) => s + x.v, 0);
-  const kind = w.current.temperature_2m <= 0.5 ? "Schnee" : "Regen";
+  const snowCodes = [71, 73, 75, 77, 85, 86];
+  const kind = snowCodes.includes(w.current.weather_code) || w.current.temperature_2m <= 0.5 ? "Schnee" : "Regen";
 
   let text;
-  const firstWet = slots.findIndex((s) => s.v > 0);
+  // Spuren unter 0.05 mm (Rundungsrauschen) zählen nicht als Niederschlag
+  const firstWet = slots.findIndex((s) => s.v >= 0.05);
   if (firstWet < 0) text = `☂️ Kein ${kind} in den nächsten 2 Stunden.`;
   else if (firstWet === 0) {
-    const dry = slots.findIndex((s) => s.v === 0);
+    const dry = slots.findIndex((s) => s.v < 0.05);
     text = dry < 0 ? `🌧️ ${kind} hält mindestens 2 Stunden an.` : `🌧️ ${kind} lässt gegen ${slots[dry].t} Uhr nach.`;
   } else text = `🌦️ ${kind} ab etwa ${slots[firstWet].t} Uhr erwartet.`;
 
@@ -423,10 +455,13 @@ function renderChart() {
   const top = 18;
   const bottom = H - 20;
   const h = w.hourly;
-  const start = hourStart(w);
+  const cur = w.current;
+  // Punkt 0 = jetzt (aktuelle Werte), danach die nächsten 24 vollen Stunden
+  const start = nextHour(w);
   const idx = [];
-  for (let i = start; i < Math.min(start + 25, h.time.length); i++) idx.push(i);
-  const x = (k) => 8 + (k * (W - 16)) / (idx.length - 1);
+  for (let i = start; i < Math.min(start + 24, h.time.length); i++) idx.push(i);
+  const n = idx.length + 1;
+  const x = (k) => 8 + (k * (W - 16)) / (n - 1);
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
       <stop offset="0" stop-color="var(--accent)" stop-opacity="0.45"/>
@@ -443,9 +478,12 @@ function renderChart() {
     let s = "";
     if (!dashed) s += `<path d="M${pts[0]} L${pts.join(" L")} L${x(vals.length - 1)},${bottom} L${x(0)},${bottom}Z" fill="url(#cg)"/>`;
     s += `<polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="2" ${dashed ? 'stroke-dasharray="4 4" opacity="0.7"' : 'style="filter:drop-shadow(0 0 4px var(--accent))"'}/>`;
-    if (labelUnit) {
+    if (labelUnit !== null) {
+      const hi = vals.indexOf(Math.max(...vals));
+      const lo = vals.indexOf(Math.min(...vals));
       vals.forEach((v, k) => {
-        if (k % 3 === 0) {
+        // alle 3 Stunden sowie Höchst- und Tiefstwert beschriften
+        if (k % 3 === 0 || k === hi || k === lo) {
           s += `<circle cx="${x(k)}" cy="${y(v)}" r="2.5" fill="${color}"/>`;
           s += `<text class="val" x="${x(k)}" y="${y(v) - 6}" text-anchor="middle">${round(v)}${labelUnit}</text>`;
         }
@@ -455,52 +493,54 @@ function renderChart() {
   };
 
   if (state.chart === "temp") {
-    svg += line(idx.map((i) => h.temperature_2m[i]), "var(--accent)", false, "°");
+    svg += line([cur.temperature_2m, ...idx.map((i) => h.temperature_2m[i])], "var(--accent)", false, "°");
   } else if (state.chart === "wind") {
-    const gusts = idx.map((i) => h.wind_gusts_10m[i] || 0);
-    const speed = idx.map((i) => h.wind_speed_10m[i] || 0);
+    const gusts = [cur.wind_gusts_10m || 0, ...idx.map((i) => h.wind_gusts_10m[i] || 0)];
+    const speed = [cur.wind_speed_10m || 0, ...idx.map((i) => h.wind_speed_10m[i] || 0)];
     // gemeinsame Skala für Wind und Böen
-    const min = Math.min(...speed);
+    const min = Math.min(...speed, ...gusts);
     const max = Math.max(...gusts, ...speed);
     svg += line(gusts, "var(--accent-2)", true, null, min, max);
     svg += line(speed, "var(--accent)", false, "", min, max);
     svg += `<text x="${W - 4}" y="12" text-anchor="end">km/h · gestrichelt = Böen bis ${round(max)}</text>`;
   } else {
-    const bw = Math.max(3, (W - 16) / idx.length - 3);
+    // Balken zwischen den Stunden: der Wert um 15:00 gilt für 14–15 Uhr
+    const bw = Math.max(3, (W - 16) / n - 3);
     const maxMm = Math.max(1, ...idx.map((i) => h.precipitation[i] || 0));
-    idx.forEach((i, k) => {
+    idx.forEach((i, j) => {
+      const k = j + 0.5;
       const p = h.precipitation_probability[i] || 0;
       const mm = h.precipitation[i] || 0;
       const ph = ((bottom - top) * p) / 100;
       svg += `<rect x="${x(k) - bw / 2}" y="${bottom - ph}" width="${bw}" height="${ph}" rx="2" fill="var(--rain)" opacity="0.28"/>`;
       const mh = ((bottom - top) * mm) / maxMm;
       if (mm > 0) svg += `<rect x="${x(k) - bw / 2}" y="${bottom - mh}" width="${bw}" height="${mh}" rx="2" fill="var(--rain)"/>`;
-      if (k % 3 === 0 && p > 0) svg += `<text class="val" x="${x(k)}" y="${bottom - ph - 4}" text-anchor="middle">${p}%</text>`;
+      if (j % 3 === 0 && p > 0) svg += `<text class="val" x="${x(k)}" y="${bottom - ph - 4}" text-anchor="middle">${p}%</text>`;
     });
-    svg += `<text x="${W - 4}" y="12" text-anchor="end">hell = Wahrscheinlichkeit · kräftig = mm</text>`;
+    const total = idx.reduce((s, i) => s + (h.precipitation[i] || 0), 0);
+    svg += `<text x="${W - 4}" y="12" text-anchor="end">hell = Wahrscheinlichkeit · kräftig = mm · Σ ${total.toFixed(1)} mm</text>`;
   }
 
-  idx.forEach((i, k) => {
-    if (k % 3 === 0) svg += `<text x="${x(k)}" y="${H - 4}" text-anchor="middle">${k === 0 ? "jetzt" : h.time[i].slice(11, 13)}</text>`;
+  svg += `<text x="${x(0)}" y="${H - 4}" text-anchor="middle">jetzt</text>`;
+  idx.forEach((i, j) => {
+    if ((j + 1) % 3 === 0) svg += `<text x="${x(j + 1)}" y="${H - 4}" text-anchor="middle">${h.time[i].slice(11, 13)}</text>`;
   });
   box.innerHTML = `${svg}</svg>`;
 }
 
 function renderHourly(w) {
   const h = w.hourly;
-  const start = hourStart(w);
+  const cur = w.current;
+  const start = nextHour(w);
   const items = [];
-  for (let i = start; i < Math.min(start + 24, h.time.length); i++) {
-    const info = wmo(h.weather_code[i], h.is_day[i] === 1);
-    const p = h.precipitation_probability[i];
-    const item = el("div", `hour${i === start ? " now" : ""}`);
-    item.append(
-      el("span", "t", i === start ? "JETZT" : `${h.time[i].slice(11, 13)}h`),
-      el("span", "i", info.icon),
-      el("span", "v", `${round(h.temperature_2m[i])}°`),
-      el("span", "p", p >= 20 ? `${p}%` : "")
-    );
-    items.push(item);
+  const item = (cls, label, icon, temp, p) => {
+    const node = el("div", cls);
+    node.append(el("span", "t", label), el("span", "i", icon), el("span", "v", `${round(temp)}°`), el("span", "p", p >= 20 ? `${p}%` : ""));
+    return node;
+  };
+  items.push(item("hour now", "JETZT", wmo(cur.weather_code, cur.is_day === 1).icon, cur.temperature_2m, h.precipitation_probability[start]));
+  for (let i = start; i < Math.min(start + 23, h.time.length); i++) {
+    items.push(item("hour", `${h.time[i].slice(11, 13)}h`, wmo(h.weather_code[i], h.is_day[i] === 1).icon, h.temperature_2m[i], h.precipitation_probability[i]));
   }
   $("#hourly").replaceChildren(...items);
 }
@@ -619,8 +659,9 @@ function renderTiles(w, air) {
   // Luftfeuchte & Taupunkt
   const hum = tile("// FEUCHTE");
   hum.append(html("div", "tile-big", `${cur.relative_humidity_2m}<small> %</small>`));
-  const dew = h.dew_point_2m[s];
-  hum.append(el("div", "tile-sub", `Taupunkt ${round(dew)}° · ${dew >= 18 ? "schwül" : dew >= 13 ? "angenehm feucht" : "trocken"}`));
+  const dew = nowValue(w, "dew_point_2m");
+  const feel = dew >= 21 ? "drückend schwül" : dew >= 18 ? "schwül" : dew >= 16 ? "leicht schwül" : dew >= 10 ? "angenehm" : "trocken";
+  hum.append(el("div", "tile-sub", `Taupunkt ${round(dew)}° · ${feel}`));
   const meter = html("div", "meter", `<i style="left:${cur.relative_humidity_2m}%"></i>`);
   meter.style.background = "linear-gradient(90deg,#ffb020,#3ddc97,#4da3ff)";
   hum.append(meter);
@@ -629,27 +670,36 @@ function renderTiles(w, air) {
 
   // Luftdruck mit Tendenz
   const press = tile("// LUFTDRUCK");
-  const p3 = h.pressure_msl[Math.min(s + 3, h.pressure_msl.length - 1)];
-  const diff = p3 - cur.pressure_msl;
-  const trend = diff > 1 ? "↗ steigend" : diff < -1 ? "↘ fallend" : "→ stabil";
-  press.append(html("div", "tile-big", `${round(cur.pressure_msl)}<small> hPa</small>`));
-  press.append(el("div", "tile-sub", `${trend} (${diff >= 0 ? "+" : ""}${diff.toFixed(1)} in 3 h)`));
+  // Barometrische Tendenz wie am Barometer: Änderung der letzten 3 Stunden.
+  // Kurz nach Mitternacht fehlen die Vorstunden, dann die nächsten 3 Stunden.
+  // Für die Differenz durchgehend die Stundenreihe verwenden (gleiche Datenbasis)
+  const nowP = cur.pressure_msl;
+  const seriesNow = nowValue(w, "pressure_msl") ?? nowP;
+  const past = s >= 3 ? h.pressure_msl[s - 3] : null;
+  const diff = past != null ? seriesNow - past : (h.pressure_msl[Math.min(s + 3, h.pressure_msl.length - 1)] - seriesNow);
+  const span = past != null ? "letzte 3 h" : "nächste 3 h";
+  const trend = diff >= 3 ? "⇈ stark steigend" : diff >= 1 ? "↗ steigend" : diff <= -3 ? "⇊ stark fallend" : diff <= -1 ? "↘ fallend" : "→ stabil";
+  const hint = diff <= -3 ? " · Wetterverschlechterung möglich" : nowP >= 1020 && diff > -1 ? " · Hochdruck" : nowP < 1000 ? " · Tiefdruck" : "";
+  press.append(html("div", "tile-big", `${round(nowP)}<small> hPa</small>`));
+  press.append(el("div", "tile-sub", `${trend} (${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} hPa, ${span})${hint}`));
   tiles.push(press);
 
   // Sichtweite
   const vis = tile("// SICHT");
-  const km = (h.visibility[s] ?? 0) / 1000;
-  vis.append(html("div", "tile-big", `${km >= 10 ? round(km) : km.toFixed(1)}<small> km</small>`));
-  vis.append(el("div", "tile-sub", km >= 20 ? "Sehr gute Fernsicht" : km >= 10 ? "Gute Sicht" : km >= 1 ? "Eingeschränkte Sicht" : "Nebel – sehr schlechte Sicht"));
+  const km = (nowValue(w, "visibility") ?? 0) / 1000;
+  const kmText = km >= 10 ? round(km) : km >= 1 ? km.toFixed(1) : km.toFixed(2);
+  vis.append(html("div", "tile-big", `${km < 1 ? round(km * 1000) : kmText}<small> ${km < 1 ? "m" : "km"}</small>`));
+  vis.append(el("div", "tile-sub", km >= 20 ? "Sehr gute Fernsicht" : km >= 10 ? "Gute Sicht" : km >= 4 ? "Mäßige Sicht (Dunst)" : km >= 1 ? "Schlechte Sicht (Dunst)" : "Nebel – sehr schlechte Sicht"));
   tiles.push(vis);
 
   // UV
   const uvT = tile("// UV-INDEX");
-  const uv = d.uv_index_max[0] ?? 0;
-  const uvText = uv < 3 ? "Niedrig" : uv < 6 ? "Mäßig" : uv < 8 ? "Hoch" : uv < 11 ? "Sehr hoch" : "Extrem";
-  uvT.append(html("div", "tile-big", `${uv.toFixed(1)}`));
-  uvT.append(el("div", "tile-sub", `${uvText}${uv >= 3 ? " · Sonnenschutz empfohlen" : ""}`));
-  uvT.append(html("div", "meter", `<i style="left:${clamp(uv / 11, 0, 1) * 100}%"></i>`));
+  const uvLabel = (v) => (v < 3 ? "Niedrig" : v < 6 ? "Mäßig" : v < 8 ? "Hoch" : v < 11 ? "Sehr hoch" : "Extrem");
+  const uvNow = Math.max(0, nowValue(w, "uv_index") ?? 0);
+  const uvMax = d.uv_index_max[0] ?? 0;
+  uvT.append(html("div", "tile-big", `${uvNow.toFixed(1)}<small> jetzt</small>`));
+  uvT.append(el("div", "tile-sub", `${uvLabel(uvNow)} · Max heute ${uvMax.toFixed(1)} (${uvLabel(uvMax)})${uvMax >= 3 ? " · Sonnenschutz empfohlen" : ""}`));
+  uvT.append(html("div", "meter", `<i style="left:${clamp(uvNow / 11, 0, 1) * 100}%"></i>`));
   tiles.push(uvT);
 
   // Mond
@@ -682,12 +732,23 @@ function renderTiles(w, air) {
     const pollen = Object.entries(POLLEN).filter(([k]) => a[k] !== null && a[k] !== undefined);
     if (pollen.length) {
       const pl = tile("// POLLENFLUG", "wide");
-      const level = (v) => (v < 1 ? ["keine", 0] : v < 20 ? ["gering", 1] : v < 100 ? ["mäßig", 2] : ["hoch", 4]);
-      const rows = pollen.map(([k, name]) => {
-        const [txt, lv] = level(a[k]);
-        return `<span>${name}</span><b class="lvl-${lv}">${txt}</b>`;
+      // Stufen in Pollen/m³ je Art (angelehnt an MeteoSchweiz: schwach, mässig, stark, sehr stark)
+      const limits = {
+        alder_pollen: [10, 70, 300], birch_pollen: [10, 70, 300], grass_pollen: [20, 50, 150],
+        mugwort_pollen: [6, 15, 50], olive_pollen: [20, 50, 200], ragweed_pollen: [6, 11, 40],
+      };
+      const level = (k, v) => {
+        if (v < 1) return ["keine", 0];
+        const [m, s, vs] = limits[k];
+        return v < m ? ["schwach", 1] : v < s ? ["mäßig", 2] : v < vs ? ["stark", 3] : ["sehr stark", 4];
+      };
+      const active = pollen.filter(([k]) => a[k] >= 1);
+      const rows = active.map(([k, name]) => {
+        const [txt, lv] = level(k, a[k]);
+        return `<span>${name}</span><b class="lvl-${lv}">${txt}${lv ? ` · ${round(a[k])}/m³` : ""}</b>`;
       });
-      pl.append(html("div", "kv", rows.join("")));
+      if (active.length) pl.append(html("div", "kv", rows.join("")));
+      else pl.append(el("div", "tile-sub", `Zurzeit kein Pollenflug (${pollen.map(([, name]) => name).join(", ")}).`));
       tiles.push(pl);
     }
   }
@@ -736,6 +797,7 @@ async function showPlace(place) {
     if (seq !== loadSeq) return; // inzwischen anderer Ort gewählt
     const t = Date.now();
     store(cacheKey, { t, w, air });
+    state.fetchedAt = t;
     Object.assign(state, { w, air });
     renderAll();
     renderUpdated(t, true);
@@ -1038,6 +1100,11 @@ if (lastPlace) {
   locate();
 }
 
+// Solange die App offen ist, alle 15 Minuten neue Daten laden
+setInterval(() => {
+  if (document.visibilityState === "visible" && state.place) showPlace(state.place);
+}, 15 * 60 * 1000);
+
 // Beim Zurückkehren in die App: Daten und Tagespsalm aktualisieren
 let lastDay = new Date().toDateString();
 document.addEventListener("visibilitychange", () => {
@@ -1048,7 +1115,8 @@ document.addEventListener("visibilitychange", () => {
     renderPsalm();
     renderVerse();
   }
-  if (state.place) showPlace(state.place);
+  // Nur neu laden, wenn die Daten älter als 5 Minuten sind (schont Akku und Datenvolumen)
+  if (state.place && Date.now() - (state.fetchedAt || 0) > 5 * 60 * 1000) showPlace(state.place);
 });
 
 if ("serviceWorker" in navigator) {
