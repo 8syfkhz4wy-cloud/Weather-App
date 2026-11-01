@@ -20,16 +20,21 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
-# (Name, URL, Gewicht, nur Fussball?)
+# (Name, URL, Gewicht, nur Fussball?, Sprache)
+# Internationale Redaktionen zählen für die Wichtigkeit mit, angezeigt wird nach
+# Möglichkeit ein deutschsprachiger Artikel zum selben Thema.
 SOURCES = [
-    ("SRF Sport", "https://www.srf.ch/sport/bnf/rss/718", 1.2, False),
-    ("NZZ", "https://www.nzz.ch/sport/fussball.rss", 1.2, True),
-    ("Blick", "https://www.blick.ch/sport/fussball/rss.xml", 1.0, True),
-    ("Der Spiegel", "https://www.spiegel.de/sport/fussball/index.rss", 1.1, True),
-    ("kicker", "https://newsfeed.kicker.de/news/fussball", 1.1, True),
-    ("Sportschau", "https://www.sportschau.de/fussball/index~rss2.xml", 1.0, True),
-    ("tagesschau", "https://www.tagesschau.de/sport/index~rss2.xml", 0.9, False),
-    ("11FREUNDE", "https://www.11freunde.de/feed", 0.8, True),
+    ("SRF Sport", "https://www.srf.ch/sport/bnf/rss/718", 1.1, False, "de"),
+    ("NZZ", "https://www.nzz.ch/sport/fussball.rss", 1.1, True, "de"),
+    ("Blick", "https://www.blick.ch/sport/fussball/rss.xml", 0.9, True, "de"),
+    ("Der Spiegel", "https://www.spiegel.de/sport/fussball/index.rss", 1.0, True, "de"),
+    ("kicker", "https://newsfeed.kicker.de/news/fussball", 1.0, True, "de"),
+    ("Sportschau", "https://www.sportschau.de/fussball/index~rss2.xml", 0.9, True, "de"),
+    ("tagesschau", "https://www.tagesschau.de/sport/index~rss2.xml", 0.8, False, "de"),
+    ("11FREUNDE", "https://www.11freunde.de/feed", 0.7, True, "de"),
+    ("BBC Sport", "https://feeds.bbci.co.uk/sport/football/rss.xml", 1.4, True, "en"),
+    ("The Guardian", "https://www.theguardian.com/football/rss", 1.3, True, "en"),
+    ("ESPN", "https://www.espn.com/espn/rss/soccer/news", 1.3, True, "en"),
 ]
 
 MAX_AGE = timedelta(hours=30)
@@ -49,9 +54,15 @@ FOOTBALL = re.compile(
 )
 # Liveticker, Audiostreams, Bildergalerien und Unterhaltung aussortieren
 SKIP = re.compile(r"\blive\b|liveticker|audiostream|jetzt live|ticker|instaschau|bilder|quiz|podcast|"
-                  r"im stream|so sehen sie|tv-übertragung|aufstellung", re.I)
+                  r"im stream|so sehen sie|tv-übertragung|aufstellung|gossip|predictions|as it happened|"
+                  r"highlights|how to watch|team news|player ratings|newsletter", re.I)
 LOWER_LEAGUES = re.compile(r"regionalliga|oberliga|challenge league|3\. liga|2\. liga|promotion league|"
-                           r"u ?1[0-9]|u ?2[0-3]|jugend|amateur|landesliga|verbandsliga", re.I)
+                           r"u ?1[0-9]|u ?2[0-3]|jugend|amateur|landesliga|verbandsliga|league one|league two|"
+                           r"national league|scottish|\bwsl\b|non-league", re.I)
+# Weltstars und Startrainer: Meldungen über sie sind international bedeutsam
+STARS = re.compile(r"messi|ronaldo|mbapp|haaland|yamal|bellingham|salah|vin[ií]cius|kane|de bruyne|"
+                   r"guardiola|ancelotti|klopp|xabi alonso|flick|mourinho|zidane|infantino|neymar|"
+                   r"lewandowski|musiala|wirtz|pedri|rodri|saka|palmer|osimhen|dembélé|dembele", re.I)
 
 # Themen: (Bezeichnung, Emoji, Muster, Bonus für internationale Bedeutung)
 TOPICS = [
@@ -61,14 +72,19 @@ TOPICS = [
     ("Ballon d'Or", "🏅", r"ballon d.or|weltfussballer|weltfußballer", 1.5),
     ("Europa League", "🟠", r"europa league|europa-league", 1.3),
     ("Conference League", "🟢", r"conference league", 1.2),
-    ("Nationalteam", "🇨🇭", r"nati\b|nationalmannschaft|nationalteam|sfv|dfb-team|länderspiel|yakin|nagelsmann", 1.4),
-    ("Transfer", "💸", r"transfer|wechsel|verpflicht|ablöse|vertrag", 1.2),
-    ("Trainer", "📋", r"trainer|coach|entlass|freigestellt|beurlaubt", 1.2),
-    ("Premier League", "🦁", r"premier league|liverpool|manchester|arsenal|chelsea|tottenham|man city|man united", 1.35),
+    ("Nationalteam", "🌍", r"nati\b|nationalmannschaft|nationalteam|national team|sfv|dfb-team|länderspiel|"
+                          r"international break|yakin|nagelsmann", 1.4),
+    ("Premier League", "🦁", r"premier league|liverpool|manchester|arsenal|chelsea|tottenham|man city|man utd|"
+                             r"man united|newcastle|aston villa", 1.35),
     ("La Liga", "🇪🇸", r"laliga|la liga|real madrid|barcelona|barça|atlético|atletico", 1.35),
-    ("Serie A", "🇮🇹", r"serie a|juventus|inter mailand|ac mailand|napoli|neapel|as rom|lazio", 1.3),
-    ("Bundesliga", "🇩🇪", r"bundesliga|bayern|bvb|dortmund|leverkusen|leipzig|kane|kimmich", 1.25),
-    ("Super League", "🇨🇭", r"super league|yb\b|young boys|fc basel|fcb\b|fcz\b|fc zürich|servette|lugano", 1.15),
+    ("Serie A", "🇮🇹", r"serie a|juventus|inter mailand|inter milan|ac mailand|ac milan|napoli|neapel|as rom|roma\b|lazio", 1.3),
+    ("Ligue 1", "🇫🇷", r"ligue 1|psg|paris saint|paris st|marseille|monaco", 1.25),
+    ("Transfer", "💸", r"transfer|wechsel|verpflicht|ablöse|signs|signing|deal", 1.2),
+    ("Trainer", "📋", r"trainer|coach|entlass|freigestellt|beurlaubt|manager|sacked|appointed", 1.15),
+    # Nationale Ligen der D-A-CH-Redaktionen zählen weniger, damit nicht jede
+    # Bundesliga-Meldung gewinnt, nur weil viele deutsche Medien darüber schreiben
+    ("Bundesliga", "🇩🇪", r"bundesliga|bayern|bvb|dortmund|leverkusen|leipzig|kimmich|dfb-pokal", 0.8),
+    ("Super League", "🇨🇭", r"super league|yb\b|young boys|fc basel|fcb\b|fcz\b|fc zürich|servette|lugano", 0.75),
 ]
 
 # Häufige Wörter, die kein Hinweis auf dasselbe Thema sind
@@ -80,6 +96,10 @@ saison spieltag runde liga league partie duell derby heim auswärts minute minut
 fans stadion nach jetzt heute gestern morgen sonntag samstag montag dienstag mittwoch donnerstag freitag
 erste ersten zweite zweiten neue neuen neuer alte alten großer grosse grosser großen grossen kein keine
 spieler star stars sportchef präsident geht gibt macht bleibt steht kommt muss soll kann will darf
+the a an and or but with after before for from into over under is are was were has have not how why what
+who when where his her their this that these those it its as at by on in of to up out new first last top
+man men women says said say will can could would should game games win wins won loss draw goal goals
+manager coach player players season week weekend match matches cup final boss fan fans world
 """.split())
 
 
@@ -111,7 +131,7 @@ def keywords(text):
 def load_items():
     now = datetime.now(timezone.utc)
     items = []
-    for name, url, weight, football_only in SOURCES:
+    for name, url, weight, football_only, lang in SOURCES:
         try:
             root = ET.fromstring(fetch(url))
         except Exception as err:
@@ -141,7 +161,7 @@ def load_items():
             if " – " in title and name.startswith("SRF"):
                 title = title.split(" – ", 1)[1]
             items.append({
-                "source": name, "weight": weight, "rank": rank, "title": title, "teaser": desc,
+                "source": name, "weight": weight, "rank": rank, "title": title, "teaser": desc, "lang": lang,
                 # Themenvergleich nur über die Schlagzeile: Anrisstexte enthalten zu viele Nebennamen
                 "url": link, "published": published, "kw": keywords(title),
             })
@@ -186,6 +206,8 @@ def pick(items):
                 a["links"].append(f"{b['source']}: {b['title'][:50]} [{', '.join(sorted(a['kw'] & b['kw']))}]")
         coverage = sum(sources.values())
         _, _, bonus = topic_of(a["title"] + " " + a["teaser"])
+        if STARS.search(a["title"]):
+            bonus = max(bonus, 1.0) * 1.2
         hours = (now - a["published"]).total_seconds() / 3600
         freshness = max(0.4, 1 - hours / 36)
         position = 1.15 if a["rank"] < 3 else 1.0  # Aufmacher der Redaktion
@@ -193,9 +215,18 @@ def pick(items):
         score = coverage * bonus * freshness * position * teaser_ok
         a["score"] = score
         a["coverage"] = sorted(sources)
+        a["cluster"] = [b for b in items if b is a or related(a, b, idf)]
         if score > best_score:
             best, best_score = a, score
     return best
+
+
+def representative(top):
+    """Zum gewählten Thema einen deutschsprachigen Artikel mit gutem Anrisstext zeigen."""
+    german = [b for b in top["cluster"] if b["lang"] == "de"]
+    if not german:
+        return top
+    return max(german, key=lambda b: (len(b["teaser"]) > 60, b["weight"], b["rank"] < 3, b["published"]))
 
 
 def shorten(text, limit=230):
@@ -210,7 +241,7 @@ def main(out_file):
     items = load_items()
     if not items:
         raise SystemExit("Keine Meldungen gefunden")
-    top = pick(items)
+    top = representative(pick(items))
     for it in sorted(items, key=lambda x: -x["score"])[:5]:
         print(f"  {it['score']:.2f}  [{it['source']}] {it['title']}  ({', '.join(it['coverage'])})")
         for link in it["links"][:6]:
@@ -222,7 +253,7 @@ def main(out_file):
     news = {
         "title": top["title"],
         "teaser": shorten(top["teaser"]),
-        "source": top["source"],
+        "source": top["source"] + (" (Englisch)" if top["lang"] == "en" else ""),
         "url": top["url"],
         "published": top["published"].isoformat(),
         "topic": label,

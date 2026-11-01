@@ -18,8 +18,10 @@ Vier Bereiche über die Tab-Leiste:
 - **Breaking News Fussball:** die wichtigste internationale Fussball-Meldung des Tages
   als illustrierte Karte mit Laufband. Alle 2 Stunden sammelt
   `scripts/fussball_news.py` die Schlagzeilen von SRF, NZZ, Blick, Spiegel, kicker,
-  Sportschau, tagesschau und 11FREUNDE und wählt das Thema, über das die meisten
-  Redaktionen berichten (internationale Wettbewerbe zählen mehr, Liveticker und
+  Sportschau, tagesschau, 11FREUNDE, BBC Sport, The Guardian und ESPN und wählt das
+  international wichtigste Thema, über das die meisten
+  Redaktionen berichten (internationale Wettbewerbe und Weltstars zählen mehr, reine
+  Bundesliga- und Super-League-Themen weniger, Liveticker und
   unterklassige Ligen werden aussortiert). Antippen öffnet den Artikel der Quelle.
 - **Radar:** animiertes Regenradar der letzten 2 Stunden (RainViewer) auf dunkler Karte
 - **Psalm:** Psalm des Tages aus der Lutherbibel 1912: alle 150 Psalmen der Reihe
