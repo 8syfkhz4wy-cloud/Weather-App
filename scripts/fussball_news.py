@@ -142,7 +142,8 @@ def load_items():
                 title = title.split(" – ", 1)[1]
             items.append({
                 "source": name, "weight": weight, "rank": rank, "title": title, "teaser": desc,
-                "url": link, "published": published, "kw": keywords(title + " " + desc[:200]),
+                # Themenvergleich nur über die Schlagzeile: Anrisstexte enthalten zu viele Nebennamen
+                "url": link, "published": published, "kw": keywords(title),
             })
             count += 1
         print(f"{name}: {count} passende Meldungen")
@@ -178,9 +179,11 @@ def pick(items):
     best, best_score = None, -1
     for a in items:
         sources = {a["source"]: a["weight"]}
+        a["links"] = []
         for b in items:
             if b is not a and related(a, b, idf):
                 sources[b["source"]] = max(sources.get(b["source"], 0), b["weight"])
+                a["links"].append(f"{b['source']}: {b['title'][:50]} [{', '.join(sorted(a['kw'] & b['kw']))}]")
         coverage = sum(sources.values())
         _, _, bonus = topic_of(a["title"] + " " + a["teaser"])
         hours = (now - a["published"]).total_seconds() / 3600
@@ -210,6 +213,8 @@ def main(out_file):
     top = pick(items)
     for it in sorted(items, key=lambda x: -x["score"])[:5]:
         print(f"  {it['score']:.2f}  [{it['source']}] {it['title']}  ({', '.join(it['coverage'])})")
+        for link in it["links"][:6]:
+            print(f"         ~ {link}")
     # Thema bevorzugt aus der Schlagzeile, sonst aus dem Anrisstext
     label, emoji, _ = topic_of(top["title"])
     if label == "Top-Meldung":
