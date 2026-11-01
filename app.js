@@ -185,6 +185,117 @@ async function loadPsalms() {
   renderVerse();
 }
 
+// ---------- Breaking News Fussball ----------
+
+// Eigene Illustration: Stadion bei Nacht mit Flutlicht, Rasen und fliegendem Ball
+function newsArtSvg(accent) {
+  const stands = Array.from({ length: 46 }, (_, i) => {
+    const x = i * 14;
+    const hgt = 18 + ((i * 37) % 11);
+    return `<rect x="${x}" y="${150 - hgt}" width="12" height="${hgt}" rx="2" fill="#0d1428"/>`;
+  }).join("");
+  const crowd = Array.from({ length: 120 }, (_, i) => {
+    const x = (i * 53) % 640;
+    const y = 124 + ((i * 29) % 22);
+    return `<circle cx="${x}" cy="${y}" r="1.3" fill="${i % 7 === 0 ? accent : "#3a4a72"}" opacity="0.7"/>`;
+  }).join("");
+  return `<svg viewBox="0 0 640 320" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#070b1d"/><stop offset="1" stop-color="#1a1240"/></linearGradient>
+    <linearGradient id="npitch" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f5c35"/><stop offset="1" stop-color="#06301c"/></linearGradient>
+    <linearGradient id="ncone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6d8" stop-opacity="0.55"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></linearGradient>
+    <radialGradient id="nglow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${accent}" stop-opacity="0.55"/><stop offset="1" stop-color="${accent}" stop-opacity="0"/></radialGradient>
+    <linearGradient id="nscan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="ntrail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${accent}" stop-opacity="0"/><stop offset="1" stop-color="${accent}" stop-opacity="0.8"/></linearGradient>
+    <clipPath id="nclip"><rect width="640" height="320"/></clipPath>
+  </defs>
+  <g clip-path="url(#nclip)">
+    <rect width="640" height="320" fill="url(#nsky)"/>
+    <circle cx="470" cy="70" r="140" fill="url(#nglow)"/>
+    <!-- Flutlichtmasten -->
+    <g class="flood"><polygon points="70,40 -60,320 260,320" fill="url(#ncone)"/></g>
+    <g class="flood b"><polygon points="570,40 380,320 700,320" fill="url(#ncone)"/></g>
+    <g fill="#c9d4ff"><rect x="54" y="22" width="32" height="18" rx="3"/><rect x="554" y="22" width="32" height="18" rx="3"/></g>
+    <g fill="#fffbe6">${[0, 1, 2, 3].map((k) => `<circle cx="${60 + k * 7}" cy="31" r="2.4"/><circle cx="${560 + k * 7}" cy="31" r="2.4"/>`).join("")}</g>
+    <rect x="68" y="40" width="4" height="110" fill="#1b2442"/><rect x="568" y="40" width="4" height="110" fill="#1b2442"/>
+    <!-- Tribüne mit Zuschauern und Blitzlichtern -->
+    ${stands}${crowd}
+    <circle class="flash" cx="150" cy="130" r="3" fill="#fff"/><circle class="flash b" cx="420" cy="134" r="3" fill="#fff"/><circle class="flash c" cx="300" cy="128" r="3" fill="#fff"/>
+    <!-- Spielfeld in Perspektive -->
+    <polygon points="120,150 520,150 680,320 -40,320" fill="url(#npitch)"/>
+    ${[0, 1, 2, 3, 4, 5].map((k) => `<polygon points="${120 + k * 66.7},150 ${120 + (k + 0.5) * 66.7},150 ${-40 + (k + 0.5) * 120},320 ${-40 + k * 120},320" fill="#ffffff" opacity="0.035"/>`).join("")}
+    <g fill="none" stroke="#e9fff2" stroke-opacity="0.6" stroke-width="2">
+      <polygon points="120,150 520,150 680,320 -40,320"/>
+      <line x1="320" y1="150" x2="320" y2="320"/>
+      <ellipse cx="320" cy="222" rx="70" ry="22"/>
+      <polygon points="250,150 390,150 404,170 236,170"/>
+    </g>
+    <!-- Tor -->
+    <g stroke="#ffffff" stroke-width="3" fill="none"><path d="M290 150 V128 H350 V150"/></g>
+    <g stroke="#ffffff" stroke-opacity="0.25" stroke-width="1"><path d="M296 130 V150 M304 130 V150 M312 130 V150 M320 130 V150 M328 130 V150 M336 130 V150 M344 130 V150 M292 136 H348 M292 143 H348"/></g>
+    <!-- Ball mit Flugspur -->
+    <g class="ball">
+      <path d="M150 268 Q 260 170 368 196" stroke="url(#ntrail)" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <circle cx="378" cy="198" r="22" fill="${accent}" opacity="0.25"/>
+      <g class="ball-spin">
+        <circle cx="378" cy="198" r="15" fill="#ffffff"/>
+        <polygon points="378,190 385,195 382,203 374,203 371,195" fill="#101828"/>
+        <path d="M378 183 v7 M392 194 l-7 1 M387 210 l-5 -7 M369 210 l5 -7 M364 194 l7 1" stroke="#101828" stroke-width="2"/>
+      </g>
+    </g>
+    <rect class="scan" width="640" height="90" fill="url(#nscan)"/>
+    <rect width="640" height="320" fill="none" stroke="${accent}" stroke-opacity="0.35" stroke-width="2"/>
+  </g></svg>`;
+}
+
+const NEWS_ACCENTS = {
+  "Champions League": "#4d9bff",
+  "Europa League": "#ff8a3d",
+  "Conference League": "#3ddc97",
+  "WM": "#ffd34d",
+  "EM": "#4dd2ff",
+  "Nationalteam": "#ff4d6a",
+  "Transfer": "#3ddc97",
+  "Trainer": "#c77dff",
+  "Premier League": "#c77dff",
+  "La Liga": "#ff7a3d",
+  "Serie A": "#4d9bff",
+  "Bundesliga": "#ff4d4d",
+  "Super League": "#ff4d6a",
+};
+
+function timeAgo(iso) {
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  if (min < 60) return `vor ${min} Min.`;
+  const h = Math.round(min / 60);
+  return h < 24 ? `vor ${h} Std.` : `vor ${Math.round(h / 24)} Tg.`;
+}
+
+async function loadNews() {
+  const res = await fetch("news.json", { cache: "no-cache" });
+  if (!res.ok) return;
+  const n = await res.json();
+  if (!n.title) return;
+  const accent = NEWS_ACCENTS[n.topic] || "#ffd34d";
+  const card = $("#news-card");
+  card.href = n.url;
+  card.style.setProperty("--news-accent", accent);
+  $("#news-art").innerHTML = newsArtSvg(accent);
+  $("#news-topic").textContent = `${n.emoji || "⚽"} ${n.topic || "Top-Meldung"}`;
+  $("#news-title").textContent = n.title;
+  $("#news-teaser").textContent = n.teaser || "";
+  $("#news-teaser").hidden = !n.teaser;
+  $("#news-source").textContent = `Quelle: ${n.source}`;
+  $("#news-age").textContent = n.published ? timeAgo(n.published) : "";
+  const track = $("#news-ticker-track");
+  track.replaceChildren();
+  // Zweimal hintereinander, damit das Laufband nahtlos weiterläuft
+  for (let k = 0; k < 2; k++) {
+    track.append(el("b", null, "⚽ BREAKING"), n.title.toUpperCase(), el("b", null, "●"), (n.source || "").toUpperCase());
+  }
+  card.hidden = false;
+}
+
 // ---------- Status ----------
 
 let statusTimer;
@@ -1081,6 +1192,7 @@ loadPsalms().catch(() => {
   $("#psalm-ref").textContent = "Psalm konnte nicht geladen werden";
 });
 loadAlerts().catch(() => {});
+loadNews().catch(() => {});
 fetch("version.json")
   .then((res) => res.json())
   .then((v) => {

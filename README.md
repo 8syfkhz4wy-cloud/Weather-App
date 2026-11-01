@@ -15,6 +15,12 @@ Vier Bereiche über die Tab-Leiste:
   Kompass und Beaufort, Feuchte und Taupunkt, Luftdruck mit Tendenz, Sichtweite,
   UV-Index, Mondphase, Sonnenbahn, Luftqualität (EU-Index, Feinstaub, Ozon, NO₂)
   und Pollenflug
+- **Breaking News Fussball:** die wichtigste internationale Fussball-Meldung des Tages
+  als illustrierte Karte mit Laufband. Alle 2 Stunden sammelt
+  `scripts/fussball_news.py` die Schlagzeilen von SRF, NZZ, Blick, Spiegel, kicker,
+  Sportschau, tagesschau und 11FREUNDE und wählt das Thema, über das die meisten
+  Redaktionen berichten (internationale Wettbewerbe zählen mehr, Liveticker und
+  unterklassige Ligen werden aussortiert). Antippen öffnet den Artikel der Quelle.
 - **Radar:** animiertes Regenradar der letzten 2 Stunden (RainViewer) auf dunkler Karte
 - **Psalm:** Psalm des Tages aus der Lutherbibel 1912: alle 150 Psalmen der Reihe
   nach, Psalm 119 in seine 22 Abschnitte geteilt (171 Tageslesungen im Zyklus).

@@ -4,6 +4,8 @@ on:
   push:
     branches: [main, claude/weather-app-daily-psalms-81jrgq]
   workflow_dispatch:
+  schedule:
+    - cron: "23 */2 * * *" # alle 2 Stunden: neue Fussball-Top-Meldung
 
 permissions:
   contents: read
@@ -12,7 +14,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -29,6 +31,11 @@ jobs:
           mkdir _site
           cp -r index.html styles.css app.js weather-fx.js sw.js psalms.json manifest.webmanifest icons warnungen _site/
           git log -1 --format='%cI%n%s' | python3 -c 'import json,sys; d,t=sys.stdin.read().splitlines()[:2]; print(json.dumps({"date": d, "title": t}, ensure_ascii=False))' > _site/version.json
+      # Fussball-Top-Meldung; schlägt das fehl, bleibt die zuletzt veröffentlichte erhalten
+      - name: Fussball-News holen
+        run: |
+          python3 scripts/fussball_news.py _site/news.json || \
+            curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/news.json -o _site/news.json || true
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
