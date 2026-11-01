@@ -47,7 +47,7 @@ INTERNATIONAL = re.compile(r"champions league|champions-league|königsklasse|eur
                            r"länderspiel|uefa|fifa", re.I)
 # Nur Männerfussball: Meldungen über Frauenfussball werden aussortiert
 WOMEN = re.compile(r"\bwomen|frauen|fußballerinnen|fussballerinnen|spielerinnen|lionesses|\bwsl\b|"
-                   r"women's super league|nati-frauen|\bdamen|ladies|she\b|her\b", re.I)
+                   r"women's super league|nati-frauen|\bdamen|ladies", re.I)
 # Weltklubs: Meldungen über sie bewegen international am meisten
 BIG_CLUBS = re.compile(r"real madrid|barcelona|barça|man(chester)? (united|utd|city)|liverpool|arsenal|chelsea|"
                        r"psg|paris saint|juventus|inter mailand|inter milan|ac mailand|ac milan|atlético|atletico", re.I)
