@@ -34,8 +34,10 @@ SOURCES = [
     ("11FREUNDE", "https://www.11freunde.de/feed", 0.7, True, "de"),
     ("BBC Sport", "https://feeds.bbci.co.uk/sport/football/rss.xml", 1.4, True, "en"),
     ("The Guardian", "https://www.theguardian.com/football/rss", 1.3, True, "en"),
-    ("ESPN", "https://www.espn.com/espn/rss/soccer/news", 1.3, True, "en"),
+    ("Sky Sports", "https://www.skysports.com/rss/12040", 1.2, True, "en"),
 ]
+
+SOURCES_BY_NAME = {name: [{"lang": lang}] for name, _, _, _, lang in SOURCES}
 
 MAX_AGE = timedelta(hours=30)
 
@@ -204,8 +206,12 @@ def pick(items):
             if b is not a and related(a, b, idf):
                 sources[b["source"]] = max(sources.get(b["source"], 0), b["weight"])
                 a["links"].append(f"{b['source']}: {b['title'][:50]} [{', '.join(sorted(a['kw'] & b['kw']))}]")
-        coverage = sum(sources.values())
-        _, _, bonus = topic_of(a["title"] + " " + a["teaser"])
+        label, _, bonus = topic_of(a["title"] + " " + a["teaser"])
+        # Heimvorteil ausgleichen: Bei reinen Bundesliga-/Super-League-Themen zählen
+        # deutschsprachige Redaktionen nur wenig, die internationalen entscheiden.
+        domestic = label in ("Bundesliga", "Super League")
+        lang = {s: next(x["lang"] for x in SOURCES_BY_NAME[s]) for s in sources}
+        coverage = sum(w * (0.35 if domestic and lang[s] == "de" else 1) for s, w in sources.items())
         if STARS.search(a["title"]):
             bonus = max(bonus, 1.0) * 1.2
         hours = (now - a["published"]).total_seconds() / 3600
