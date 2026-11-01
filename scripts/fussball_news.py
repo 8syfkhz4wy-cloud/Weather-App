@@ -12,6 +12,7 @@ unterklassige Ligen werden aussortiert.
 """
 import html
 import json
+import math
 import re
 import sys
 import urllib.request
@@ -155,18 +156,30 @@ def topic_of(text):
     return "Top-Meldung", "⚽", 1.0
 
 
-def related(a, b):
+def related(a, b, idf):
+    """Gleiches Thema, wenn genug seltene gemeinsame Namen vorkommen. Häufige Wörter
+    wie "Bayern" zählen wenig, seltene wie "Gnabry" viel (normierte IDF-Gewichtung)."""
     shared = a["kw"] & b["kw"]
-    return len(shared) >= 2 or (len(shared) == 1 and len(next(iter(shared))) >= 6 and a["source"] != b["source"])
+    if not shared:
+        return False
+    weights = [idf[k] for k in shared]
+    return max(weights) >= 0.45 and sum(weights) >= 1.0
 
 
 def pick(items):
     now = datetime.now(timezone.utc)
+    df = {}
+    for it in items:
+        for k in it["kw"]:
+            df[k] = df.get(k, 0) + 1
+    # Seltenheit auf 0..1 normiert, damit die Schwelle bei 10 wie bei 100 Meldungen passt
+    norm = math.log(max(len(items), 3))
+    idf = {k: math.log(len(items) / n) / norm for k, n in df.items()}
     best, best_score = None, -1
     for a in items:
         sources = {a["source"]: a["weight"]}
         for b in items:
-            if b is not a and related(a, b):
+            if b is not a and related(a, b, idf):
                 sources[b["source"]] = max(sources.get(b["source"], 0), b["weight"])
         coverage = sum(sources.values())
         _, _, bonus = topic_of(a["title"] + " " + a["teaser"])
