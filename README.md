@@ -22,7 +22,8 @@ Vier Bereiche über die Tab-Leiste:
   international wichtigste Thema, über das die meisten
   Redaktionen berichten (internationale Wettbewerbe und Weltstars zählen mehr, reine
   Bundesliga- und Super-League-Themen weniger, Liveticker und
-  unterklassige Ligen werden aussortiert). Antippen öffnet den Artikel der Quelle.
+  unterklassige Ligen werden aussortiert). Nur Männerfussball. Antippen öffnet den
+  Artikel der Quelle.
 - **Radar:** animiertes Regenradar der letzten 2 Stunden (RainViewer) auf dunkler Karte
 - **Psalm:** Psalm des Tages aus der Lutherbibel 1912: alle 150 Psalmen der Reihe
   nach, Psalm 119 in seine 22 Abschnitte geteilt (171 Tageslesungen im Zyklus).

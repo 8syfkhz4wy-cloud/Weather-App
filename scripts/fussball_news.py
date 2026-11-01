@@ -45,7 +45,12 @@ DOMESTIC = re.compile(r"bundesliga|bayern|bvb|dortmund|leverkusen|leipzig|kimmic
 INTERNATIONAL = re.compile(r"champions league|champions-league|königsklasse|europa league|conference league|"
                            r"\bwm\b|\bem\b|world cup|nationalmannschaft|nationalteam|national team|nati\b|"
                            r"länderspiel|uefa|fifa", re.I)
-WOMEN = re.compile(r"\bwomen|frauen|fußballerinnen|fussballerinnen|lionesses|\bwsl\b", re.I)
+# Nur Männerfussball: Meldungen über Frauenfussball werden aussortiert
+WOMEN = re.compile(r"\bwomen|frauen|fußballerinnen|fussballerinnen|spielerinnen|lionesses|\bwsl\b|"
+                   r"women's super league|nati-frauen|\bdamen|ladies|she\b|her\b", re.I)
+# Weltklubs: Meldungen über sie bewegen international am meisten
+BIG_CLUBS = re.compile(r"real madrid|barcelona|barça|man(chester)? (united|utd|city)|liverpool|arsenal|chelsea|"
+                       r"psg|paris saint|juventus|inter mailand|inter milan|ac mailand|ac milan|atlético|atletico", re.I)
 
 SOURCES_BY_NAME = {name: [{"lang": lang}] for name, _, _, _, lang in SOURCES}
 
@@ -165,6 +170,8 @@ def load_items():
             full = f"{title} {desc}"
             if SKIP.search(title) or LOWER_LEAGUES.search(full):
                 continue
+            if WOMEN.search(title + " " + desc[:200]):
+                continue
             if not football_only and (OTHER_SPORTS.search(title) or not FOOTBALL.search(full)):
                 continue
             if OTHER_SPORTS.search(title) and not FOOTBALL.search(title):
@@ -220,13 +227,14 @@ def pick(items):
         label, _, bonus = topic_of(a["title"])
         if label == "Top-Meldung":
             label, _, bonus = topic_of(a["title"] + " " + a["teaser"])
+            bonus = min(bonus, 1.1)  # Nebenerwähnungen im Anrisstext zählen nur wenig
         # Heimvorteil ausgleichen: Bei reinen Bundesliga-/Super-League-Themen zählen
         # deutschsprachige Redaktionen nur wenig, die internationalen entscheiden.
         domestic = bool(DOMESTIC.search(a["title"])) and not INTERNATIONAL.search(a["title"])
         if domestic:
             bonus = min(bonus, 0.8)
-        if WOMEN.search(a["title"]) and not INTERNATIONAL.search(a["title"]):
-            bonus *= 0.7
+        if BIG_CLUBS.search(a["title"]):
+            bonus *= 1.15
         lang = {s: next(x["lang"] for x in SOURCES_BY_NAME[s]) for s in sources}
         coverage = sum(w * (0.35 if domestic and lang[s] == "de" else 1) for s, w in sources.items())
         if STARS.search(a["title"]) and not domestic:
@@ -235,7 +243,9 @@ def pick(items):
         freshness = max(0.4, 1 - hours / 36)
         position = 1.15 if a["rank"] < 3 else 1.0  # Aufmacher der Redaktion
         teaser_ok = 1.05 if len(a["teaser"]) > 60 else 0.9
-        score = coverage * bonus * freshness * position * teaser_ok
+        # Ohne deutschsprachigen Artikel zum Thema weniger: Die Meldung soll auf Deutsch lesbar sein
+        has_german = a["lang"] == "de" or any(SOURCES_BY_NAME[s][0]["lang"] == "de" for s in sources)
+        score = coverage * bonus * freshness * position * teaser_ok * (1 if has_german else 0.6)
         a["score"] = score
         a["coverage"] = sorted(sources)
         a["cluster"] = [b for b in items if b is a or related(a, b, idf)]
