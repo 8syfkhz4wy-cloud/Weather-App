@@ -37,6 +37,16 @@ SOURCES = [
     ("Sky Sports", "https://www.skysports.com/rss/12040", 1.2, True, "en"),
 ]
 
+# Liga-Themen der D-A-CH-Redaktionen und internationale Wettbewerbe (entscheidet die Schlagzeile)
+DOMESTIC = re.compile(r"bundesliga|bayern|bvb|dortmund|leverkusen|leipzig|kimmich|dfb-pokal|stuttgart|"
+                      r"frankfurt|gladbach|wolfsburg|freiburg|union berlin|hsv|werder|schalke|köln|"
+                      r"super league|\byb\b|young boys|fc basel|fcb\b|fcz\b|fc zürich|servette|lugano|"
+                      r"st\. gallen|luzern|grasshopper|winterthur|sion|thun", re.I)
+INTERNATIONAL = re.compile(r"champions league|champions-league|königsklasse|europa league|conference league|"
+                           r"\bwm\b|\bem\b|world cup|nationalmannschaft|nationalteam|national team|nati\b|"
+                           r"länderspiel|uefa|fifa", re.I)
+WOMEN = re.compile(r"\bwomen|frauen|fußballerinnen|fussballerinnen|lionesses|\bwsl\b", re.I)
+
 SOURCES_BY_NAME = {name: [{"lang": lang}] for name, _, _, _, lang in SOURCES}
 
 MAX_AGE = timedelta(hours=30)
@@ -62,7 +72,7 @@ LOWER_LEAGUES = re.compile(r"regionalliga|oberliga|challenge league|3\. liga|2\.
                            r"u ?1[0-9]|u ?2[0-3]|jugend|amateur|landesliga|verbandsliga|league one|league two|"
                            r"national league|scottish|\bwsl\b|non-league", re.I)
 # Weltstars und Startrainer: Meldungen über sie sind international bedeutsam
-STARS = re.compile(r"messi|ronaldo|mbapp|haaland|yamal|bellingham|salah|vin[ií]cius|kane|de bruyne|"
+STARS = re.compile(r"messi|ronaldo|mbapp|haaland|yamal|bellingham|salah|vin[ií]cius|de bruyne|"
                    r"guardiola|ancelotti|klopp|xabi alonso|flick|mourinho|zidane|infantino|neymar|"
                    r"lewandowski|musiala|wirtz|pedri|rodri|saka|palmer|osimhen|dembélé|dembele", re.I)
 
@@ -206,13 +216,20 @@ def pick(items):
             if b is not a and related(a, b, idf):
                 sources[b["source"]] = max(sources.get(b["source"], 0), b["weight"])
                 a["links"].append(f"{b['source']}: {b['title'][:50]} [{', '.join(sorted(a['kw'] & b['kw']))}]")
-        label, _, bonus = topic_of(a["title"] + " " + a["teaser"])
+        # Bonus nach Thema der Schlagzeile (der Anrisstext nur, wenn sie nichts hergibt)
+        label, _, bonus = topic_of(a["title"])
+        if label == "Top-Meldung":
+            label, _, bonus = topic_of(a["title"] + " " + a["teaser"])
         # Heimvorteil ausgleichen: Bei reinen Bundesliga-/Super-League-Themen zählen
         # deutschsprachige Redaktionen nur wenig, die internationalen entscheiden.
-        domestic = label in ("Bundesliga", "Super League")
+        domestic = bool(DOMESTIC.search(a["title"])) and not INTERNATIONAL.search(a["title"])
+        if domestic:
+            bonus = min(bonus, 0.8)
+        if WOMEN.search(a["title"]) and not INTERNATIONAL.search(a["title"]):
+            bonus *= 0.7
         lang = {s: next(x["lang"] for x in SOURCES_BY_NAME[s]) for s in sources}
         coverage = sum(w * (0.35 if domestic and lang[s] == "de" else 1) for s, w in sources.items())
-        if STARS.search(a["title"]):
+        if STARS.search(a["title"]) and not domestic:
             bonus = max(bonus, 1.0) * 1.2
         hours = (now - a["published"]).total_seconds() / 3600
         freshness = max(0.4, 1 - hours / 36)
