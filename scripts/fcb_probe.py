@@ -1,25 +1,33 @@
-import json, re, urllib.request, urllib.parse
+import json, re, urllib.request
 def get(u):
     req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0 (wetter-psalm-app)"})
     return urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "replace")
-# Wikipedia Kader
-try:
-    u = "https://de.wikipedia.org/w/api.php?" + urllib.parse.urlencode({"action":"parse","page":"FC Basel","prop":"wikitext","section":"25","format":"json"})
-    wt = json.loads(get(u))["parse"]["wikitext"]["*"]
-    print("== WIKI section 25 len", len(wt)); print(wt[:2500])
-except Exception as e: print("wiki fail", e)
-# kicker
-for u in ["https://www.kicker.de/fc-basel/startseite", "https://www.kicker.de/fc-basel/kader", "https://www.kicker.de/fc-basel/spielplan", "https://www.kicker.de/super-league/spieltag"]:
-    try:
-        h = get(u); print(f"\n== OK {u} {len(h)}")
-        links = sorted(set(re.findall(r'href="(/[^"]*basel[^"]*)"', h)))[:40]
-        print("\n".join(links))
-    except Exception as e: print(f"\n== FAIL {u}: {e}")
-# SFL
-try:
-    h = get("https://www.sfl.ch/")
+def nextdata(h):
     m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', h, re.S)
-    print("\n== SFL next data:", bool(m))
-    links = sorted(set(re.findall(r'href="(/[^"#]*)"', h)))
-    print([l for l in links if re.search(r"match|spiel|club|team|basel|game", l, re.I)][:40])
-except Exception as e: print("sfl fail", e)
+    return json.loads(m.group(1)) if m else None
+def walk(o, path="", out=None, depth=0):
+    out = out if out is not None else []
+    if depth > 7: return out
+    if isinstance(o, dict):
+        for k, v in o.items():
+            p = f"{path}.{k}"
+            if re.search(r"lineup|starting|formation|match|fixture|game|result|score|player|squad", k, re.I):
+                out.append((p, type(v).__name__, (len(v) if isinstance(v, (list, dict)) else str(v)[:60])))
+            walk(v, p, out, depth + 1)
+    elif isinstance(o, list) and o:
+        walk(o[0], path + "[0]", out, depth + 1)
+    return out
+for slug in ["fc-basel-1893", "fc-bale-1893"]:
+    for lang in ["", "/de"]:
+        u = f"https://www.sfl.ch{lang}/teams/{slug}"
+        try:
+            h = get(u); d = nextdata(h)
+            print(f"\n== {u} {len(h)} nextdata={bool(d)}")
+            if d:
+                pp = d.get("props", {}).get("pageProps", {})
+                print("pageProps keys:", list(pp.keys())[:30])
+                for row in walk(pp)[:60]: print("  ", row)
+            links = sorted(set(re.findall(r'href="(/[^"#]*)"', h)))
+            print("links:", [l for l in links if re.search(r"match|spiel|game|fixture|player|spieler", l, re.I)][:30])
+        except Exception as e:
+            print(f"\n== FAIL {u}: {e}")
