@@ -3,7 +3,7 @@ def get(u):
     req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0 (wetter-psalm-app)"})
     return urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "replace")
 print("== robots.txt\n", get("https://www.sfl.ch/robots.txt")[:3000])
-h = get("https://www.sfl.ch/teams/fc-basel-1893")
+h = get("https://www.sfl.ch/teams/fc-bale-1893")
 scripts = sorted(set(re.findall(r'src="(/_next/static/[^"]+\.js)"', h)))
 print("scripts:", len(scripts))
 found = set()
