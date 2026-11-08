@@ -1289,7 +1289,7 @@ fetch("version.json")
   .then((res) => res.json())
   .then((v) => {
     const date = new Date(v.date).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
-    $("#version").textContent = `Version ${date} · Neu: ${v.title}`;
+    $("#version").textContent = `${v.version ? `Version ${v.version.replace(/^v/, "")} · ` : ""}Stand ${date} · Neu: ${v.title}`;
     $("#version").hidden = false;
   })
   .catch(() => {});

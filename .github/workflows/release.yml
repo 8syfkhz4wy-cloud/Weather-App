@@ -1,0 +1,44 @@
+name: Neue Version veröffentlichen
+
+# Startet, wenn ein Versions-Tag wie v1.0.0 hochgeladen wird:
+# erstellt das GitHub-Release, baut die App mit der neuen Versionsnummer neu
+# und schickt eine Push-Nachricht.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Versionshinweise aus CHANGELOG.md lesen
+        run: |
+          awk -v tag="## ${GITHUB_REF_NAME}" '$0==tag{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          cat notes.md
+
+      - name: GitHub-Release erstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "Wetter & Psalm ${GITHUB_REF_NAME}" --notes-file notes.md
+
+      - name: App mit neuer Versionsnummer veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch=$(gh api "repos/${{ github.repository }}" --jq .default_branch)
+          gh workflow run pages.yml --repo "${{ github.repository }}" --ref "$branch"
+
+      - name: Push-Nachricht senden
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          python3 scripts/update_nachricht.py warnungen/orte.json "Version ${version} ist da 🎉
+
+          Info: Die neue Version ${version} von Wetter & Psalm ist veröffentlicht. Ganz unten auf der Wetter-Seite siehst du die Versionsnummer."

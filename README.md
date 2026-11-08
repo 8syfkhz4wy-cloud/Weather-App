@@ -70,6 +70,13 @@ der Commit-Nachricht, der Text kommt aus einer Zeile `Info: …` in der Commit-N
 **Test:** unter *Actions → Wetterwarnungen → Run workflow* die Option
 „Testnachricht“ anhaken und starten.
 
+## Neue Version veröffentlichen
+
+Versionshinweise unter einer Überschrift `## vX.Y.Z` in `CHANGELOG.md` eintragen und
+einen Tag hochladen (`git tag v1.1.0 && git push origin v1.1.0`). Der Ablauf
+`.github/workflows/release.yml` erstellt das GitHub-Release, veröffentlicht die App mit
+der neuen Versionsnummer und schickt eine Push-Nachricht.
+
 ## Auf dem iPhone installieren
 
 Die App ist eine Web-App (PWA). Sie braucht keinen Mac, kein Xcode und keinen App Store.
