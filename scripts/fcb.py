@@ -3,6 +3,9 @@
 
 - Kader: Wikipedia-Artikel "FC Basel", Abschnitt "Die 1. Mannschaft" (CC BY-SA)
 - News: Google News (Suche "FC Basel") und Blick-Fussballfeed, nur Männerfussball
+- Us dr Kurve: Newsfeed von muttenzerkurve.ch und öffentliche Telegram-Webvorschau
+  der Muttenzerkurve (falls erreichbar)
+- Gerüchteküche: Transfer- und Wechselgerüchte zum FCB aus den Medien
 - Kurven-Experte: eine erfundene Figur, die die echten Meldungen derb und emotional auf
   Baseldeutsch kommentiert (regelbasiert aus Vorlagen, keine erfundenen Fakten)
 
@@ -159,6 +162,91 @@ def load_news():
     return items[:10]
 
 
+# ---------- Us dr Kurve & Gerüchteküche ----------
+
+# Meldungen über Gewalt, Krawalle oder Polizeieinsätze kommentiert Dani nicht
+VIOLENCE = re.compile(r"krawall|ausschreitung|gewalt|polizei|festnahme|verhaft|hooligan|schläger|prügel|"
+                      r"angriff|attack|verletzte fans|pyro|feuerwerk|petarde|stadionverbot|randal|sachschaden",
+                      re.I)
+RUMOR = re.compile(r"gerücht|interess|könnte|offenbar|angeblich|vor dem wechsel|wechsel|transfer|"
+                   r"abgang|verlässt|lockt|buhlt|im visier|angebot|millionen|poker|verpflicht|vertrag", re.I)
+
+
+def load_kurve():
+    """Ankündigungen der Muttenzerkurve: Website-Feed und öffentliche Telegram-Vorschau."""
+    now = datetime.now(timezone.utc)
+    items = []
+    try:
+        root = ET.fromstring(fetch("https://www.muttenzerkurve.ch/feed/"))
+        for it in root.findall(".//item")[:10]:
+            published = parsedate_to_datetime(it.findtext("pubDate"))
+            if now - published > timedelta(days=21):
+                continue
+            title = clean(it.findtext("title"))
+            text = clean(it.findtext("description"))
+            if VIOLENCE.search(title + " " + text):
+                continue
+            items.append({"title": title.title() if title.isupper() else title, "text": text[:220],
+                          "url": (it.findtext("link") or "").strip(), "source": "muttenzerkurve.ch",
+                          "published": published.isoformat()})
+    except Exception as err:
+        print(f"Kurven-Website nicht erreichbar: {err}")
+    try:
+        page = fetch("https://t.me/s/muttenzerkurve").decode("utf-8", "replace")
+        for block in re.findall(r'<div class="tgme_widget_message_wrap.*?</time>', page, re.S)[-8:]:
+            post = re.search(r'data-post="([^"]+)"', block)
+            text = re.search(r'tgme_widget_message_text[^>]*>(.*?)</div>', block, re.S)
+            when = re.search(r'<time[^>]*datetime="([^"]+)"', block)
+            if not (post and text and when):
+                continue
+            published = datetime.fromisoformat(when.group(1))
+            body = clean(text.group(1))
+            if not body or now - published > timedelta(days=14) or VIOLENCE.search(body):
+                continue
+            first = re.split(r"(?<=[.!?])\s", body)[0][:90]
+            items.append({"title": first, "text": body[:220], "url": f"https://t.me/{post.group(1)}",
+                          "source": "Telegram Muttenzerkurve", "published": published.isoformat()})
+    except Exception as err:
+        print(f"Telegram-Vorschau nicht erreichbar: {err}")
+    items.sort(key=lambda x: x["published"], reverse=True)
+    return items[:5]
+
+
+def load_rumors(squad):
+    """Transfer- und Wechselgerüchte zum FCB und zu Spielern aus dem Kader."""
+    names = {p["name"].split()[-1] for g in (squad or {}).get("groups", []) for p in g["players"]
+             if len(p["name"].split()[-1]) > 3}
+    query = urllib.parse.quote('"FC Basel" (Transfer OR Gerücht OR Interesse OR Wechsel OR Angebot) when:7d')
+    now = datetime.now(timezone.utc)
+    items, seen = [], set()
+    try:
+        root = ET.fromstring(fetch(f"https://news.google.com/rss/search?q={query}&hl=de&gl=CH&ceid=CH:de"))
+    except Exception as err:
+        print(f"Gerüchte nicht erreichbar: {err}")
+        return []
+    for it in root.findall(".//item")[:40]:
+        title = clean(it.findtext("title"))
+        src = it.find("source")
+        source = (src.text or "").strip() if src is not None else ""
+        if source and title.endswith(" - " + source):
+            title = title[: -len(source) - 3]
+        about_fcb = re.search(r"FCB|FC Basel|Basel|Basler", title) or any(n in title for n in names)
+        if not about_fcb or not RUMOR.search(title) or WOMEN.search(title) or VIOLENCE.search(title):
+            continue
+        try:
+            published = parsedate_to_datetime(it.findtext("pubDate"))
+        except Exception:
+            continue
+        key = re.sub(r"\W+", "", title.lower())[:40]
+        if key in seen or now - published > timedelta(days=7):
+            continue
+        seen.add(key)
+        items.append({"title": title, "source": source, "url": (it.findtext("link") or "").strip(),
+                      "published": published.isoformat()})
+    items.sort(key=lambda x: x["published"], reverse=True)
+    return items[:5]
+
+
 # ---------- Kurven-Experte (erfundene Figur) ----------
 # Derb und emotional, aber: keine Gewaltaufrufe und keine Beleidigung echter,
 # namentlich genannter Personen. Geflucht wird über Situationen, nicht über Menschen.
@@ -228,6 +316,33 @@ REACTIONS = [
         "Ich ha jetzt scho Härzrase! Gege die wämmer gwinne, und zwar so dütlich, dass es im ganze Land z ghöre isch!",
     ]),
 ]
+# Reaktionen auf Ankündigungen der Kurve
+KURVE_REACTIONS = [
+    (r"usswärts|auswärts|extrazug|zug|car\b|uff\s", [
+        "Usswärts?! Ich pack scho d Täsche! Extrazug, Gsang und Rotblau bis in d Fingerspitze – alli mit!",
+        "Wer do nit mitfahrt, verpasst s Läbe, gopferdammi! Ab in Zug und d Kurve uf Reise!",
+    ]),
+    (r"choreo|fahne|fahnedaag|malen|mole", [
+        "Fahne mole, Choreo baue – das isch Kurve-Handwärk! Ich bi dr Erscht mit em Pinsel, verdammi!",
+        "Wenn d Choreo ufgoht, chunnt mir jedes Mol s Augewasser. Alli go hälfe!",
+    ]),
+    (r"saal|film|fescht|fest|party|apéro|bar", [
+        "Im Saal mit dr ganze Kurve – Bier, Gschichte und Gänsehut. Do bin ich, klar wie Kloschbrüe!",
+        "E Obe mit dr Kurve isch besser als jede Ferie, gopfertelli!",
+    ]),
+    (r"dehai|heimspiel|joggeli|rotblau.?gass", [
+        "Heimspiel! S Joggeli wird bebe, und ich bi heiser bis am Mäntig!",
+        "Rotblau Gass, Kurve voll, Stimm wäg – so mues es sy, verdammi nomol!",
+    ]),
+]
+# Reaktionen auf Gerüchte
+RUMOR_REACTIONS = [
+    "Gerüchte, Gerüchte … mi Bluetdruck goht scho wieder ufe! Wenn dä goht, denn nur für e Huufe Stutz!",
+    "Jo spinnsch?! Wenn die üse Bescht wäggchaufe wänn, denn sölle si zahle, bis es chlöpft!",
+    "Ich glaub s erscht, wenn s unterschriebe isch. Bis denn: Gschnorr, aber spannends Gschnorr!",
+    "Gopferdammi, immer die Gerüchtchüchi! Ich ha jetzt scho Bauchweh, und es isch erscht Mäntig!",
+]
+
 GENERIC = [
     "Ich weiss nit, ob ich lache oder brüele söll – aber s Härz brennt rotblau, gopferdammi!",
     "Ohni Seich: Am Wuchenänd zählt nur, was uf em Platz passiert. Alles anderi isch Gschnorr!",
@@ -235,15 +350,22 @@ GENERIC = [
 ]
 
 
-def expert_comment(news, today):
+def expert_comment(news, today, kurve=(), rumors=()):
     rnd = random.Random(today.isoformat())  # gleicher Kommentar den ganzen Tag
     lines = [rnd.choice(INTROS)]
-    for item in news[:3]:
+    news = [n for n in news if not VIOLENCE.search(n["title"])]
+    for item in news[:2]:
         mood, reaction = next(((m, rnd.choice(r)) for pattern, m, r in REACTIONS
                                if re.search(pattern, item["title"], re.I)), ("neutral", rnd.choice(GENERIC)))
         lines.append(f"{rnd.choice(AUSRUFE[mood])} «{item['title']}» – {reaction}")
     if not news:
         lines.append("Hüt isch s ruhig um dr FCB. Viel z ruhig, gopferdammi – ich halt das nit us!")
+    for item in list(kurve)[:1]:
+        reaction = next((rnd.choice(r) for pattern, r in KURVE_REACTIONS if re.search(pattern, item["title"], re.I)),
+                        "Us dr Kurve gits Neus – lesed das, ihr Bebbi, und denn alli derbi!")
+        lines.append(f"📣 Us dr Kurve: «{item['title']}» – {reaction}")
+    for item in list(rumors)[:2]:
+        lines.append(f"🍲 Gerüchtchüchi: «{item['title']}» – {rnd.choice(RUMOR_REACTIONS)}")
     lines.append(rnd.choice(OUTROS))
     return {**EXPERT, "lines": lines}
 
@@ -257,7 +379,15 @@ def main(out_file):
         print(f"Kader nicht verfügbar: {err}")
     data["news"] = load_news()
     print(f"News: {len(data['news'])}")
-    data["expert"] = expert_comment(data["news"], datetime.now(timezone.utc).date())
+    data["kurve"] = load_kurve()
+    print(f"Us dr Kurve: {len(data['kurve'])}")
+    for k in data["kurve"]:
+        print(f"  - [{k['source']}] {k['title']}")
+    data["rumors"] = load_rumors(data.get("squad"))
+    print(f"Gerüchte: {len(data['rumors'])}")
+    for r in data["rumors"]:
+        print(f"  - {r['title']} ({r['source']})")
+    data["expert"] = expert_comment(data["news"], datetime.now(timezone.utc).date(), data["kurve"], data["rumors"])
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
 

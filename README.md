@@ -29,6 +29,9 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   SFL-Matchcenter) und dem fiktiven Kurven-Experten «Dani Joggeli Meier», der die echten
   Schlagzeilen auf Baseldeutsch kommentiert. Erzeugt von `scripts/fcb.py` bei jeder
   Veröffentlichung.
+  Unter „Kurve“ zusätzlich „Us dr Kurve“ (Newsfeed von muttenzerkurve.ch und öffentliche
+  Telegram-Webvorschau der Muttenzerkurve) und die „Gerüchteküche“ (Transfergerüchte zum FCB
+  aus den Medien). Meldungen über Gewalt oder Krawalle werden nicht übernommen.
 - **Radar:** animiertes Regenradar der letzten 2 Stunden (RainViewer) auf dunkler Karte
 - **Psalm:** Psalm des Tages aus der Lutherbibel 1912: alle 150 Psalmen der Reihe
   nach, Psalm 119 in seine 22 Abschnitte geteilt (171 Tageslesungen im Zyklus).

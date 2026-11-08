@@ -1104,6 +1104,25 @@ function renderFcb(d) {
     $("#fcb-pitch").replaceChildren(el("p", "hint", "Kader gerade nicht verfügbar."));
   }
 
+  // Us dr Kurve & Gerüchteküche
+  const feedList = (items, list, card) => {
+    $(card).hidden = !items.length;
+    $(list).replaceChildren(
+      ...items.map((n) => {
+        const li = el("li");
+        const link = el("a");
+        link.href = n.url;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.append(el("b", null, n.title), el("small", null, `${n.source || "Quelle"} · ${timeAgo(n.published)}`));
+        li.append(link);
+        return li;
+      })
+    );
+  };
+  feedList(d.kurve || [], "#kurve-feed", "#kurve-feed-card");
+  feedList(d.rumors || [], "#rumor-feed", "#rumor-card");
+
   // Fiktiver Kurven-Experte
   if (d.expert) {
     $("#kurve-name").textContent = d.expert.name;
