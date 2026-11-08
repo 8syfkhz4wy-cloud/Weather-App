@@ -16,7 +16,7 @@ Vier Bereiche über die Tab-Leiste:
   UV-Index, Mondphase, Sonnenbahn, Luftqualität (EU-Index, Feinstaub, Ozon, NO₂)
   und Pollenflug
 - **Breaking News Fussball:** die wichtigste internationale Fussball-Meldung des Tages
-  als illustrierte Karte mit Laufband. Alle 2 Stunden sammelt
+  als illustrierte Karte mit Laufband. Mehrmals täglich sammelt
   `scripts/fussball_news.py` die Schlagzeilen von SRF, NZZ, Blick, Spiegel, kicker,
   Sportschau, tagesschau, 11FREUNDE, BBC Sport, The Guardian und Sky Sports und wählt das
   international wichtigste Thema, über das die meisten
@@ -35,9 +35,11 @@ Vier Bereiche über die Tab-Leiste:
 
 ## Wetterwarnungen per Push-Nachricht
 
-Ein GitHub-Actions-Ablauf (`.github/workflows/warnungen.yml`) prüft **stündlich** die
+Ein GitHub-Actions-Ablauf (`.github/workflows/warnungen.yml`) prüft **mehrmals täglich** die
 Vorhersage der nächsten 24 Stunden für die Orte in `warnungen/orte.json`. Bei Gefahr
 schickt er über [ntfy.sh](https://ntfy.sh) eine Push-Nachricht, auch wenn die App geschlossen ist.
+Eingestellt ist stündlich; GitHub startet zeitgesteuerte Abläufe aber oft verzögert. Deshalb
+stossen sich Warnungen und Veröffentlichung gegenseitig an (etwa 6–8 Prüfungen am Tag).
 
 | Warnung | Schwelle |
 |---|---|

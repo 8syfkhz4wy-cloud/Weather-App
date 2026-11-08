@@ -572,7 +572,8 @@ function renderChart() {
   const idx = [];
   for (let i = start; i < Math.min(start + 24, h.time.length); i++) idx.push(i);
   const n = idx.length + 1;
-  const x = (k) => 8 + (k * (W - 16)) / (n - 1);
+  // Seitlicher Rand, damit die Beschriftungen am Anfang und Ende nicht abgeschnitten werden
+  const x = (k) => 18 + (k * (W - 36)) / (n - 1);
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
       <stop offset="0" stop-color="var(--accent)" stop-opacity="0.45"/>
@@ -613,7 +614,7 @@ function renderChart() {
     const max = Math.max(...gusts, ...speed);
     svg += line(gusts, "var(--accent-2)", true, null, min, max);
     svg += line(speed, "var(--accent)", false, "", min, max);
-    svg += `<text x="${W - 4}" y="12" text-anchor="end">km/h · gestrichelt = Böen bis ${round(max)}</text>`;
+    svg += `<text x="${W - 4}" y="12" text-anchor="end">km/h · - - Böen bis ${round(max)}</text>`;
   } else {
     // Balken zwischen den Stunden: der Wert um 15:00 gilt für 14–15 Uhr
     const bw = Math.max(3, (W - 16) / n - 3);
@@ -629,7 +630,7 @@ function renderChart() {
       if (j % 3 === 0 && p > 0) svg += `<text class="val" x="${x(k)}" y="${bottom - ph - 4}" text-anchor="middle">${p}%</text>`;
     });
     const total = idx.reduce((s, i) => s + (h.precipitation[i] || 0), 0);
-    svg += `<text x="${W - 4}" y="12" text-anchor="end">hell = Wahrscheinlichkeit · kräftig = mm · Σ ${total.toFixed(1)} mm</text>`;
+    svg += `<text x="${W - 4}" y="12" text-anchor="end">hell % · kräftig mm · Σ ${total.toFixed(1)} mm</text>`;
   }
 
   svg += `<text x="${x(0)}" y="${H - 4}" text-anchor="middle">jetzt</text>`;

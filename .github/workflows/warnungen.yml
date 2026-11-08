@@ -40,9 +40,20 @@ jobs:
           key: warnungen-status-${{ github.run_id }}
 
       # GitHub pausiert zeitgesteuerte Abläufe nach 60 Tagen ohne Änderungen
-      # am Repository. Das erneute Aktivieren hält die Warnungen am Laufen.
+      # am Repository. Das erneute Aktivieren hält Warnungen und News am Laufen.
       - name: Ablauf aktiv halten
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/warnungen.yml/enable" || true
+        run: |
+          gh api -X PUT "repos/${{ github.repository }}/actions/workflows/warnungen.yml/enable" || true
+          gh api -X PUT "repos/${{ github.repository }}/actions/workflows/pages.yml/enable" || true
+
+      # GitHub startet zeitgesteuerte Abläufe oft nur wenige Male am Tag. Deshalb stossen sich
+      # Warnungen und Veröffentlichung (Fussball-News) gegenseitig an. Nur bei geplanten Läufen,
+      # damit keine Endlosschleife entsteht.
+      - name: Fussball-News mit aktualisieren
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" || true

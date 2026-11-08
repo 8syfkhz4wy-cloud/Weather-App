@@ -113,6 +113,7 @@ saison spieltag runde liga league partie duell derby heim auswärts minute minut
 fans stadion nach jetzt heute gestern morgen sonntag samstag montag dienstag mittwoch donnerstag freitag
 erste ersten zweite zweiten neue neuen neuer alte alten großer grosse grosser großen grossen kein keine
 spieler star stars sportchef präsident geht gibt macht bleibt steht kommt muss soll kann will darf
+premier champions europa conference bundesliga laliga serie ligue pokal fc sc afc cf
 the a an and or but with after before for from into over under is are was were has have not how why what
 who when where his her their this that these those it its as at by on in of to up out new first last top
 man men women says said say will can could would should game games win wins won loss draw goal goals
