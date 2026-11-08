@@ -1,7 +1,7 @@
 {
   "name": "Wetter & Psalm",
   "short_name": "Wetter & Psalm",
-  "description": "Wettervorhersage mit einem Psalm für jeden Tag",
+  "description": "Wetter mit Radar und Warnungen, Psalm des Tages, Fussball-News und FC Basel",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

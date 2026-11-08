@@ -7,7 +7,7 @@ Im Hintergrund läuft eine Animation des aktuellen Wetters (Regen, Schnee, Gewit
 mit Blitzen, ziehende Wolken, Nebel, Sonnenstrahlen, Sterne und Windlinien), deren
 Stärke sich nach Niederschlag, Wind und Bewölkung richtet. Bei aktivierter Einstellung
 „Bewegung reduzieren“ auf dem iPhone bleibt sie ruhig stehen.
-Vier Bereiche über die Tab-Leiste:
+Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
 
 - **Wetter:** aktuelle Werte, Warnbanner, Vers des Tages, Niederschlag der nächsten
   2 Stunden (15-Minuten-Raster), 24-Stunden-Diagramm (Temperatur / Regen / Wind),
