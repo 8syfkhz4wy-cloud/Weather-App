@@ -673,8 +673,8 @@ body[data-tab="fcb"] { --accent: #ff3b4e; --accent-2: #2f6bff; }
 .fcb-link { display: block; margin-top: 10px; text-align: center; text-decoration: none; color: var(--text); }
 .kurve-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .kurve-avatar {
-  display: grid; place-items: center; width: 52px; height: 52px; flex: 0 0 auto; border-radius: 50%; font-size: 28px;
-  background: linear-gradient(135deg, #e30613 50%, #0a2d7a 50%); border: 2px solid #ffd34d;
+  display: block; width: 56px; height: 56px; flex: 0 0 auto; border-radius: 50%; object-fit: cover;
+  box-shadow: 0 0 0 2px #ffd34d, 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 .kurve-name { font-size: 17px; font-weight: 800; }
 .kurve-bio { font-size: 12px; color: var(--muted); }
