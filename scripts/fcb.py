@@ -203,11 +203,21 @@ def load_kurve():
             body = clean(text.group(1))
             if not body or now - published > timedelta(days=14) or VIOLENCE.search(body):
                 continue
-            first = re.split(r"(?<=[.!?])\s", body)[0][:90]
+            # Beiträge beginnen oft mit einem Titel in Grossbuchstaben ("ALLI UFF LUGANO Basel ab …")
+            caps = re.match(r"([A-ZÄÖÜ0-9][A-ZÄÖÜ0-9 &!'’.\-]{3,}?)(?=\s+[A-ZÄÖÜ][a-zäöü]|$)", body)
+            first = caps.group(1).strip().title() if caps else re.split(r"(?<=[.!?])\s", body)[0][:90]
             items.append({"title": first, "text": body[:220], "url": f"https://t.me/{post.group(1)}",
                           "source": "Telegram Muttenzerkurve", "published": published.isoformat()})
     except Exception as err:
         print(f"Telegram-Vorschau nicht erreichbar: {err}")
+    # Website und Telegram melden oft dasselbe: doppelte Titel nur einmal zeigen (Website bevorzugt)
+    unique, seen = [], set()
+    for it in sorted(items, key=lambda x: x["source"] != "muttenzerkurve.ch"):
+        key = re.sub(r"\W+", "", it["title"].lower())[:20]
+        if key not in seen:
+            seen.add(key)
+            unique.append(it)
+    items = unique
     items.sort(key=lambda x: x["published"], reverse=True)
     return items[:5]
 
