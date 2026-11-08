@@ -1343,5 +1343,21 @@ document.addEventListener("visibilitychange", () => {
 });
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+  // sw.js nie aus dem Zwischenspeicher, damit neue Versionen sofort erkannt werden
+  navigator.serviceWorker
+    .register("sw.js", { updateViaCache: "none" })
+    .then((reg) => {
+      reg.update();
+      document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && reg.update());
+    })
+    .catch(() => {});
+  // Sobald eine neue Version aktiv wird, einmal neu laden, damit sie sofort sichtbar ist
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (hadController && !reloaded) {
+      reloaded = true;
+      location.reload();
+    }
+  });
 }
