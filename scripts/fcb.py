@@ -3,8 +3,8 @@
 
 - Kader: Wikipedia-Artikel "FC Basel", Abschnitt "Die 1. Mannschaft" (CC BY-SA)
 - News: Google News (Suche "FC Basel") und Blick-Fussballfeed, nur Männerfussball
-- Kurven-Experte: eine fiktive Figur, die die echten Meldungen auf Baseldeutsch
-  kommentiert (regelbasiert aus Vorlagen, keine erfundenen Fakten)
+- Kurven-Experte: eine erfundene Figur, die die echten Meldungen derb und emotional auf
+  Baseldeutsch kommentiert (regelbasiert aus Vorlagen, keine erfundenen Fakten)
 
     python3 scripts/fcb.py _site/fcb.json
 """
@@ -159,57 +159,79 @@ def load_news():
     return items[:10]
 
 
-# ---------- Fiktiver Kurven-Experte ----------
+# ---------- Kurven-Experte (erfundene Figur) ----------
+# Derb und emotional, aber: keine Gewaltaufrufe und keine Beleidigung echter,
+# namentlich genannter Personen. Geflucht wird über Situationen, nicht über Menschen.
 
 EXPERT = {
     "name": "Dani «Joggeli» Meier",
-    "bio": "Fiktive Figur · steht seit 1998 in der Muttenzerkurve",
+    "bio": "Leidenschaftlicher Ultra und ehemaliger Brätscher · seit 1998 in dr Muttenzerkurve",
 }
 
-INTROS = ["Salü zämme!", "Hoi mitenand!", "Grüessech us dr Kurve!", "So, Basler, losed zue!",
-          "Guete Morge, Rotblau-Familie!"]
-OUTROS = ["Allez FCB! ❤️💙", "Rotblau für immer! ❤️💙", "Mir gseh is im Joggeli – allez! ❤️💙",
-          "Hopp FCB! ❤️💙", "Zäme sind mir Basel. ❤️💙"]
+INTROS = [
+    "HOI ZÄMME, IHR BEBBI!!! Dr Dani isch do und s Bluet kocht scho!",
+    "Gopferdammi, Lüt, losed zue – hüt git s Klartext us dr Kurve!",
+    "So, Bier uf, Schal um – und jetzt redet dr Dani!",
+    "Hueresiech, ich ha scho wieder Härzklopfe bevor ich überhaupt agfange ha!",
+    "Morge, ihr Rotblaue! Dr Dani isch wach und hässig wie immer!",
+]
+OUTROS = [
+    "ALLEZ FCB, VERDAMMI NOMOL!!! ❤️💙",
+    "Rotblau bis i d Chnoche – und wer s nit verstoht, isch sälber tschuld! ❤️💙",
+    "Mir gseh is im Joggeli, und denn wird gsunge bis d Stimm wäg isch! ❤️💙",
+    "HOPP FCB!!! Ich bi heiser, und das isch guet so. ❤️💙",
+    "Basel isch kei Stadt, Basel isch e Gfühl, gopfertelli! ❤️💙",
+]
+# Ausrufe, mit denen die Emotionen hochkochen – passend zur Stimmung der Meldung
+AUSRUFE = {
+    "gut": ["HUERE GEIL!", "JOOO!", "Gopferdammi, isch das schön!", "Ich flipp us!"],
+    "schlecht": ["Gopferdammi!", "Hueresiech nomol!", "Verdammi!", "Ich drehe dure!", "Mi Bluetdruck!"],
+    "neutral": ["Gopfertelli!", "Hallo?!", "Ohni Seich jetzt!", "Jo spinnsch?!"],
+}
 
-# (Muster in der Schlagzeile, Reaktionen) – leidenschaftlich, aber fair und ohne Gewalt
+# (Muster in der Schlagzeile, Stimmung, Reaktionen)
 REACTIONS = [
-    (r"verletz|ausfall|fällt.*aus|operation|knie|muskel", [
-        "Das tuet weh. Gueti Besserig – d Kurve wartet uf di!",
-        "Verletzige sind s Gift vo jedere Saison. Chunnt guet, mir hän e breite Kader.",
+    (r"verletz|ausfall|fällt.*aus|operation|knie|muskel", "schlecht", [
+        "Scho wieder e Verletzig?! Das isch doch verhext, dä Seich! Gueti Besserig, mir bruuche di!",
+        "Ich ha grad mi Bier umgschüttet vor Ärger! Wieso immer mir?! Chumm schnell zrugg, Kämpfer!",
     ]),
-    (r"sieg|gewinnt|gewonnen|siegt|schlägt|triumph|dreier", [
-        "So wämmers ha! Drei Pünkt und e Kurve, wo bis zum Schluss gsunge het.",
-        "Das isch Basel, wie mirs gärn hän: Härz, Tempo und Tor!",
+    (r"sieg|gewinnt|gewonnen|siegt|schlägt|triumph|dreier", "gut", [
+        "DREI PÜNKT!!! Ich ha brüelt wie e Gstörte und ha e wildfrömde Typ gumarmt! HUERE GEIL!",
+        "SO WÄMMERS HA, GOPFERDAMMI! Das isch Basel – Härz, Bluet und Tor! Ich ha Gänsehut bis in d Zeche!",
     ]),
-    (r"niederlage|verliert|verloren|pleite|blamage|unterliegt", [
-        "Nach some Spiel bisch zerscht still. Aber mir stöhn hinter dr Mannschaft – grad jetzt.",
-        "Chopf ufe, Jungs. E Niederlag isch kei Weltundergang, nume Motivation fürs nächste Mol.",
+    (r"niederlage|verliert|verloren|pleite|blamage|unterliegt", "schlecht", [
+        "Was isch DAS für e Huere-Seich gsi?! Ich ha mi Schal fascht ufgfrässe vor Wuet! Aber mir stöhn hinter dene Jungs – grad jetzt!",
+        "Ich chönnt grad d Wand ufelaufe! So e Chäs! Aber am Samstig sin mir wieder do, luter als je!",
     ]),
-    (r"remis|unentschieden|punkt|torlos|1:1|2:2|0:0", [
-        "E Punkt isch e Punkt – aber mir wänn meh. S nächscht Mol bitte mit Dreier!",
-        "Unentschiede fühlt sich immer chli a wie lauwarme Kaffi. Witer!",
+    (r"remis|unentschieden|punkt|torlos|1:1|2:2|0:0", "schlecht", [
+        "E Punkt?! E PUNKT?! Das isch wie Bier ohni Schuum, gopfertelli! Mir wänn Dreier, nit so lauwarme Seich!",
+        "Unentschiede … ich bi so hässig, dass ich hüt nüt meh iss! Nächscht Mol wird gwunne, verdammi!",
     ]),
-    (r"trainer|coach|entlass|freigestellt", [
-        "Trainerfrog? Ich sag nur: Ruhe bewahre und dr Mannschaft Zyt gä.",
-        "Wenn über dr Trainer gredet wird, isch s Wichtigscht: Zämehebe in dr Kurve.",
+    (r"schiri|schiedsrichter|var|elfmeter|penalty|rot\b|platzverweis", "schlecht", [
+        "Dr Schiri?! Dä het wohl d Brülle dihei vergässe! Ich explodier grad im Sässel!",
+        "VAR, Schiri, Pfiff – alles en Seich! Mi Bluetdruck isch uf 200, ohni Witz!",
     ]),
-    (r"transfer|wechsel|verpflicht|vertrag|verlänger|leihe|ablöse", [
-        "Transfergrücht! Ich bi gspannt – Hauptsach, s Härz schlot rotblau.",
-        "Neui Gsichter sind immer spannend. Willkomme, wenns klappt!",
+    (r"trainer|coach|entlass|freigestellt", "schlecht", [
+        "Trainer-Theater?! Gopferdammi, lönd die Jungs doch eifach schutte und hörred uf mit däm Gschnorr!",
+        "Ich sag nume: Wer dr FCB trainiert, mues s Härz am rächte Fläck ha – süsch gits Krach i dr Kurve!",
     ]),
-    (r"fans|kurve|stimmung|choreo|zuschauer|stadion|joggeli", [
-        "D Kurve isch s Härz vom Verein – friedlich, luut und rotblau. So mues es sy.",
-        "Wenn s Joggeli bebt, denn spürsch, was Basel bedütet.",
+    (r"transfer|wechsel|verpflicht|vertrag|verlänger|leihe|ablöse", "gut", [
+        "Transfer?! Wenn dä nit rotblau blüetet, söll er grad dihei blibe! Und wenn doch: WILLKOMME, BRUEDER!",
+        "Ich ha scho s Trikot im Chopf bschriftet! Hoffentlich isch das kei Luftnummere, süsch dreh ich dure!",
     ]),
-    (r"zürich|fcz|gc\b|grasshopper|young boys|\byb\b", [
-        "Spitzespiel! Respekt für dr Gegner – aber am Schluss zähle nur rotblaui Pünkt.",
-        "Gege die wämmer immer gwinne. Fair, aber mit volle Härz!",
+    (r"fans|kurve|stimmung|choreo|zuschauer|stadion|joggeli", "gut", [
+        "D Kurve isch unser Wohnzimmer, gopferdammi! Luut, rotblau und mit Härz – so mues es sy!",
+        "Wenn s Joggeli bebt, denn zitter ich am ganze Körper. Das verstoht kei Mensch, wo nit dört gstande isch!",
+    ]),
+    (r"zürich|fcz|gc\b|grasshopper|young boys|\byb\b", "neutral", [
+        "GEGE DIE?! Do gits kei Pardon uf em Platz – die Pünkt ghöre uns, verdammi nomol!",
+        "Ich ha jetzt scho Härzrase! Gege die wämmer gwinne, und zwar so dütlich, dass es im ganze Land z ghöre isch!",
     ]),
 ]
 GENERIC = [
-    "Spannendi Gschicht. Ich bi gspannt, wies witer goht.",
-    "Für mi isch klar: Am Wuchenänd zählt nur, was uf em Platz passiert.",
-    "Mir verfolge das in dr Kurve ganz genau.",
+    "Ich weiss nit, ob ich lache oder brüele söll – aber s Härz brennt rotblau, gopferdammi!",
+    "Ohni Seich: Am Wuchenänd zählt nur, was uf em Platz passiert. Alles anderi isch Gschnorr!",
+    "Das macht mi so hibbelig, dass ich hüt Nacht nit penn. Hopp jetzt!",
 ]
 
 
@@ -217,11 +239,11 @@ def expert_comment(news, today):
     rnd = random.Random(today.isoformat())  # gleicher Kommentar den ganzen Tag
     lines = [rnd.choice(INTROS)]
     for item in news[:3]:
-        reaction = next((rnd.choice(r) for pattern, r in REACTIONS if re.search(pattern, item["title"], re.I)),
-                        rnd.choice(GENERIC))
-        lines.append(f"«{item['title']}» – {reaction}")
+        mood, reaction = next(((m, rnd.choice(r)) for pattern, m, r in REACTIONS
+                               if re.search(pattern, item["title"], re.I)), ("neutral", rnd.choice(GENERIC)))
+        lines.append(f"{rnd.choice(AUSRUFE[mood])} «{item['title']}» – {reaction}")
     if not news:
-        lines.append("Hüt isch s ruhig um dr FCB. Zyt zum d Schal wäsche und Lieder üebe.")
+        lines.append("Hüt isch s ruhig um dr FCB. Viel z ruhig, gopferdammi – ich halt das nit us!")
     lines.append(rnd.choice(OUTROS))
     return {**EXPERT, "lines": lines}
 
