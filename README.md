@@ -73,7 +73,8 @@ der Commit-Nachricht, der Text kommt aus einer Zeile `Info: …` in der Commit-N
 ## Neue Version veröffentlichen
 
 Versionshinweise unter einer Überschrift `## vX.Y.Z` in `CHANGELOG.md` eintragen und
-einen Tag hochladen (`git tag v1.1.0 && git push origin v1.1.0`). Der Ablauf
+unter *Actions → Neue Version veröffentlichen → Run workflow* die Versionsnummer eingeben
+(oder einen Tag hochladen). Der Ablauf
 `.github/workflows/release.yml` erstellt das GitHub-Release, veröffentlicht die App mit
 der neuen Versionsnummer und schickt eine Push-Nachricht.
 
