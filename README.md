@@ -24,6 +24,11 @@ Vier Bereiche über die Tab-Leiste:
   Bundesliga- und Super-League-Themen weniger, Liveticker und
   unterklassige Ligen werden aussortiert). Nur Männerfussball. Antippen öffnet den
   Artikel der Quelle.
+- **FCB:** FC-Basel-Bereich (Männer) mit News (Google News, Blick, SRF), Kader aus
+  Wikipedia, Kader nach Positionen auf dem Spielfeld (keine offizielle Startelf, Link zum
+  SFL-Matchcenter) und dem fiktiven Kurven-Experten «Dani Joggeli Meier», der die echten
+  Schlagzeilen auf Baseldeutsch kommentiert. Erzeugt von `scripts/fcb.py` bei jeder
+  Veröffentlichung.
 - **Radar:** animiertes Regenradar der letzten 2 Stunden (RainViewer) auf dunkler Karte
 - **Psalm:** Psalm des Tages aus der Lutherbibel 1912: alle 150 Psalmen der Reihe
   nach, Psalm 119 in seine 22 Abschnitte geteilt (171 Tageslesungen im Zyklus).

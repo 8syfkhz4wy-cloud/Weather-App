@@ -1030,12 +1030,100 @@ async function initRadar() {
   }
 }
 
+// ---------- FC Basel ----------
+
+function setFcbSection(name) {
+  $$("#fcb-seg button").forEach((b) => b.classList.toggle("on", b.dataset.s === name));
+  ["news", "kader", "aufstellung", "kurve"].forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
+  store("fcbSection", name);
+}
+
+function renderFcb(d) {
+  // News
+  const news = d.news || [];
+  $("#fcb-news-meta").textContent = d.updated ? `Stand ${new Date(d.updated).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "";
+  $("#fcb-news-list").replaceChildren(
+    ...(news.length
+      ? news.map((n) => {
+          const li = el("li");
+          const a = el("a");
+          a.href = n.url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          a.append(el("b", null, n.title), el("small", null, `${n.source || "Quelle"} · ${timeAgo(n.published)}`));
+          li.append(a);
+          return li;
+        })
+      : [el("li", "hint", "Gerade keine aktuellen FCB-Meldungen.")])
+  );
+
+  // Kader
+  const squad = d.squad;
+  if (squad) {
+    $("#fcb-sub").textContent = `Männer · Super League${squad.season ? ` · ${squad.season}` : ""}`;
+    $("#fcb-kader-meta").textContent = squad.stand ? `Stand ${squad.stand}` : "";
+    $("#fcb-kader-src").href = squad.url;
+    const parts = [];
+    for (const g of squad.groups) {
+      parts.push(el("div", "kader-group", `${g.group} (${g.players.length})`));
+      for (const p of g.players) {
+        const row = el("div", "kader-row");
+        const info = el("div");
+        info.append(el("div", "kader-name", `${p.name} ${p.flags || ""}`.trim()));
+        const meta = [p.since && `seit ${p.since}`, p.from && `von ${p.from}`].filter(Boolean).join(" · ");
+        if (meta) info.append(el("div", "kader-meta", meta));
+        row.append(el("span", "kader-nr", p.nr || "–"), info);
+        parts.push(row);
+      }
+    }
+    $("#fcb-kader-list").replaceChildren(...parts);
+
+    // Spielfeld: Angriff oben, Tor unten
+    const order = [/sturm|angriff/i, /mittelfeld/i, /verteid|abwehr/i, /tor/i];
+    const rank = (g) => {
+      const i = order.findIndex((r) => r.test(g.group));
+      return i < 0 ? 9 : i;
+    };
+    const groups = [...squad.groups].sort((a, b) => rank(a) - rank(b));
+    $("#fcb-pitch").replaceChildren(
+      ...groups.map((g) => {
+        const row = el("div", "pitch-row");
+        row.append(el("h4", null, g.group.toUpperCase()));
+        const list = el("div");
+        for (const p of g.players) {
+          const chip = el("span", "pitch-player");
+          chip.append(el("i", null, p.nr || "–"), p.name.split(" ").slice(-1)[0]);
+          list.append(chip);
+        }
+        row.append(list);
+        return row;
+      })
+    );
+  } else {
+    $("#fcb-kader-list").replaceChildren(el("p", "hint", "Kader gerade nicht verfügbar."));
+    $("#fcb-pitch").replaceChildren(el("p", "hint", "Kader gerade nicht verfügbar."));
+  }
+
+  // Fiktiver Kurven-Experte
+  if (d.expert) {
+    $("#kurve-name").textContent = d.expert.name;
+    $("#kurve-bio").textContent = d.expert.bio;
+    $("#kurve-lines").replaceChildren(...d.expert.lines.map((l) => el("p", null, l)));
+  }
+}
+
+async function loadFcb() {
+  const res = await fetch("fcb.json", { cache: "no-cache" });
+  if (!res.ok) throw new Error(res.status);
+  renderFcb(await res.json());
+}
+
 // ---------- Tabs ----------
 
 function setTab(tab) {
   document.body.dataset.tab = tab;
   $$(".tabbar button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
-  ["wetter", "radar", "psalm", "warn"].forEach((t) => ($(`#view-${t}`).hidden = t !== tab));
+  ["wetter", "radar", "psalm", "fcb", "warn"].forEach((t) => ($(`#view-${t}`).hidden = t !== tab));
   store("tab", tab);
   window.scrollTo(0, 0);
   if (tab === "wetter") renderChart();
@@ -1194,6 +1282,9 @@ loadPsalms().catch(() => {
 });
 loadAlerts().catch(() => {});
 loadNews().catch(() => {});
+loadFcb().catch(() => ($("#fcb-empty").hidden = false));
+$$("#fcb-seg button").forEach((b) => b.addEventListener("click", () => setFcbSection(b.dataset.s)));
+setFcbSection(store("fcbSection") || "news");
 fetch("version.json")
   .then((res) => res.json())
   .then((v) => {

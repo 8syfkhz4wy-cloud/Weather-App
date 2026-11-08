@@ -37,6 +37,11 @@ jobs:
         run: |
           python3 scripts/fussball_news.py _site/news.json || \
             curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/news.json -o _site/news.json || true
+      # FC-Basel-Bereich (Kader, News, fiktiver Kurven-Experte); bei Fehler bleibt der letzte Stand
+      - name: FC-Basel-Daten holen
+        run: |
+          python3 scripts/fcb.py _site/fcb.json || \
+            curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/fcb.json -o _site/fcb.json || true
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

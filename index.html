@@ -152,6 +152,62 @@
     </section>
 
     <!-- ===== Warnungen ===== -->
+    <!-- ===== FC Basel ===== -->
+    <section class="view" id="view-fcb" hidden>
+      <div class="fcb-hero">
+        <svg class="fcb-badge" viewBox="0 0 64 64" aria-hidden="true">
+          <defs><clipPath id="fcbc"><circle cx="32" cy="32" r="29"/></clipPath></defs>
+          <g clip-path="url(#fcbc)"><rect width="32" height="64" fill="#e30613"/><rect x="32" width="32" height="64" fill="#0a2d7a"/></g>
+          <circle cx="32" cy="32" r="29" fill="none" stroke="#ffd34d" stroke-width="2.5"/>
+          <text x="32" y="38" text-anchor="middle" font-size="17" font-weight="800" fill="#fff" font-family="-apple-system, sans-serif">FCB</text>
+        </svg>
+        <div>
+          <div class="fcb-title">FC Basel 1893</div>
+          <div id="fcb-sub" class="fcb-sub mono">Männer · Super League</div>
+        </div>
+      </div>
+
+      <div class="seg fcb-seg" id="fcb-seg" role="tablist">
+        <button data-s="news" class="on">News</button>
+        <button data-s="kader">Kader</button>
+        <button data-s="aufstellung">Aufstellung</button>
+        <button data-s="kurve">Kurve</button>
+      </div>
+
+      <div class="fcb-pane" id="fcb-news">
+        <div class="panel"><div class="panel-head"><span class="tag">// FCB NEWS</span><span id="fcb-news-meta" class="tag-r"></span></div>
+          <ul id="fcb-news-list" class="fcb-news"></ul>
+        </div>
+      </div>
+
+      <div class="fcb-pane" id="fcb-kader" hidden>
+        <div class="panel"><div class="panel-head"><span class="tag">// KADER</span><span id="fcb-kader-meta" class="tag-r"></span></div>
+          <div id="fcb-kader-list"></div>
+          <p class="source">Quelle: <a id="fcb-kader-src" target="_blank" rel="noopener">Wikipedia</a> (CC BY-SA)</p>
+        </div>
+      </div>
+
+      <div class="fcb-pane" id="fcb-aufstellung" hidden>
+        <div class="panel"><div class="panel-head"><span class="tag">// KADER NACH POSITIONEN</span></div>
+          <div id="fcb-pitch" class="fcb-pitch"></div>
+          <p class="hint">Keine offizielle Startelf: Die Grafik zeigt den ganzen Kader nach Positionen. Die echte Aufstellung veröffentlicht die Liga kurz vor Anpfiff.</p>
+          <a class="btn fcb-link" href="https://www.sfl.ch/teams/fc-basel-1893" target="_blank" rel="noopener">Offizielle Aufstellung im SFL-Matchcenter ›</a>
+        </div>
+      </div>
+
+      <div class="fcb-pane" id="fcb-kurve" hidden>
+        <div class="panel kurve">
+          <div class="kurve-head">
+            <div class="kurve-avatar" aria-hidden="true">🧣</div>
+            <div><div id="kurve-name" class="kurve-name"></div><div id="kurve-bio" class="kurve-bio"></div></div>
+          </div>
+          <div id="kurve-lines" class="kurve-lines"></div>
+          <p class="hint">Fiktive Figur. Die Kommentare sind frei erfunden und beziehen sich auf die echten Schlagzeilen oben.</p>
+        </div>
+      </div>
+      <p id="fcb-empty" class="hint" hidden>FC-Basel-Daten werden beim nächsten Update geladen.</p>
+    </section>
+
     <section class="view" id="view-warn" hidden>
       <div class="panel">
         <div class="panel-head"><span class="tag">// AKTIVE WARNUNGEN</span><span id="warn-place" class="tag-r"></span></div>
@@ -192,6 +248,9 @@
     </button>
     <button data-tab="psalm">
       <svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5zM12 6v13"/></svg>Psalm
+    </button>
+    <button data-tab="fcb" class="tab-fcb">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/><path d="M12 3v4M16 10l4-1M15 15l2 4M9 15l-2 4M8 10 4 9"/></svg>FCB
     </button>
     <button data-tab="warn">
       <svg viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v4M12 17v.5"/></svg>Warnungen<span id="warn-badge" class="badge" hidden></span>
