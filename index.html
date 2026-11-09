@@ -170,7 +170,7 @@
       <div class="seg fcb-seg" id="fcb-seg" role="tablist">
         <button data-s="news" class="on">News</button>
         <button data-s="kader">Kader</button>
-        <button data-s="aufstellung">Aufstellung</button>
+        <button data-s="ticker">Ticker</button>
         <button data-s="kurve">Kurve</button>
       </div>
 
@@ -187,11 +187,16 @@
         </div>
       </div>
 
-      <div class="fcb-pane" id="fcb-aufstellung" hidden>
-        <div class="panel"><div class="panel-head"><span class="tag">// KADER NACH POSITIONEN</span></div>
-          <div id="fcb-pitch" class="fcb-pitch"></div>
-          <p class="hint">Keine offizielle Startelf: Die Grafik zeigt den ganzen Kader nach Positionen. Die echte Aufstellung veröffentlicht die Liga kurz vor Anpfiff.</p>
-          <a class="btn fcb-link" href="https://www.sfl.ch/teams/fc-bale-1893" target="_blank" rel="noopener">Offizielle Aufstellung im SFL-Matchcenter ›</a>
+      <div class="fcb-pane" id="fcb-ticker" hidden>
+        <div class="panel ticker">
+          <div class="panel-head"><span class="tag"><i class="live-dot"></i>// SPIEL-TICKER</span><span id="ticker-meta" class="tag-r"></span></div>
+          <ul id="ticker-list" class="ticker-list"></ul>
+          <p class="hint">Neueste Spielmeldungen zum FCB, mehrmals täglich aktualisiert. Für Minute-für-Minute eine Meldung oder einen der Liveticker unten antippen.</p>
+          <div class="ticker-links">
+            <a class="btn" href="https://www.srf.ch/sport/fussball/super-league" target="_blank" rel="noopener">SRF Sport</a>
+            <a class="btn" href="https://www.blick.ch/sport/fussball/super-league/" target="_blank" rel="noopener">Blick</a>
+            <a class="btn" href="https://www.fcb.ch" target="_blank" rel="noopener">FCB offiziell</a>
+          </div>
         </div>
       </div>
 

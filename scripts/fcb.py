@@ -222,6 +222,66 @@ def load_kurve():
     return items[:5]
 
 
+LIVE = re.compile(r"liveticker|live-ticker|\blive\b|ticker|jetzt live|im ticker", re.I)
+MATCH = re.compile(r"\b\d{1,2}\s?:\s?\d{1,2}\b|halbzeit|pause|endstand|abpfiff|anpfiff|schlusspfiff|"
+                   r"\btor\b|tore|ausgleich|führung|gewinnt|verliert|remis|unentschieden|siegt|"
+                   r"spielbericht|telegramm|aufstellung|startelf", re.I)
+
+
+def load_ticker():
+    """Neueste Spielmeldungen zum FCB (Liveticker, Zwischen- und Endstände)."""
+    now = datetime.now(timezone.utc)
+    query = urllib.parse.quote('"FC Basel" (Liveticker OR live OR Ticker OR Halbzeit OR Endstand) when:2d')
+    feeds = [
+        ("https://www.srf.ch/sport/bnf/rss/718", "SRF"),
+        ("https://www.blick.ch/sport/fussball/rss.xml", "Blick"),
+        (f"https://news.google.com/rss/search?q={query}&hl=de&gl=CH&ceid=CH:de", None),
+    ]
+    items, seen = [], set()
+    for url, fixed in feeds:
+        try:
+            root = ET.fromstring(fetch(url))
+        except Exception as err:
+            print(f"Ticker-Feed nicht erreichbar: {url} ({err})")
+            continue
+        for it in root.findall(".//item")[:60]:
+            title = clean(it.findtext("title"))
+            desc = clean(it.findtext("description"))[:200]
+            source = fixed or ""
+            if not fixed:
+                src = it.find("source")
+                source = (src.text or "").strip() if src is not None else ""
+                if source and title.endswith(" - " + source):
+                    title = title[: -len(source) - 3]
+            if " – " in title and fixed == "SRF":
+                title = title.split(" – ", 1)[1]
+            if not re.search(r"\bFCB\b|FC Basel|\bBasel\b|Basler", title + " " + desc):
+                continue
+            if WOMEN.search(title + " " + desc) or VIOLENCE.search(title):
+                continue
+            if not (LIVE.search(title) or MATCH.search(title)):
+                continue
+            try:
+                published = parsedate_to_datetime(it.findtext("pubDate"))
+            except Exception:
+                continue
+            if now - published > timedelta(hours=48):
+                continue
+            key = re.sub(r"\W+", "", title.lower())[:40]
+            if key in seen:
+                continue
+            seen.add(key)
+            score = re.search(r"\b(\d{1,2})\s?:\s?(\d{1,2})\b", title)
+            items.append({
+                "title": title, "source": source, "url": (it.findtext("link") or "").strip(),
+                "published": published.isoformat(),
+                "score": f"{score.group(1)}:{score.group(2)}" if score else "",
+                "live": bool(LIVE.search(title)) and now - published < timedelta(hours=4),
+            })
+    items.sort(key=lambda x: x["published"], reverse=True)
+    return items[:8]
+
+
 def load_rumors(squad):
     """Transfer- und Wechselgerüchte zum FCB und zu Spielern aus dem Kader."""
     names = {p["name"].split()[-1] for g in (squad or {}).get("groups", []) for p in g["players"]
@@ -393,6 +453,10 @@ def main(out_file):
     print(f"Us dr Kurve: {len(data['kurve'])}")
     for k in data["kurve"]:
         print(f"  - [{k['source']}] {k['title']}")
+    data["ticker"] = load_ticker()
+    print(f"Ticker: {len(data['ticker'])}")
+    for t in data["ticker"]:
+        print(f"  - {t['score'] or '–'} {t['title']} ({t['source']})")
     data["rumors"] = load_rumors(data.get("squad"))
     print(f"Gerüchte: {len(data['rumors'])}")
     for r in data["rumors"]:

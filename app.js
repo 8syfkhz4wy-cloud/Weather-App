@@ -1034,8 +1034,11 @@ async function initRadar() {
 
 function setFcbSection(name) {
   $$("#fcb-seg button").forEach((b) => b.classList.toggle("on", b.dataset.s === name));
-  ["news", "kader", "aufstellung", "kurve"].forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
+  if (!["news", "kader", "ticker", "kurve"].includes(name)) name = "ticker";
+  $$("#fcb-seg button").forEach((b) => b.classList.toggle("on", b.dataset.s === name));
+  ["news", "kader", "ticker", "kurve"].forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
   store("fcbSection", name);
+  if (name === "ticker") loadFcb().catch(() => {});
 }
 
 function renderFcb(d) {
@@ -1077,32 +1080,32 @@ function renderFcb(d) {
       }
     }
     $("#fcb-kader-list").replaceChildren(...parts);
-
-    // Spielfeld: Angriff oben, Tor unten
-    const order = [/sturm|angriff/i, /mittelfeld/i, /verteid|abwehr/i, /tor/i];
-    const rank = (g) => {
-      const i = order.findIndex((r) => r.test(g.group));
-      return i < 0 ? 9 : i;
-    };
-    const groups = [...squad.groups].sort((a, b) => rank(a) - rank(b));
-    $("#fcb-pitch").replaceChildren(
-      ...groups.map((g) => {
-        const row = el("div", "pitch-row");
-        row.append(el("h4", null, g.group.toUpperCase()));
-        const list = el("div");
-        for (const p of g.players) {
-          const chip = el("span", "pitch-player");
-          chip.append(el("i", null, p.nr || "–"), p.name.split(" ").slice(-1)[0]);
-          list.append(chip);
-        }
-        row.append(list);
-        return row;
-      })
-    );
   } else {
     $("#fcb-kader-list").replaceChildren(el("p", "hint", "Kader gerade nicht verfügbar."));
-    $("#fcb-pitch").replaceChildren(el("p", "hint", "Kader gerade nicht verfügbar."));
   }
+
+  // Spiel-Ticker
+  const ticker = d.ticker || [];
+  $("#ticker-meta").textContent = d.updated ? `Stand ${new Date(d.updated).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "";
+  $("#ticker-list").replaceChildren(
+    ...(ticker.length
+      ? ticker.map((t) => {
+          const li = el("li");
+          const a = el("a");
+          a.href = t.url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          const text = el("div");
+          text.append(el("b", null, t.title));
+          const meta = el("small", null, `${t.source || "Quelle"} · ${timeAgo(t.published)}`);
+          if (t.live) meta.prepend(el("span", "live-tag", "LIVE · "));
+          text.append(meta);
+          a.append(el("span", `ticker-score${t.score ? "" : " none"}`, t.score || "⚽"), text);
+          li.append(a);
+          return li;
+        })
+      : [el("li", "hint", "Gerade keine Spielmeldungen. Vor und während FCB-Spielen erscheinen hier die Ticker.")])
+  );
 
   // Us dr Kurve & Gerüchteküche
   const feedList = (items, list, card) => {

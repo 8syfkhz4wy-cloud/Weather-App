@@ -25,8 +25,8 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   unterklassige Ligen werden aussortiert). Nur Männerfussball. Antippen öffnet den
   Artikel der Quelle.
 - **FCB:** FC-Basel-Bereich (Männer) mit News (Google News, Blick, SRF), Kader aus
-  Wikipedia, Kader nach Positionen auf dem Spielfeld (keine offizielle Startelf, Link zum
-  SFL-Matchcenter) und dem fiktiven Kurven-Experten «Dani Joggeli Meier», der die echten
+  Wikipedia, Spiel-Ticker mit den neuesten Spielmeldungen (SRF, Blick, Google News) samt
+  Resultaten und Links zu den Livetickern und dem fiktiven Kurven-Experten «Dani Joggeli Meier», der die echten
   Schlagzeilen auf Baseldeutsch kommentiert. Erzeugt von `scripts/fcb.py` bei jeder
   Veröffentlichung.
   Unter „Kurve“ zusätzlich „Us dr Kurve“ (Newsfeed von muttenzerkurve.ch und öffentliche
