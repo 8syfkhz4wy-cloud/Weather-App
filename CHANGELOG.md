@@ -1,5 +1,16 @@
 # Versionen
 
+## v2.0.0
+
+Grosses FCB-Update für **Wetter & Psalm**.
+
+- **Spiel-Ticker:** neuer Bereich im FCB-Tab mit den neuesten Spielmeldungen, Zwischen- und Endständen von SRF, Blick und weiteren Medien – antippen öffnet den Liveticker, dazu Schnellknöpfe zu SRF Sport, Blick und fcb.ch
+- **Dani «Joggeli» Meier:** fiktiver Ultra aus der Muttenzerkurve, jetzt viel emotionaler und in derberem Baseldytsch
+- **Us dr Kurve:** Ankündigungen der Muttenzerkurve (Website und Telegram) mit Danis Kommentar
+- **Gerüchteküche:** die neuesten FCB-Transfergerüchte aus den Medien
+- **Updates sofort sichtbar:** neue Versionen erscheinen direkt beim Öffnen der App
+- Korrekturen: Link zur FCB-Seite der Swiss Football League, Layout auf kleinen iPhones, Diagramm-Beschriftungen
+
 ## v1.0.0
 
 Die erste offizielle Version von **Wetter & Psalm**.
