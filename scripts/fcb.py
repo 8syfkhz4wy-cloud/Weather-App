@@ -263,7 +263,7 @@ def load_rumors(squad):
 
 EXPERT = {
     "name": "Dani «Joggeli» Meier",
-    "bio": "Leidenschaftlicher Ultra und ehemaliger Brätscher · seit 1998 in dr Muttenzerkurve",
+    "bio": "Fiktiver Ultra · leidenschaftlich und ehemaliger Brätscher · seit 1998 in dr Muttenzerkurve",
 }
 
 INTROS = [
