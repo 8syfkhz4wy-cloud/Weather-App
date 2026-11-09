@@ -271,11 +271,13 @@ def load_ticker():
             if key in seen:
                 continue
             seen.add(key)
-            score = re.search(r"\b(\d{1,2})\s?:\s?(\d{1,2})\b", title)
+            # Letztes Resultat in der Schlagzeile ("nach 2:0-Führung 3:3" -> 3:3)
+            scores = re.findall(r"\b(\d{1,2})\s?:\s?(\d{1,2})\b", title)
+            score = scores[-1] if scores else None
             items.append({
                 "title": title, "source": source, "url": (it.findtext("link") or "").strip(),
                 "published": published.isoformat(),
-                "score": f"{score.group(1)}:{score.group(2)}" if score else "",
+                "score": f"{score[0]}:{score[1]}" if score else "",
                 "live": bool(LIVE.search(title)) and now - published < timedelta(hours=4),
             })
     items.sort(key=lambda x: x["published"], reverse=True)
