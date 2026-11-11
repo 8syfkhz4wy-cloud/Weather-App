@@ -134,7 +134,7 @@ def send(topics, title, message, tags, priority=4):
 
 
 def main(places_file, test=False):
-    topics = [p["topic"] for p in json.load(open(places_file)) if p.get("topic")]
+    topics = [p["topic"] for p in json.load(open(places_file))["orte"] if p.get("topic")]
     fx, score, goals, reds = state()
     print("Partie:", fx and f"{fx['home']} - {fx['away']}", "| Anpfiff:", fx and fx["kickoff"], "| Stand:", score,
           "| Tore:", goals, "| Platzverweise:", reds)
