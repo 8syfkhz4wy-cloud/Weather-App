@@ -1140,7 +1140,7 @@ async function initRadar() {
     // die amtliche Landeskarte von swisstopo (beide frei und ohne Schlüssel)
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12 }).addTo(radar.map);
     L.tileLayer("https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg", {
-      minZoom: 7, maxZoom: 12, bounds: [[45.75, 5.9], [47.9, 10.6]],
+      minZoom: 7, maxZoom: 12, bounds: [[45.3, 5.0], [48.4, 11.6]],
     }).addTo(radar.map);
     radar.marker = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [14, 14] }) }).addTo(radar.map);
     radar.center = (place) => {

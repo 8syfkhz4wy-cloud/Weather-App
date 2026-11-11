@@ -15,7 +15,7 @@ const { chromium, devices } = require('playwright');
   console.log(await p.evaluate(() => [document.querySelector('#place').textContent, document.querySelector('#radar-msg').textContent, document.querySelector('#radar-time').textContent, document.querySelector('#version') && document.querySelector('#version').textContent].join(' | ')));
   await p.screenshot({ path: '/tmp/a.jpg', type: 'jpeg', quality: 45 });
   await p.evaluate(() => showFrame(radar.layers.length - 1)); await p.waitForTimeout(4000);
-  await p.locator('.leaflet-control-zoom-in').click(); await p.locator('.leaflet-control-zoom-in').click(); await p.waitForTimeout(7000);
+  for (let i = 0; i < 3; i++) await p.locator('.leaflet-control-zoom-in').click(); await p.waitForTimeout(8000);
   await p.screenshot({ path: '/tmp/b.jpg', type: 'jpeg', quality: 45 });
   await b.close();
 })();
