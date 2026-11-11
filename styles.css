@@ -564,6 +564,7 @@ body[data-sky^="storm"] .hero-icon { animation: float 5s ease-in-out infinite, z
 }
 .radar-ctl { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .radar-ctl input { flex: 1; accent-color: var(--accent); }
+.radar-ctl .btn { flex: 0 0 auto; min-height: 40px; padding: 0 12px; font-size: 13px; }
 .leaflet-container { font-family: var(--sans); background: #0b111c; }
 .leaflet-bar { border: 0 !important; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45); }
 .leaflet-bar a { width: 40px !important; height: 40px !important; line-height: 40px !important; font-size: 22px !important; color: #e8eefc !important; background: rgba(11, 17, 28, 0.92) !important; border-color: rgba(255, 255, 255, 0.15) !important; }

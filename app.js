@@ -1139,9 +1139,18 @@ async function initRadar() {
     // Karte: OpenStreetMap für die ganze Welt, darüber in der Schweiz und im Grenzgebiet
     // die amtliche Landeskarte von swisstopo (beide frei und ohne Schlüssel)
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12 }).addTo(radar.map);
-    L.tileLayer("https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg", {
+    const swiss = L.tileLayer("https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg", {
       minZoom: 7, maxZoom: 12, bounds: [[45.3, 5.0], [48.4, 11.6]],
-    }).addTo(radar.map);
+    });
+    // Umschalter: ruhige Landeskarte oder Strassenkarte mit mehr Ortsnamen
+    const setBase = (osm) => {
+      store("radarOsm", osm);
+      if (osm) radar.map.removeLayer(swiss);
+      else swiss.addTo(radar.map);
+      $("#radar-base").textContent = osm ? "Landeskarte" : "Mehr Orte";
+    };
+    setBase(store("radarOsm") === true);
+    $("#radar-base").addEventListener("click", () => setBase(store("radarOsm") !== true));
     radar.marker = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [14, 14] }) }).addTo(radar.map);
     radar.center = (place) => {
       radar.map.setView([place.lat, place.lon], radar.map.getZoom());
