@@ -1,43 +1,47 @@
-import json, re, urllib.request, urllib.parse
+import json, re, urllib.request
 UA = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile Safari/604.1"}
-def get(u, raw=False, n=None):
-    req = urllib.request.Request(u, headers=UA)
-    r = urllib.request.urlopen(req, timeout=25)
-    b = r.read()
-    return (r.status, r.geturl(), b) if raw else b.decode("utf-8", "replace")
-def show(label, u, n=700):
+def req(u, h=None):
+    r = urllib.request.urlopen(urllib.request.Request(u, headers={**UA, **(h or {})}), timeout=25)
+    return r, r.read()
+# CORS?
+try:
+    r, b = req("https://api.teletext.ch/channels/SRF1/pages/202", {"Origin": "https://8syfkhz4wy-cloud.github.io"})
+    print("CORS:", r.headers.get("Access-Control-Allow-Origin"), "| cache:", r.headers.get("Cache-Control"), "| type:", r.headers.get("Content-Type"))
+    d = json.loads(b); sp = d["subpages"][0]
+    print("subpage keys:", list(sp.keys())); print("ep1Info keys:", list(sp.get("ep1Info", {}).keys()))
+    print("RAW 202:\n" + (sp["ep1Info"].get("contentText") or ""))
+    print("meta:", json.dumps(d.get("metaData"))[:300])
+except Exception as e: print("tt fail", e)
+def page(p):
     try:
-        st, final, b = get(u, raw=True)
-        t = b.decode("utf-8", "replace")
-        print(f"\n== OK {label} [{st}] {len(b)}B final={final[:120]}\n{re.sub(r'\\s+', ' ', t)[:n]}")
-        return t
+        _, b = req(f"https://api.teletext.ch/channels/SRF1/pages/{p}")
+        return [s.get("ep1Info", {}).get("contentText") or "" for s in json.loads(b).get("subpages", [])]
     except Exception as e:
-        print(f"\n== FAIL {label}: {e}")
-# Links der App
-for l, u in [("btn srf", "https://www.srf.ch/sport/fussball/super-league"), ("btn blick", "https://www.blick.ch/sport/fussball/super-league/"), ("btn fcb", "https://www.fcb.ch"), ("sfl team", "https://www.sfl.ch/teams/fc-bale-1893")]:
-    show(l, u, 120)
-# Google-News-Link folgen
-try:
-    x = get("https://news.google.com/rss/search?q=%22FC+Basel%22+when:2d&hl=de&gl=CH&ceid=CH:de")
-    link = re.search(r"<item>.*?<link>([^<]+)</link>", x, re.S).group(1)
-    print("\nGN link:", link[:150]); show("GN follow", link, 400)
-except Exception as e: print("GN fail", e)
-# Teletext
-for p in [200, 201, 202, 203, 204, 205, 206, 207, 208, 210, 211, 212, 220, 221, 222, 230, 231]:
+        return []
+for p in [205, 209, 216, 217]:
+    for i, t in enumerate(page(p)[:2]): print(f"\n--- RAW {p}/{i}\n{t}")
+shown = 0
+for p in list(range(233, 252)) + list(range(300, 345)):
+    for i, t in enumerate(page(p)):
+        if re.search(r"\bTore?\b|Rot|Gelb", t) and shown < 6:
+            shown += 1; print(f"\n--- TELEGRAMM {p}/{i}\n{t}")
+# Ortsname Allschwil
+for lat, lon in [(47.551, 7.536), (47.5596, 7.5886), (47.52, 7.55)]:
     try:
-        d = json.loads(get(f"https://api.teletext.ch/channels/SRF1/pages/{p}"))
-        subs = d.get("subpages", [])
-        txt = " | ".join(re.sub(r"\s+", " ", s.get("ep1Info", {}).get("contentText", "") or "")[:260] for s in subs[:3])
-        print(f"\nTT {p} subs={len(subs)} keys={list(d.keys())[:8]} :: {txt[:700]}")
-    except Exception as e: print(f"TT {p} fail {e}")
-# OpenLigaDB
+        _, b = req(f"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat}&longitude={lon}&localityLanguage=de")
+        r = json.loads(b)
+        adm = [(a.get("name"), a.get("adminLevel"), a.get("order")) for a in r.get("localityInfo", {}).get("administrative", [])]
+        print(f"\nBDC {lat},{lon}: city={r.get('city')!r} locality={r.get('locality')!r} adm={adm}")
+    except Exception as e: print("bdc fail", e)
+# Blick-Knopf und Feeds
+for u in ["https://www.blick.ch/sport/fussball/superleague/", "https://www.blick.ch/sport/fussball/", "https://www.blick.ch/sport/fussball/superleague/fc-basel/", "https://www.srf.ch/sport/fussball/super-league", "https://www.srf.ch/sport/resultcenter/results#/results/football", "https://www.teletext.ch/SRF1/202"]:
+    try:
+        r, b = req(u); print("OK ", r.status, u)
+    except Exception as e: print("FAIL", u, e)
 try:
-    ls = json.loads(get("https://api.openligadb.de/getavailableleagues"))
-    print("\nOLDB:", [(l["leagueShortcut"], l["leagueName"], l["leagueSeason"]) for l in ls if re.search(r"schweiz|swiss|super league", l["leagueName"], re.I)][-12:])
-except Exception as e: print("OLDB fail", e)
-# Sofascore
-show("sofa search", "https://api.sofascore.com/api/v1/search/teams?q=basel", 300)
-show("sofa app", "https://www.sofascore.com/api/v1/search/teams?q=basel", 300)
-# Direkte Feeds
-for l, u in [("bz fcb", "https://www.bzbasel.ch/sport/fcb.rss"), ("bz sport", "https://www.bzbasel.ch/sport.rss"), ("nau", "https://www.nau.ch/sport/fussball.rss"), ("fcb atom", "https://www.fcb.ch/blogs/news.atom"), ("baz", "https://www.bazonline.ch/sport/fc-basel.rss"), ("20min", "https://partner-feeds.20min.ch/rss/20minuten/sport"), ("watson", "https://www.watson.ch/api/2.0/rss/index.xml?tag=FC%20Basel"), ("telebasel", "https://telebasel.ch/feed"), ("sport.de", "https://www.sport.de/fussball/te1304/fc-basel/"), ("weltfussball", "https://www.weltfussball.com/teams/fc-basel/"), ("srf rc", "https://www.srf.ch/sport/resultcenter/results#/results/football")]:
-    show(l, u, 260)
+    _, b = req("https://www.watson.ch/api/2.0/rss/index.xml?tag=FC%20Basel")
+    t = b.decode("utf-8", "replace")
+    for e in re.findall(r"<entry>(.*?)</entry>", t, re.S)[:4]:
+        print("watson:", re.search(r"<title[^>]*>(.*?)</title>", e, re.S).group(1)[:90], "|", re.search(r'<link[^>]*href="([^"]+)"', e).group(1)[:90], "|", (re.search(r"<(?:updated|published)>([^<]+)", e) or [0, ""])[1])
+    _, b = req("https://fcb.ch/blogs/news.atom"); print("fcb atom:", b.decode()[:544])
+except Exception as e: print("feed fail", e)
