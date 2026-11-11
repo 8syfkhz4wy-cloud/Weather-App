@@ -329,97 +329,124 @@ EXPERT = {
 }
 
 INTROS = [
-    "HOI ZÄMME, IHR BEBBI!!! Dr Dani isch do und s Bluet kocht scho!",
-    "Gopferdammi, Lüt, losed zue – hüt git s Klartext us dr Kurve!",
-    "So, Bier uf, Schal um – und jetzt redet dr Dani!",
-    "Hueresiech, ich ha scho wieder Härzklopfe bevor ich überhaupt agfange ha!",
-    "Morge, ihr Rotblaue! Dr Dani isch wach und hässig wie immer!",
+    "HÖSCH, IHR BEBBI!!! Dr Dani isch do, und s Bluet kocht scho bis in Grind ufe!",
+    "Gopferdammi nomol, losed zue – hüt git s Klartext us dr Kurve, ohni Wattebäuschli!",
+    "So. Bier uf, Schal um, Schnuure uf – jetzt schwätzt dr Dani!",
+    "Hueresiech, ych ha scho Härzchlopfe, bevor ych überhaupt agfange ha!",
+    "Guete Morge, ihr Rotblaue! Ych bi wach, verchateret und hässig wie e Hornusse!",
+    "Jä nu, wo fang ych aa? Ah ja: BEIM FCB, wo susch, ihr Glünggi!",
+    "Ych ha hüt scho drei Kaffi und e Gipfeli gha – und ych bi IMMER NO uf hundertachtzig!",
+    "Mamme, mach s Radio lüter – dr Dani verzellt ebbis!",
 ]
 OUTROS = [
-    "ALLEZ FCB, VERDAMMI NOMOL!!! ❤️💙",
-    "Rotblau bis i d Chnoche – und wer s nit verstoht, isch sälber tschuld! ❤️💙",
-    "Mir gseh is im Joggeli, und denn wird gsunge bis d Stimm wäg isch! ❤️💙",
-    "HOPP FCB!!! Ich bi heiser, und das isch guet so. ❤️💙",
-    "Basel isch kei Stadt, Basel isch e Gfühl, gopfertelli! ❤️💙",
+    "ALLEZ FCB, GOPFERDAMMI NOMOL!!! ❤️💙",
+    "Rotblau bis in d Chnoche – und wär s nit kapiert, cha mir dr Buggel abeschlyffe! ❤️💙",
+    "Mir gsehn is im Joggeli, und denn wird brüelt, bis kai Stimm meh do isch! ❤️💙",
+    "HOPP FCB!!! Ych bi heiser wie e alte Gugge-Bass – und s isch mir Wurscht! ❤️💙",
+    "Basel isch kai Stadt, Basel isch e Gfühl, verreckt nomol! ❤️💙",
+    "Z Basel an mym Rhy – und dr FCB im Härz. Fertig, Schluss, Amen! ❤️💙",
+    "So, jetzt bruuch ych e Bier. Oder zwai. Oder drüü. HOPP BASEL! ❤️💙",
 ]
 # Ausrufe, mit denen die Emotionen hochkochen – passend zur Stimmung der Meldung
 AUSRUFE = {
-    "gut": ["HUERE GEIL!", "JOOO!", "Gopferdammi, isch das schön!", "Ich flipp us!"],
-    "schlecht": ["Gopferdammi!", "Hueresiech nomol!", "Verdammi!", "Ich drehe dure!", "Mi Bluetdruck!"],
-    "neutral": ["Gopfertelli!", "Hallo?!", "Ohni Seich jetzt!", "Jo spinnsch?!"],
+    "gut": ["HUERE GEIL!!!", "JOOOOO!!!", "Gopferdammi, isch das schön!", "Ych flipp us!",
+            "Sauglatt, Lüt!", "Mamme, ych heul!", "HÖSCH, LUEG DAS AA!"],
+    "schlecht": ["Gopferdammi!", "Hueresiech nomol!", "Verreckt!", "Schissdräck!", "Ych drey dure!",
+                 "Mi Bluetdruck!!!", "Jesses Gott!", "So e Chabis!"],
+    "neutral": ["Gopfertelli!", "Hösch?!", "Ohni Seich jetzt!", "Jo spinnsch?!", "Jä nu …", "Lueg emol do!"],
+}
+# Nachsätze, zufällig angehängt – damit Dani jeden Tag anders tönt
+NACHSAETZE = {
+    "gut": ["Ych ha Gänsehut bis an d Zeche!", "Ych bruuch jetzt e Bier – oder grad e Fass!",
+            "Ych bi so happy, ych chönnt dr ganz Tram abschmützle!", "D Mamme het gmeint, ych syg nit ganz bache!"],
+    "schlecht": ["Ych chönnt grad in Rhy springe – aber nur zum abchüehle!", "Mi Grind platzt glyy!",
+                 "Ych ha mi Schal fascht ufgfrässe vor Wuet!", "Dr Hund het sich unters Sofa verschloffe, so han ych brüelt!"],
+    "neutral": ["Mol luege, was do no kunnt.", "Ych bi gspannt wie e Rägeschirm im Sturm!",
+                "Ych sag nyt meh – nai, ych sag doch no ebbis: HOPP FCB!"],
 }
 
 # (Muster in der Schlagzeile, Stimmung, Reaktionen)
 REACTIONS = [
     (r"verletz|ausfall|fällt.*aus|operation|knie|muskel", "schlecht", [
-        "Scho wieder e Verletzig?! Das isch doch verhext, dä Seich! Gueti Besserig, mir bruuche di!",
-        "Ich ha grad mi Bier umgschüttet vor Ärger! Wieso immer mir?! Chumm schnell zrugg, Kämpfer!",
+        "Scho wieder e Verletzig?! Das isch doch verhäxt, dä Huere-Seich! Gueti Besserig, mir bruuche di, Kampfsau!",
+        "Ych ha grad mi Bier umgschüttet vor Ärger! Wieso immer mir, gopferdammi?! Chumm schnäll zrugg, Brueder!",
+        "D Lazarett-Lischte isch lenger als d Schlange vor em Fasnachtsbändeli-Stand! Schissdräck!",
     ]),
-    (r"sieg|gewinnt|gewonnen|siegt|schlägt|triumph|dreier", "gut", [
-        "DREI PÜNKT!!! Ich ha brüelt wie e Gstörte und ha e wildfrömde Typ gumarmt! HUERE GEIL!",
-        "SO WÄMMERS HA, GOPFERDAMMI! Das isch Basel – Härz, Bluet und Tor! Ich ha Gänsehut bis in d Zeche!",
+    (r"sieg|gewinnt|gewonnen|siegt|schlägt|triumph|dreier|dreht", "gut", [
+        "DRÜÜ PÜNKT!!! Ych ha brüelt wie e Gstörte und e wildfrömde Typ abgschmützlet! HUERE GEIL!",
+        "SO WÄMMERS HA, GOPFERDAMMI! Das isch Basel – Härz, Bluet und Tor! Ych bi fix und fertig vor Glügg!",
+        "Mir sinn wieder wär, ihr Lappi! Ych tanz grad uf em Chuchitisch – d Nochbere chönne mi mol!",
     ]),
-    (r"niederlage|verliert|verloren|pleite|blamage|unterliegt", "schlecht", [
-        "Was isch DAS für e Huere-Seich gsi?! Ich ha mi Schal fascht ufgfrässe vor Wuet! Aber mir stöhn hinter dene Jungs – grad jetzt!",
-        "Ich chönnt grad d Wand ufelaufe! So e Chäs! Aber am Samstig sin mir wieder do, luter als je!",
+    (r"niederlage|verliert|verloren|pleite|blamage|unterliegt|kassiert", "schlecht", [
+        "Was isch DAS für e Schofseggel-Spiel gsi?! Ych ha dr Grind uf d Tischplatte ghaue! Aber mir stöhn hinter dene Jungs – grad jetzt, verreckt nomol!",
+        "Ych chönnt grad d Wand uffelaufe, so e Chäs! Aber am Samschtig sinn mir wieder do – lüter als je!",
+        "Verlore?! VERLORE?! Ych bruuch e Schnaps und e Rueh. Und denn wird wieder gsunge, gopferdammi!",
     ]),
-    (r"remis|unentschieden|punkt|torlos|1:1|2:2|0:0", "schlecht", [
-        "E Punkt?! E PUNKT?! Das isch wie Bier ohni Schuum, gopfertelli! Mir wänn Dreier, nit so lauwarme Seich!",
-        "Unentschiede … ich bi so hässig, dass ich hüt nüt meh iss! Nächscht Mol wird gwunne, verdammi!",
+    (r"remis|unentschieden|punkt|torlos|1:1|2:2|3:3|0:0|begnügen", "schlecht", [
+        "E Pünktli?! E PÜNKTLI?! Das isch wie Bier ohni Schuum, gopfertelli! Mir wänn Dreier, kai lauwarme Seich!",
+        "Unentschiede … ych bi so hässig, dass ych hüt nyt meh iss – usser e Wurscht. Oder zwai.",
+        "Gopferdammi, so knapp! Ych ha mir d Hoor usgrisse – und ych ha sowiso scho kaini meh!",
     ]),
-    (r"schiri|schiedsrichter|var|elfmeter|penalty|rot\b|platzverweis", "schlecht", [
-        "Dr Schiri?! Dä het wohl d Brülle dihei vergässe! Ich explodier grad im Sässel!",
-        "VAR, Schiri, Pfiff – alles en Seich! Mi Bluetdruck isch uf 200, ohni Witz!",
+    (r"schiri|schiedsrichter|var|elfmeter|penalty|rot\b|platzverweis|eigentor", "schlecht", [
+        "Dr Schiri?! Dä het sy Brülle dehai im Nachttischli vergässe! Ych explodier grad im Sässel!",
+        "VAR, Pfiff, Chabis – alles e huere Seich! Mi Bluetdruck isch uf zwaihundert, ohni Witz!",
+        "Ych ha so lut brüelt, dass dr ganzi Sektor gmeint het, ych syg dr Stadionspeaker!",
     ]),
     (r"trainer|coach|entlass|freigestellt", "schlecht", [
-        "Trainer-Theater?! Gopferdammi, lönd die Jungs doch eifach schutte und hörred uf mit däm Gschnorr!",
-        "Ich sag nume: Wer dr FCB trainiert, mues s Härz am rächte Fläck ha – süsch gits Krach i dr Kurve!",
+        "Trainer-Theater?! Lönd die Jungs doch aifach schutte und hörred uf mit däm Gschnorr, gopferdammi!",
+        "Wär dr FCB trainiert, mues s Härz am rächte Fläck ha – susch git s Rambazamba i dr Kurve!",
     ]),
     (r"transfer|wechsel|verpflicht|vertrag|verlänger|leihe|ablöse", "gut", [
-        "Transfer?! Wenn dä nit rotblau blüetet, söll er grad dihei blibe! Und wenn doch: WILLKOMME, BRUEDER!",
-        "Ich ha scho s Trikot im Chopf bschriftet! Hoffentlich isch das kei Luftnummere, süsch dreh ich dure!",
+        "Transfer?! Wenn dä nit rotblau blüetet, söll er grad dehai blybe! Und wenn doch: WILLKOMME, BRUEDER!",
+        "Ych ha scho s Trikot im Grind bschriftet! Wenn das e Luftnummere isch, drey ych dure, verreckt!",
     ]),
     (r"fans|kurve|stimmung|choreo|zuschauer|stadion|joggeli", "gut", [
-        "D Kurve isch unser Wohnzimmer, gopferdammi! Luut, rotblau und mit Härz – so mues es sy!",
-        "Wenn s Joggeli bebt, denn zitter ich am ganze Körper. Das verstoht kei Mensch, wo nit dört gstande isch!",
+        "D Kurve isch unser Wohnstube, gopferdammi! Lut, rotblau und mit Härz – so mues es sy!",
+        "Wenn s Joggeli bebt, zitter ych am ganze Lyb. Das verstoht kai Mensch, wo nit dört gstande isch!",
     ]),
     (r"zürich|fcz|gc\b|grasshopper|young boys|\byb\b", "neutral", [
-        "GEGE DIE?! Do gits kei Pardon uf em Platz – die Pünkt ghöre uns, verdammi nomol!",
-        "Ich ha jetzt scho Härzrase! Gege die wämmer gwinne, und zwar so dütlich, dass es im ganze Land z ghöre isch!",
+        "GEGE DIE?! Do git s kai Pardon uf em Platz – die Pünkt ghöre uns, verreckt nomol!",
+        "Ych ha jetzt scho Härzrase! Gege die wämmer gwinne, und zwar so dütlich, dass es bis an Bodesee ane z ghöre isch!",
     ]),
 ]
 # Reaktionen auf Ankündigungen der Kurve
 KURVE_REACTIONS = [
     (r"usswärts|auswärts|extrazug|zug|car\b|uff\s", [
-        "Usswärts?! Ich pack scho d Täsche! Extrazug, Gsang und Rotblau bis in d Fingerspitze – alli mit!",
-        "Wer do nit mitfahrt, verpasst s Läbe, gopferdammi! Ab in Zug und d Kurve uf Reise!",
+        "Usswärts?! Ych pack scho d Täsche! Extrazug, Gsang und Rotblau bis in d Fingerspitze – alli mit, ihr Bebbi!",
+        "Wär do nit mitfahrt, verpasst s Läbe, gopferdammi! Ab in Zug und d Kurve uf Reise – egal wohi, Hauptsach rotblau!",
     ]),
     (r"choreo|fahne|fahnedaag|malen|mole", [
-        "Fahne mole, Choreo baue – das isch Kurve-Handwärk! Ich bi dr Erscht mit em Pinsel, verdammi!",
-        "Wenn d Choreo ufgoht, chunnt mir jedes Mol s Augewasser. Alli go hälfe!",
+        "Fahne mole, Choreo baue – das isch Kurve-Handwärk! Ych bi dr Erscht mit em Pinsel, verreckt!",
+        "Wenn d Choreo uffgoht, laufe mir jedes Mol d Auge über. Alli go hälfe, ihr fuule Säck!",
     ]),
     (r"saal|film|fescht|fest|party|apéro|bar", [
-        "Im Saal mit dr ganze Kurve – Bier, Gschichte und Gänsehut. Do bin ich, klar wie Kloschbrüe!",
-        "E Obe mit dr Kurve isch besser als jede Ferie, gopfertelli!",
+        "Im Saal mit dr ganze Kurve – Bier, Gschichte und Gänsehut. Do bi n ych, klar wie Chlosterbrüe!",
+        "E Obe mit dr Kurve isch besser als jedi Fasnacht – und das sag ych als Basler, gopfertelli!",
     ]),
     (r"dehai|heimspiel|joggeli|rotblau.?gass", [
-        "Heimspiel! S Joggeli wird bebe, und ich bi heiser bis am Mäntig!",
-        "Rotblau Gass, Kurve voll, Stimm wäg – so mues es sy, verdammi nomol!",
+        "Heimspiel! S Joggeli wird bebe, und ych bi heiser bis am Mäntig!",
+        "Rotblau Gass, Kurve voll, Stimm wäg – so mues es sy, verreckt nomol!",
     ]),
 ]
 # Reaktionen auf Gerüchte
 RUMOR_REACTIONS = [
-    "Gerüchte, Gerüchte … mi Bluetdruck goht scho wieder ufe! Wenn dä goht, denn nur für e Huufe Stutz!",
-    "Jo spinnsch?! Wenn die üse Bescht wäggchaufe wänn, denn sölle si zahle, bis es chlöpft!",
-    "Ich glaub s erscht, wenn s unterschriebe isch. Bis denn: Gschnorr, aber spannends Gschnorr!",
-    "Gopferdammi, immer die Gerüchtchüchi! Ich ha jetzt scho Bauchweh, und es isch erscht Mäntig!",
+    "Grücht, Grücht … mi Bluetdruck goht scho wieder uffe! Wenn dä goht, denn nur für e Huufe Stutz!",
+    "Jo spinnsch?! Wenn die üsi Beschte wäggchaufe wänn, denn sölle si zahle, bis es chlöpft!",
+    "Ych glaub s erscht, wenn s unterschriibe isch. Bis denn: Gschnorr – aber spannends Gschnorr!",
+    "Gopferdammi, immer die Grüchtchuchi! Ych ha jetzt scho Ranzepfyffe, und es isch erscht Mäntig!",
 ]
 
 GENERIC = [
-    "Ich weiss nit, ob ich lache oder brüele söll – aber s Härz brennt rotblau, gopferdammi!",
-    "Ohni Seich: Am Wuchenänd zählt nur, was uf em Platz passiert. Alles anderi isch Gschnorr!",
-    "Das macht mi so hibbelig, dass ich hüt Nacht nit penn. Hopp jetzt!",
+    "Ych waiss nit, öb ych lache oder brüele söll – aber s Härz brennt rotblau, gopferdammi!",
+    "Ohni Seich: Am Wuchenänd zellt nur, was uf em Rase passiert. Alles anderi isch Gschnorr!",
+    "Das macht mi so hibbelig, dass ych hüt z Nacht kai Aug zuemach. Hopp jetzt!",
+    "Ych läs das und dänk: Jä nu, Hauptsach dr FCB isch im Gspröch – und mir in dr Kurve!",
 ]
+
+
+def shout(text, rnd):
+    """Ab und zu kocht Dani ganz über: dann brüllt er den Satz."""
+    return text.upper() if rnd.random() < 0.18 else text
 
 
 def expert_comment(news, today, kurve=(), rumors=()):
@@ -429,15 +456,16 @@ def expert_comment(news, today, kurve=(), rumors=()):
     for item in news[:2]:
         mood, reaction = next(((m, rnd.choice(r)) for pattern, m, r in REACTIONS
                                if re.search(pattern, item["title"], re.I)), ("neutral", rnd.choice(GENERIC)))
-        lines.append(f"{rnd.choice(AUSRUFE[mood])} «{item['title']}» – {reaction}")
+        tail = f" {rnd.choice(NACHSAETZE[mood])}" if rnd.random() < 0.6 else ""
+        lines.append(f"{rnd.choice(AUSRUFE[mood])} «{item['title']}» – {shout(reaction, rnd)}{tail}")
     if not news:
-        lines.append("Hüt isch s ruhig um dr FCB. Viel z ruhig, gopferdammi – ich halt das nit us!")
+        lines.append("Hüt isch s ruhig um dr FCB. Viel z ruhig, gopferdammi – ych halt das nit us, ych bruuch Fuessball!")
     for item in list(kurve)[:1]:
         reaction = next((rnd.choice(r) for pattern, r in KURVE_REACTIONS if re.search(pattern, item["title"], re.I)),
-                        "Us dr Kurve gits Neus – lesed das, ihr Bebbi, und denn alli derbi!")
+                        "Us dr Kurve git s Neis – läsed das, ihr Bebbi, und denn alli derby!")
         lines.append(f"📣 Us dr Kurve: «{item['title']}» – {reaction}")
     for item in list(rumors)[:2]:
-        lines.append(f"🍲 Gerüchtchüchi: «{item['title']}» – {rnd.choice(RUMOR_REACTIONS)}")
+        lines.append(f"🍲 Grüchtchuchi: «{item['title']}» – {rnd.choice(RUMOR_REACTIONS)}")
     lines.append(rnd.choice(OUTROS))
     return {**EXPERT, "lines": lines}
 
