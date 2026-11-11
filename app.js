@@ -1044,7 +1044,7 @@ function refresh() {
 
 // ---------- Radar (RainViewer + Leaflet, wird erst bei Bedarf geladen) ----------
 
-const radar = { map: null, frames: [], layers: [], pos: 0, timer: null, marker: null, center: null };
+const radar = { map: null, frames: [], layers: [], pos: 0, timer: null, marker: null, center: null, kind: null, loadedAt: 0 };
 
 function loadLeaflet() {
   if (window.L) return Promise.resolve();
@@ -1067,7 +1067,7 @@ function showFrame(pos) {
   radar.layers.forEach((l, k) => l.setOpacity(k === radar.pos ? 0.7 : 0));
   const f = radar.frames[radar.pos];
   const t = new Date(f.time * 1000).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  $("#radar-time").textContent = `${t}${f.nowcast ? " · PROGNOSE" : ""}`;
+  $("#radar-time").textContent = `${t}${f.nowcast ? " · VORHERSAGE" : ""}`;
   $("#radar-slider").value = radar.pos;
 }
 
@@ -1080,39 +1080,34 @@ function toggleRadarPlay(force) {
     : '<svg viewBox="0 0 24 24"><path class="fill" d="M8 5v14l11-7z"/></svg>';
 }
 
-async function initRadar() {
-  if (radar.map) {
-    radar.map.invalidateSize();
-    return;
-  }
-  $("#radar-msg").textContent = "Radar wird geladen …";
-  try {
-    await loadLeaflet();
-    const p = state.place || DEFAULT_PLACE;
-    radar.map = L.map("map", { zoomControl: false, attributionControl: false, minZoom: 5, maxZoom: 12 }).setView([p.lat, p.lon], 8);
-    L.control.zoom({ position: "topright", zoomInTitle: "Näher", zoomOutTitle: "Weiter weg" }).addTo(radar.map);
-    // Helle, gut lesbare Karte unten, Radar in der Mitte, Ortsnamen und Grenzen zuoberst,
-    // damit die Orte auch unter dem Regen sichtbar bleiben
-    const carto = "https://{s}.basemaps.cartocdn.com/rastertiles";
-    const base = L.tileLayer(`${carto}/voyager_nolabels/{z}/{x}/{y}{r}.png`, { maxZoom: 12, subdomains: "abcd" }).addTo(radar.map);
-    radar.map.createPane("labels");
-    radar.map.getPane("labels").style.zIndex = 450;
-    radar.map.getPane("labels").style.pointerEvents = "none";
-    const labels = L.tileLayer(`${carto}/voyager_only_labels/{z}/{x}/{y}{r}.png`, { maxZoom: 12, subdomains: "abcd", pane: "labels" }).addTo(radar.map);
-    // Falls die Karte nicht lädt: auf OpenStreetMap ausweichen (dort sind die Ortsnamen schon drin)
-    let tileErrors = 0;
-    base.on("tileerror", () => {
-      if (++tileErrors !== 4) return;
-      radar.map.removeLayer(base);
-      radar.map.removeLayer(labels);
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12 }).addTo(radar.map).bringToBack();
-    });
-    radar.marker = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [14, 14] }) }).addTo(radar.map);
-    radar.center = (place) => {
-      radar.map.setView([place.lat, place.lon], radar.map.getZoom());
-      radar.marker.setLatLng([place.lat, place.lon]);
-    };
+// Das Radar des Deutschen Wetterdienstes deckt Deutschland und die Grenzregion ab
+// (Nordschweiz inkl. Basel). Ausserhalb davon kommt das weltweite RainViewer-Radar.
+const inDwd = (p) => p.lat >= 47.0 && p.lat <= 55.0 && p.lon >= 5.8 && p.lon <= 15.0;
 
+async function loadRadarFrames(place) {
+  const kind = inDwd(place) ? "dwd" : "rv";
+  if (radar.kind === kind && Date.now() - radar.loadedAt < 5 * 60000) return;
+  toggleRadarPlay(false);
+  radar.layers.forEach((l) => radar.map.removeLayer(l));
+  radar.layers = [];
+  radar.kind = kind;
+  radar.loadedAt = Date.now();
+  if (kind === "dwd") {
+    // Amtliches Radar: letzte Stunde und Vorhersage für die nächste Stunde, alle 10 Minuten
+    const step = 10 * 60000;
+    const now = Math.floor((Date.now() - 4 * 60000) / (5 * 60000)) * 5 * 60000;
+    radar.frames = [];
+    for (let k = -6; k <= 6; k++) radar.frames.push({ time: (now + k * step) / 1000, nowcast: k > 0 });
+    radar.layers = radar.frames.map((f) =>
+      L.tileLayer.wms("https://maps.dwd.de/geoserver/dwd/wms", {
+        layers: "dwd:Niederschlagsradar", format: "image/png", transparent: true, version: "1.3.0",
+        time: new Date(f.time * 1000).toISOString(), tileSize: 512, opacity: 0, zIndex: 5,
+      }).addTo(radar.map)
+    );
+    $("#radar-msg").textContent = "Amtliches Regenradar: letzte Stunde und Vorhersage für die nächste Stunde. ▶ startet die Animation.";
+    $("#radar-src").textContent = "Deutscher Wetterdienst";
+    $("#radar-src").href = "https://www.dwd.de/";
+  } else {
     const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
     const data = await res.json();
     radar.frames = [...(data.radar?.past || []), ...(data.radar?.nowcast || []).map((f) => ({ ...f, nowcast: true }))];
@@ -1120,15 +1115,44 @@ async function initRadar() {
     radar.layers = radar.frames.map((f) =>
       L.tileLayer(`${data.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`, { opacity: 0, maxNativeZoom: 7, maxZoom: 12, zIndex: 5 }).addTo(radar.map)
     );
-    const slider = $("#radar-slider");
-    slider.max = radar.layers.length - 1;
-    slider.addEventListener("input", () => {
-      toggleRadarPlay(false);
-      showFrame(+slider.value);
-    });
-    const latest = radar.frames.findLastIndex((f) => !f.nowcast);
-    showFrame(latest < 0 ? radar.frames.length - 1 : latest);
     $("#radar-msg").textContent = "Regenradar der letzten 2 Stunden. ▶ startet die Animation.";
+    $("#radar-src").textContent = "RainViewer";
+    $("#radar-src").href = "https://www.rainviewer.com/";
+  }
+  $("#radar-slider").max = radar.layers.length - 1;
+  const latest = radar.frames.findLastIndex((f) => !f.nowcast);
+  showFrame(latest < 0 ? radar.frames.length - 1 : latest);
+}
+
+async function initRadar() {
+  const p = state.place || DEFAULT_PLACE;
+  if (radar.map) {
+    radar.map.invalidateSize();
+    loadRadarFrames(p).catch(() => {});
+    return;
+  }
+  $("#radar-msg").textContent = "Radar wird geladen …";
+  try {
+    await loadLeaflet();
+    radar.map = L.map("map", { zoomControl: false, attributionControl: false, minZoom: 5, maxZoom: 12 }).setView([p.lat, p.lon], 8);
+    L.control.zoom({ position: "topright", zoomInTitle: "Näher", zoomOutTitle: "Weiter weg" }).addTo(radar.map);
+    // Karte: OpenStreetMap für die ganze Welt, darüber in der Schweiz und im Grenzgebiet
+    // die amtliche Landeskarte von swisstopo (beide frei und ohne Schlüssel)
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12 }).addTo(radar.map);
+    L.tileLayer("https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg", {
+      minZoom: 7, maxZoom: 12, bounds: [[45.75, 5.9], [47.9, 10.6]],
+    }).addTo(radar.map);
+    radar.marker = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [14, 14] }) }).addTo(radar.map);
+    radar.center = (place) => {
+      radar.map.setView([place.lat, place.lon], radar.map.getZoom());
+      radar.marker.setLatLng([place.lat, place.lon]);
+      if (document.body.dataset.tab === "radar") loadRadarFrames(place).catch(() => {});
+    };
+    $("#radar-slider").addEventListener("input", () => {
+      toggleRadarPlay(false);
+      showFrame(+$("#radar-slider").value);
+    });
+    await loadRadarFrames(p);
   } catch {
     $("#radar-msg").textContent = "Radar konnte nicht geladen werden. Bitte später erneut versuchen.";
   }

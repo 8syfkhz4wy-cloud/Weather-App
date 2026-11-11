@@ -35,7 +35,9 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   Unter „Kurve“ zusätzlich „Us dr Kurve“ (Newsfeed von muttenzerkurve.ch und öffentliche
   Telegram-Webvorschau der Muttenzerkurve) und die „Gerüchteküche“ (Transfergerüchte zum FCB
   aus den Medien). Meldungen über Gewalt oder Krawalle werden nicht übernommen.
-- **Radar:** animiertes Regenradar der letzten 2 Stunden (RainViewer) auf dunkler Karte
+- **Radar:** animiertes Regenradar auf der Landeskarte von swisstopo (ausserhalb der Schweiz
+  OpenStreetMap). In Deutschland und der Nordschweiz das amtliche Radar des Deutschen
+  Wetterdienstes mit Vorhersage für die nächste Stunde, sonst RainViewer
 - **Psalm:** Psalm des Tages aus der Lutherbibel 1912: alle 150 Psalmen der Reihe
   nach, Psalm 119 in seine 22 Abschnitte geteilt (171 Tageslesungen im Zyklus).
   Blättern, Schriftgröße, Kopieren und Teilen
@@ -108,7 +110,7 @@ python3 -m http.server 8000
 ## Datenquellen
 
 - Wetter, Luftqualität, Pollen: [Open-Meteo](https://open-meteo.com/) (kostenlos, ohne API-Schlüssel, CC BY 4.0)
-- Radar: [RainViewer](https://www.rainviewer.com/), Karte © OpenStreetMap, © CARTO
+- Radar: [Deutscher Wetterdienst](https://www.dwd.de/) (WMS, frei), sonst [RainViewer](https://www.rainviewer.com/); Karte © swisstopo, © OpenStreetMap
 - Ortsname zum Standort: BigDataCloud Reverse Geocoding (kostenlos, ohne Schlüssel)
 - Psalmen: Lutherbibel 1912 (gemeinfrei), aus dem npm-Paket `xmlbible-lut1912` (CC0).
   `psalms.json` wird mit `scripts/build_psalms.py` erzeugt.
