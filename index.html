@@ -189,14 +189,34 @@
       </div>
 
       <div class="fcb-pane" id="fcb-ticker" hidden>
+        <div class="panel match" id="match-card">
+          <div class="panel-head"><span class="tag" id="match-tag">// SPIEL</span><span id="match-meta" class="tag-r"></span></div>
+          <div class="scoreboard">
+            <div class="sb-team" id="sb-home">FC Basel</div>
+            <div class="sb-score" id="sb-score">–:–</div>
+            <div class="sb-team" id="sb-away">…</div>
+          </div>
+          <div id="match-status" class="match-status">Spielstand wird geladen …</div>
+          <div id="match-toast" class="match-toast" hidden></div>
+          <ul id="match-events" class="match-events"></ul>
+          <details id="match-raw-box" class="match-raw" hidden><summary>Telegramm im Wortlaut</summary><p id="match-raw"></p></details>
+          <div id="match-next" class="match-next" hidden></div>
+          <p class="hint">Spielstand, Tore und Platzverweise direkt aus dem SRF-Teletext. Während eines FCB-Spiels wird alle 20 Sekunden aktualisiert.</p>
+        </div>
+
+        <div class="panel" id="table-card" hidden>
+          <div class="panel-head"><span class="tag">// TABELLE SUPER LEAGUE</span></div>
+          <table class="sl-table"><thead><tr><th></th><th>Team</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr></thead><tbody id="sl-table"></tbody></table>
+        </div>
+
         <div class="panel ticker">
-          <div class="panel-head"><span class="tag"><i class="live-dot"></i>// SPIEL-TICKER</span><span id="ticker-meta" class="tag-r"></span></div>
+          <div class="panel-head"><span class="tag">// SPIELBERICHTE</span><span id="ticker-meta" class="tag-r"></span></div>
           <ul id="ticker-list" class="ticker-list"></ul>
-          <p class="hint">Neueste Spielmeldungen zum FCB, mehrmals täglich aktualisiert. Für Minute-für-Minute eine Meldung oder einen der Liveticker unten antippen.</p>
           <div class="ticker-links">
-            <a class="btn" href="https://www.srf.ch/sport/fussball/super-league" target="_blank" rel="noopener">SRF Sport</a>
-            <a class="btn" href="https://www.blick.ch/sport/fussball/super-league/" target="_blank" rel="noopener">Blick</a>
-            <a class="btn" href="https://www.fcb.ch" target="_blank" rel="noopener">FCB offiziell</a>
+            <a class="btn" href="https://www.srf.ch/sport/fussball/super-league" target="_blank" rel="noopener">SRF</a>
+            <a class="btn" href="https://www.blick.ch/sport/fussball/superleague/" target="_blank" rel="noopener">Blick</a>
+            <a class="btn" href="https://www.teletext.ch/SRF1/202" target="_blank" rel="noopener">Teletext</a>
+            <a class="btn" href="https://www.fcb.ch" target="_blank" rel="noopener">FCB</a>
           </div>
         </div>
       </div>
@@ -286,6 +306,7 @@
   </dialog>
 
   <script src="weather-fx.js"></script>
+  <script src="fcb-live.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

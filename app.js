@@ -982,7 +982,9 @@ async function reverseGeocode(lat, lon) {
   try {
     const res = await fetchT(`${REVERSE_URL}?latitude=${lat}&longitude=${lon}&localityLanguage=de`, 6000);
     const r = await res.json();
-    return r.city || r.locality || r.principalSubdivision || "Mein Standort";
+    // Die Gemeinde (Verwaltungsebene 8) ist genauer als die nächste Stadt
+    const admin = ((r.localityInfo && r.localityInfo.administrative) || []).find((a) => a.adminLevel === 8);
+    return (admin && admin.name) || r.city || r.locality || r.principalSubdivision || "Mein Standort";
   } catch {
     return "Mein Standort";
   }
@@ -1029,7 +1031,8 @@ function locate(silent = false) {
       if (!state.place) showPlace(DEFAULT_PLACE);
       else if (silent && Date.now() - (state.fetchedAt || 0) > 5 * 60 * 1000) showPlace(state.place);
     },
-    { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
+    // Genaue Ortung, damit Nachbargemeinden (z. B. Allschwil / Basel) richtig erkannt werden
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60 * 1000 }
   );
 }
 
@@ -1123,7 +1126,222 @@ function setFcbSection(name) {
   $$("#fcb-seg button").forEach((b) => b.classList.toggle("on", b.dataset.s === name));
   ["news", "kader", "ticker", "kurve"].forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
   store("fcbSection", name);
-  if (name === "ticker") loadFcb().catch(() => {});
+  if (name === "ticker") {
+    loadFcb().catch(() => {});
+    liveTick(true);
+  }
+}
+
+// ---------- FCB live: Spielstand, Tore und Platzverweise aus dem SRF-Teletext ----------
+
+const live = { timer: null, busy: false, data: null, fullAt: 0, toastTimer: null };
+const MATCH_WINDOW = 125 * 60000; // Anpfiff bis Schlusspfiff inkl. Pause und Nachspielzeit
+const DANI_GOAL = ["JAAAA, verdammt nomol! So goht das!", "Goooool! S Joggeli bebt, Kolleeg!", "Do isch er dinne! Rotblau, du geili Sau!", "Huere geil! Wyter so, Buebe!"];
+const DANI_AGAINST = ["Gopferdammi nomol, wär deckt do?!", "Das darf doch nit wohr sy, huere Seich!", "Schlofe die hinde oder was?! Uffwache!", "Ich dräi düre! So eifach goht das nit!"];
+const DANI_RED = ["Rot! Jetzt wird s heiss, Kolleeg!", "Platzverwiis! Das git no öbbis z rede!"];
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+const firstFixture = (texts) => {
+  for (const t of texts) {
+    const fx = FcbLive.parseFixture(t);
+    if (fx) return fx;
+  }
+  return null;
+};
+
+async function liveLoad(full) {
+  const fx = firstFixture(await FcbLive.page(202));
+  const prev = live.data || {};
+  const d = { fx, events: [], raw: "", table: prev.table || [], next: prev.next || null, score: null, live: false, soon: false, kickoff: null };
+  if (fx) {
+    const pair = `${fx.home}-${fx.away}`;
+    if (fx.kickoff) store("fcbKickoff", { pair, t: fx.kickoff.getTime() });
+    const ko = store("fcbKickoff");
+    d.kickoff = ko && ko.pair === pair ? ko.t : null;
+    const now = Date.now();
+    const fresh = fx.updated && Math.abs(now - fx.updated.getTime()) < 25 * 60000;
+    d.soon = Boolean(d.kickoff) && now > d.kickoff - 15 * 60000 && now < d.kickoff + MATCH_WINDOW;
+    d.score = fx.score || null;
+    // Telegramm des Spiels (Tore, Karten) auf den Seiten 205–210 suchen
+    if (fx.score || d.soon) {
+      const pages = await Promise.allSettled([205, 206, 207, 208, 209, 210].map((n) => FcbLive.page(n)));
+      for (const p of pages) {
+        const tfx = p.status === "fulfilled" && firstFixture(p.value);
+        if (!tfx || tfx.home !== fx.home || tfx.away !== fx.away) continue;
+        d.raw = (tfx.after || tfx.rest || "").replace(/\s+/g, " ").trim();
+        d.events = FcbLive.parseTelegram("", { baselHome: fx.baselHome, after: tfx.after || tfx.rest });
+        // Der neuere Stand zählt (Telegramm oder Resultatseite)
+        const sum = (s) => (s ? s[0] + s[1] : -1);
+        if (sum(tfx.score) > sum(d.score)) d.score = tfx.score;
+        const lastGoal = d.events.filter((e) => e.type === "goal").pop();
+        if (lastGoal) {
+          const s = lastGoal.score.split(":").map(Number);
+          if (sum(s) > sum(d.score)) d.score = s;
+        }
+        break;
+      }
+    }
+    d.live = Boolean(d.score) && (d.kickoff ? now >= d.kickoff - 5 * 60000 && now <= d.kickoff + MATCH_WINDOW : Boolean(fresh));
+  }
+  // Tabelle und nächste Runde: selten nötig
+  if (full || Date.now() - live.fullAt > 10 * 60000) {
+    live.fullAt = Date.now();
+    const [table, next] = await Promise.allSettled([FcbLive.page(203), FcbLive.page(217)]);
+    if (table.status === "fulfilled") {
+      const rows = FcbLive.parseTable(table.value.join(" "));
+      if (rows.length >= 8) d.table = rows;
+    }
+    if (next.status === "fulfilled") d.next = firstFixture(next.value);
+  }
+  return d;
+}
+
+// Meldung bei Tor, Gegentor oder Platzverweis (in der Spielkarte und oben als Hinweis)
+function matchToast(kind, title, text, dani) {
+  const box = $("#match-toast");
+  box.className = `match-toast ${kind}`;
+  box.replaceChildren(el("b", null, title), document.createTextNode(text), el("i", null, `Dani: «${dani}»`));
+  box.hidden = false;
+  clearTimeout(live.toastTimer);
+  live.toastTimer = setTimeout(() => (box.hidden = true), 3 * 60000);
+  showStatus(`${title} ${text}`, 12000);
+  const sc = $("#sb-score");
+  sc.classList.remove("flash");
+  void sc.offsetWidth;
+  sc.classList.add("flash");
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+}
+
+// Änderungen seit dem letzten Abruf erkennen
+function liveChanges(d) {
+  const fx = d.fx;
+  if (!fx) return;
+  const key = `${fx.home}-${fx.away}`;
+  const reds = d.events.filter((e) => e.type === "red");
+  const old = store("fcbLive");
+  const cur = { key, score: d.score || (fx.kickoff ? [0, 0] : null), reds: reds.length };
+  store("fcbLive", cur);
+  if (!old || old.key !== key || !old.score || !d.score || !d.live) return;
+  const names = `${FcbLive.teamName(fx.home)} – ${FcbLive.teamName(fx.away)}`;
+  const stand = `${names} ${d.score[0]}:${d.score[1]}`;
+  const goals = d.events.filter((e) => e.type === "goal");
+  const lastGoal = goals[goals.length - 1];
+  const who = lastGoal && lastGoal.score === `${d.score[0]}:${d.score[1]}` ? ` (${lastGoal.min}. ${lastGoal.who})` : "";
+  const mine = fx.baselHome ? 0 : 1;
+  if (d.score[mine] > old.score[mine]) matchToast("good", "⚽ TOR für Basel!", `${stand}${who}`, pick(DANI_GOAL));
+  else if (d.score[1 - mine] > old.score[1 - mine]) {
+    const opp = FcbLive.teamName(fx.baselHome ? fx.away : fx.home);
+    matchToast("bad", `Gegentor – ${opp} trifft`, `${stand}${who}`, pick(DANI_AGAINST));
+  } else if (d.score[0] + d.score[1] < old.score[0] + old.score[1]) {
+    matchToast("", "Tor aberkannt", `Neuer Stand: ${stand}`, "Was isch jetzt wider los?!");
+  }
+  if (reds.length > (old.reds || 0)) {
+    const r = reds[reds.length - 1];
+    matchToast("bad", "🟥 Platzverweis", `${r.min}. Minute: ${r.who} · ${stand}`, pick(DANI_RED));
+  }
+}
+
+function fixtureWhen(date) {
+  const day = date.toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "numeric" });
+  const time = date.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
+  return `${day}, ${time} Uhr`;
+}
+
+function countdown(t) {
+  const min = Math.round((t - Date.now()) / 60000);
+  if (min <= 0) return "Anpfiff jeden Moment";
+  if (min < 60) return `noch ${min} Min.`;
+  if (min < 48 * 60) return `noch ${Math.round(min / 60)} Std.`;
+  return `noch ${Math.round(min / 1440)} Tage`;
+}
+
+function renderLive(d) {
+  const fx = d.fx;
+  const card = $("#match-card");
+  card.classList.toggle("live", d.live);
+  const tag = $("#match-tag");
+  tag.classList.toggle("on", d.live);
+  tag.replaceChildren(...(d.live ? [el("i", "live-dot"), document.createTextNode("// LIVE")] : [document.createTextNode("// SPIEL")]));
+  $("#match-meta").textContent = `Abruf ${new Date().toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+  const status = $("#match-status");
+  if (!fx) {
+    $("#sb-home").textContent = "FC Basel";
+    $("#sb-away").textContent = "–";
+    $("#sb-score").textContent = "–:–";
+    status.textContent = "In der aktuellen Runde ist kein FCB-Spiel angesetzt.";
+  } else {
+    for (const [id, team] of [["#sb-home", fx.home], ["#sb-away", fx.away]]) {
+      $(id).textContent = FcbLive.teamName(team);
+      $(id).classList.toggle("fcb", team === "Basel");
+    }
+    $("#sb-score").textContent = d.score ? `${d.score[0]}:${d.score[1]}` : "–:–";
+    const half = fx.half ? ` · Halbzeit ${fx.half[0]}:${fx.half[1]}` : "";
+    if (d.live) status.textContent = `Spiel läuft${d.kickoff ? ` · Anpfiff ${new Date(d.kickoff).toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" })}` : ""}${half}`;
+    else if (d.score) status.textContent = `Schlussresultat${half}`;
+    else if (fx.kickoff) status.textContent = `${fixtureWhen(fx.kickoff)} · ${countdown(fx.kickoff.getTime())}`;
+    else status.textContent = fx.note || "Noch kein Resultat";
+  }
+  // Tore und Platzverweise, neueste zuoberst
+  $("#match-events").replaceChildren(
+    ...d.events.slice().reverse().map((e) => {
+      const li = el("li", e.type === "goal" && e.basel ? "fcb" : null);
+      const text = el("div");
+      text.append(el("b", null, e.who));
+      if (e.type === "goal" && fx) text.append(el("small", null, e.basel ? "Tor für Basel" : `Tor für ${FcbLive.teamName(fx.baselHome ? fx.away : fx.home)}`));
+      if (e.type === "red") text.append(el("small", null, "Platzverweis"));
+      li.append(el("span", "min", `${e.min}.`), el("span", null, e.type === "goal" ? "⚽" : "🟥"), text, el("span", "sc", e.score || ""));
+      return li;
+    })
+  );
+  $("#match-raw-box").hidden = !d.raw || !d.score;
+  $("#match-raw").textContent = d.raw;
+  // Nächstes Spiel (aus der nächsten Runde), sobald das aktuelle vorbei ist oder fehlt
+  const next = $("#match-next");
+  const nx = d.next;
+  const showNext = nx && nx.kickoff && nx.kickoff.getTime() > Date.now() && (!fx || !fx.kickoff) && !d.live;
+  next.hidden = !showNext;
+  if (showNext) {
+    next.replaceChildren(el("small", null, "Nächstes Spiel"),
+      document.createTextNode(`${FcbLive.teamName(nx.home)} – ${FcbLive.teamName(nx.away)} · ${fixtureWhen(nx.kickoff)}`));
+  }
+  // Tabelle
+  $("#table-card").hidden = !d.table.length;
+  $("#sl-table").replaceChildren(
+    ...d.table.map((r) => {
+      const tr = el("tr", r.team === "Basel" ? "fcb" : null);
+      tr.append(el("td", null, `${r.rank}.`), el("td", null, FcbLive.teamName(r.team)), el("td", null, String(r.played)), el("td", null, r.goals), el("td", null, String(r.points)));
+      return tr;
+    })
+  );
+}
+
+const tickerOpen = () => document.body.dataset.tab === "fcb" && !$("#fcb-ticker").hidden;
+
+async function liveTick(full = false) {
+  if (live.busy) return;
+  live.busy = true;
+  try {
+    const d = await liveLoad(full);
+    liveChanges(d);
+    live.data = d;
+    renderLive(d);
+  } catch (err) {
+    if (!live.data) $("#match-status").textContent = "Spielstand gerade nicht abrufbar (SRF-Teletext nicht erreichbar).";
+  } finally {
+    live.busy = false;
+    liveNext();
+  }
+}
+
+// Nächsten Abruf planen: 20 s rund ums Spiel, sonst selten
+function liveNext() {
+  clearTimeout(live.timer);
+  if (document.visibilityState !== "visible") return;
+  const d = live.data;
+  let ms = d && (d.live || d.soon) ? 20000 : tickerOpen() ? 5 * 60000 : 30 * 60000;
+  const ko = d && d.fx && d.fx.kickoff ? d.fx.kickoff.getTime() - 15 * 60000 - Date.now() : 0;
+  if (ko > 0) ms = Math.min(ms, ko + 1000);
+  live.timer = setTimeout(liveTick, ms);
 }
 
 function renderFcb(d) {
@@ -1182,14 +1400,12 @@ function renderFcb(d) {
           a.rel = "noopener";
           const text = el("div");
           text.append(el("b", null, t.title));
-          const meta = el("small", null, `${t.source || "Quelle"} · ${timeAgo(t.published)}`);
-          if (t.live) meta.prepend(el("span", "live-tag", "LIVE · "));
-          text.append(meta);
+          text.append(el("small", null, `${t.source || "Quelle"} · ${timeAgo(t.published)}`));
           a.append(el("span", `ticker-score${t.score ? "" : " none"}`, t.score || "⚽"), text);
           li.append(a);
           return li;
         })
-      : [el("li", "hint", "Gerade keine Spielmeldungen. Vor und während FCB-Spielen erscheinen hier die Ticker.")])
+      : [el("li", "hint", "Gerade keine Spielberichte. Nach FCB-Spielen erscheinen sie hier.")])
   );
 
   // Us dr Kurve & Gerüchteküche
@@ -1399,6 +1615,7 @@ loadPsalms().catch(() => {
 loadAlerts().catch(() => {});
 loadNews().catch(() => {});
 loadFcb().catch(() => ($("#fcb-empty").hidden = false));
+liveTick(); // Spielstand auch ausserhalb des FCB-Tabs im Blick behalten
 $$("#fcb-seg button").forEach((b) => b.addEventListener("click", () => setFcbSection(b.dataset.s)));
 setFcbSection(store("fcbSection") || "news");
 fetch("version.json")
@@ -1429,6 +1646,7 @@ setInterval(() => {
 let lastDay = new Date().toDateString();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
+  liveTick();
   if (new Date().toDateString() !== lastDay) {
     lastDay = new Date().toDateString();
     psalm.offset = 0;

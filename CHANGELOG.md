@@ -1,5 +1,12 @@
 # Versionen
 
+## v2.1.0
+
+- **Live-Ticker FC Basel:** Spielstand, Tore (auch des Gegners) und Platzverweise direkt aus dem SRF-Teletext, während eines Spiels alle 20 Sekunden neu – mit Meldung in der App und Push-Nachricht
+- **Nächstes Spiel und Tabelle** der Super League im Ticker
+- **Links repariert:** Meldungen öffnen direkt den Artikel (SRF, Blick, watson, 20 Minuten), der Blick-Knopf funktioniert wieder
+- **Standort genauer:** Gemeinden wie Allschwil werden richtig erkannt
+
 ## v2.0.0
 
 Grosses FCB-Update für **Wetter & Psalm**.

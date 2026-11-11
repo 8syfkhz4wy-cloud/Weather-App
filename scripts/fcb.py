@@ -2,7 +2,8 @@
 """Erzeugt fcb.json für den FC-Basel-Bereich der App.
 
 - Kader: Wikipedia-Artikel "FC Basel", Abschnitt "Die 1. Mannschaft" (CC BY-SA)
-- News: Google News (Suche "FC Basel") und Blick-Fussballfeed, nur Männerfussball
+- News, Spielberichte, Gerüchte: direkte Feeds von SRF, Blick, watson und 20 Minuten
+  (Google News nur als Notlösung, wenn zu wenig Meldungen da sind), nur Männerfussball
 - Us dr Kurve: Newsfeed von muttenzerkurve.ch und öffentliche Telegram-Webvorschau
   der Muttenzerkurve (falls erreichbar)
 - Gerüchteküche: Transfer- und Wechselgerüchte zum FCB aus den Medien
@@ -117,49 +118,97 @@ def clean(text):
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html.unescape(text or ""))).strip()
 
 
-def load_news():
-    now = datetime.now(timezone.utc)
-    items, seen = [], set()
-    feeds = [
-        ("https://news.google.com/rss/search?q=%22FC+Basel%22+when:3d&hl=de&gl=CH&ceid=CH:de", True),
-        ("https://www.blick.ch/sport/fussball/rss.xml", False),
-        ("https://www.srf.ch/sport/bnf/rss/718", False),
-    ]
-    for url, google in feeds:
+# Direkte Feeds der Redaktionen. Ihre Links führen direkt zum Artikel
+# (Google-News-Links landen auf einer Zwischenseite und werden nur als Notlösung genutzt).
+FEEDS = [
+    ("https://www.srf.ch/sport/bnf/rss/718", "SRF"),
+    ("https://www.blick.ch/sport/fussball/rss.xml", "Blick"),
+    ("https://www.watson.ch/api/2.0/rss/index.xml?tag=FC%20Basel", "watson"),
+    ("https://partner-feeds.20min.ch/rss/20minuten/sport", "20 Minuten"),
+]
+ABOUT_FCB = re.compile(r"\bFCB\b|FC Basel|\bBasel\b|Basler|Rotblau", re.I)
+_feed_cache = {}
+
+
+def feed_items(url, source):
+    """RSS- oder Atom-Feed als Liste von Meldungen (im Lauf zwischengespeichert)."""
+    if url in _feed_cache:
+        return _feed_cache[url]
+    items = []
+    try:
+        root = ET.fromstring(fetch(url))
+    except Exception as err:
+        print(f"Feed nicht erreichbar: {url} ({err})")
+        _feed_cache[url] = items
+        return items
+    atom = "{http://www.w3.org/2005/Atom}"
+    entries = root.findall(".//item") or root.findall(f".//{atom}entry")
+    for it in entries[:60]:
+        is_atom = it.tag.startswith(atom)
+        title = clean(it.findtext(f"{atom}title" if is_atom else "title"))
+        desc = clean(it.findtext(f"{atom}summary" if is_atom else "description"))
+        if is_atom:
+            link_el = it.find(f"{atom}link")
+            link = link_el.get("href", "") if link_el is not None else ""
+            when = it.findtext(f"{atom}updated") or it.findtext(f"{atom}published") or ""
+        else:
+            link = (it.findtext("link") or "").strip()
+            when = it.findtext("pubDate") or ""
         try:
-            root = ET.fromstring(fetch(url))
-        except Exception as err:
-            print(f"News-Feed nicht erreichbar: {url} ({err})")
+            published = datetime.fromisoformat(when.replace("Z", "+00:00")) if is_atom else parsedate_to_datetime(when)
+            if published.tzinfo is None:
+                published = published.replace(tzinfo=timezone.utc)
+        except Exception:
             continue
-        for it in root.findall(".//item")[:60]:
-            title = clean(it.findtext("title"))
-            desc = clean(it.findtext("description"))
-            source = "Blick" if "blick" in url else "SRF" if "srf" in url else ""
-            if google:
-                src = it.find("source")
-                source = (src.text or "").strip() if src is not None else ""
-                if source and title.endswith(" - " + source):
-                    title = title[: -len(source) - 3]
-            elif not re.search(r"\bFCB\b|FC Basel|\bBasel\b|Basler", title + " " + desc[:200]):
-                continue
-            if " – " in title and "srf" in url:
-                title = title.split(" – ", 1)[1]
-            if WOMEN.search(title + " " + (desc if not google else "")[:200]):
-                continue
-            try:
-                published = parsedate_to_datetime(it.findtext("pubDate"))
-            except Exception:
-                continue
-            if now - published > timedelta(days=4):
-                continue
-            key = re.sub(r"\W+", "", title.lower())[:50]
-            if key in seen:
-                continue
+        src = source
+        if source is None:  # Google News: Quelle steht im Eintrag
+            el = it.find("source")
+            src = (el.text or "").strip() if el is not None else ""
+            if src and title.endswith(" - " + src):
+                title = title[: -len(src) - 3]
+        if " – " in title and source == "SRF":
+            title = title.split(" – ", 1)[1]
+        if title and link:
+            items.append({"title": title, "desc": desc[:220], "url": link, "source": src, "published": published})
+    _feed_cache[url] = items
+    return items
+
+
+def fcb_items(max_age, extra=None, google_query=None, minimum=3):
+    """FCB-Meldungen (Männer) aus den direkten Feeds; Google News nur, wenn zu wenig da ist."""
+    now = datetime.now(timezone.utc)
+
+    def collect(feeds, direct):
+        out = []
+        for url, source in feeds:
+            for it in feed_items(url, source):
+                text = it["title"] + " " + it["desc"]
+                # watson-Feed ist schon nach FC Basel gefiltert, Google sucht danach
+                if direct and source != "watson" and not ABOUT_FCB.search(text):
+                    continue
+                if WOMEN.search(text) or now - it["published"] > max_age:
+                    continue
+                if extra and not extra(it):
+                    continue
+                out.append(it)
+        return out
+
+    items = collect(FEEDS, True)
+    if len(items) < minimum and google_query:
+        q = urllib.parse.quote(google_query)
+        items += collect([(f"https://news.google.com/rss/search?q={q}&hl=de&gl=CH&ceid=CH:de", None)], False)
+    seen, unique = set(), []
+    for it in sorted(items, key=lambda x: x["published"], reverse=True):
+        key = re.sub(r"\W+", "", it["title"].lower())[:40]
+        if key not in seen:
             seen.add(key)
-            items.append({"title": title, "source": source, "url": (it.findtext("link") or "").strip(),
-                          "published": published.isoformat()})
-    items.sort(key=lambda x: x["published"], reverse=True)
-    return items[:10]
+            unique.append({**it, "published": it["published"].isoformat()})
+    return unique
+
+
+def load_news():
+    items = fcb_items(timedelta(days=5), google_query='"FC Basel" when:3d', minimum=4)
+    return [{k: it[k] for k in ("title", "source", "url", "published")} for it in items[:10]]
 
 
 # ---------- Us dr Kurve & Gerüchteküche ----------
@@ -222,101 +271,38 @@ def load_kurve():
     return items[:5]
 
 
-LIVE = re.compile(r"liveticker|live-ticker|\blive\b|ticker|jetzt live|im ticker", re.I)
-MATCH = re.compile(r"\b\d{1,2}\s?:\s?\d{1,2}\b|halbzeit|pause|endstand|abpfiff|anpfiff|schlusspfiff|"
-                   r"\btor\b|tore|ausgleich|führung|gewinnt|verliert|remis|unentschieden|siegt|"
-                   r"spielbericht|telegramm|aufstellung|startelf", re.I)
+MATCH = re.compile(r"\b\d{1,2}\s?:\s?\d{1,2}\b|halbzeit|endstand|abpfiff|schlusspfiff|\btor\b|tore\b|ausgleich|"
+                   r"führung|gewinnt|verliert|remis|unentschieden|siegt|sieg\b|niederlage|spielbericht|"
+                   r"telegramm|aufstellung|startelf|liveticker|eigentor|penalty|platzverweis|vergeigt|"
+                   r"begnügen|punkt", re.I)
 
 
 def load_ticker():
-    """Neueste Spielmeldungen zum FCB (Liveticker, Zwischen- und Endstände)."""
-    now = datetime.now(timezone.utc)
-    query = urllib.parse.quote('"FC Basel" (Liveticker OR live OR Ticker OR Halbzeit OR Endstand) when:2d')
-    feeds = [
-        ("https://www.srf.ch/sport/bnf/rss/718", "SRF"),
-        ("https://www.blick.ch/sport/fussball/rss.xml", "Blick"),
-        (f"https://news.google.com/rss/search?q={query}&hl=de&gl=CH&ceid=CH:de", None),
-    ]
-    items, seen = [], set()
-    for url, fixed in feeds:
-        try:
-            root = ET.fromstring(fetch(url))
-        except Exception as err:
-            print(f"Ticker-Feed nicht erreichbar: {url} ({err})")
-            continue
-        for it in root.findall(".//item")[:60]:
-            title = clean(it.findtext("title"))
-            desc = clean(it.findtext("description"))[:200]
-            source = fixed or ""
-            if not fixed:
-                src = it.find("source")
-                source = (src.text or "").strip() if src is not None else ""
-                if source and title.endswith(" - " + source):
-                    title = title[: -len(source) - 3]
-            if " – " in title and fixed == "SRF":
-                title = title.split(" – ", 1)[1]
-            if not re.search(r"\bFCB\b|FC Basel|\bBasel\b|Basler", title + " " + desc):
-                continue
-            if WOMEN.search(title + " " + desc) or VIOLENCE.search(title):
-                continue
-            if not (LIVE.search(title) or MATCH.search(title)):
-                continue
-            try:
-                published = parsedate_to_datetime(it.findtext("pubDate"))
-            except Exception:
-                continue
-            if now - published > timedelta(hours=48):
-                continue
-            key = re.sub(r"\W+", "", title.lower())[:40]
-            if key in seen:
-                continue
-            seen.add(key)
-            # Letztes Resultat in der Schlagzeile ("nach 2:0-Führung 3:3" -> 3:3)
-            scores = re.findall(r"\b(\d{1,2})\s?:\s?(\d{1,2})\b", title)
-            score = scores[-1] if scores else None
-            items.append({
-                "title": title, "source": source, "url": (it.findtext("link") or "").strip(),
-                "published": published.isoformat(),
-                "score": f"{score[0]}:{score[1]}" if score else "",
-                "live": bool(LIVE.search(title)) and now - published < timedelta(hours=4),
-            })
-    items.sort(key=lambda x: x["published"], reverse=True)
-    return items[:8]
+    """Spielberichte zum FCB: Meldungen mit Resultat oder Spielbezug, mit direkten Links."""
+    items = fcb_items(timedelta(days=6), extra=lambda it: MATCH.search(it["title"]) and not VIOLENCE.search(it["title"]),
+                      minimum=0)
+    out = []
+    for it in items[:6]:
+        # Letztes Resultat in der Schlagzeile ("nach 2:0-Führung 3:3" -> 3:3)
+        scores = re.findall(r"\b(\d{1,2})\s?:\s?(\d{1,2})\b", it["title"])
+        out.append({"title": it["title"], "source": it["source"], "url": it["url"], "published": it["published"],
+                    "score": f"{scores[-1][0]}:{scores[-1][1]}" if scores else ""})
+    return out
 
 
 def load_rumors(squad):
     """Transfer- und Wechselgerüchte zum FCB und zu Spielern aus dem Kader."""
     names = {p["name"].split()[-1] for g in (squad or {}).get("groups", []) for p in g["players"]
              if len(p["name"].split()[-1]) > 3}
-    query = urllib.parse.quote('"FC Basel" (Transfer OR Gerücht OR Interesse OR Wechsel OR Angebot) when:7d')
-    now = datetime.now(timezone.utc)
-    items, seen = [], set()
-    try:
-        root = ET.fromstring(fetch(f"https://news.google.com/rss/search?q={query}&hl=de&gl=CH&ceid=CH:de"))
-    except Exception as err:
-        print(f"Gerüchte nicht erreichbar: {err}")
-        return []
-    for it in root.findall(".//item")[:40]:
-        title = clean(it.findtext("title"))
-        src = it.find("source")
-        source = (src.text or "").strip() if src is not None else ""
-        if source and title.endswith(" - " + source):
-            title = title[: -len(source) - 3]
-        about_fcb = re.search(r"FCB|FC Basel|Basel|Basler", title) or any(n in title for n in names)
-        if not about_fcb or not RUMOR.search(title) or WOMEN.search(title) or VIOLENCE.search(title):
-            continue
-        try:
-            published = parsedate_to_datetime(it.findtext("pubDate"))
-        except Exception:
-            continue
-        key = re.sub(r"\W+", "", title.lower())[:40]
-        if key in seen or now - published > timedelta(days=7):
-            continue
-        seen.add(key)
-        items.append({"title": title, "source": source, "url": (it.findtext("link") or "").strip(),
-                      "published": published.isoformat()})
-    items.sort(key=lambda x: x["published"], reverse=True)
-    return items[:5]
+
+    def is_rumor(it):
+        t = it["title"]
+        about = ABOUT_FCB.search(t) or any(n in t for n in names)
+        return about and RUMOR.search(t) and not VIOLENCE.search(t)
+
+    items = fcb_items(timedelta(days=7), extra=is_rumor, minimum=2,
+                      google_query='"FC Basel" (Transfer OR Gerücht OR Interesse OR Wechsel OR Angebot) when:7d')
+    return [{k: it[k] for k in ("title", "source", "url", "published")} for it in items[:5]]
 
 
 # ---------- Kurven-Experte (erfundene Figur) ----------

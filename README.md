@@ -24,11 +24,14 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   Bundesliga- und Super-League-Themen weniger, Liveticker und
   unterklassige Ligen werden aussortiert). Nur Männerfussball. Antippen öffnet den
   Artikel der Quelle.
-- **FCB:** FC-Basel-Bereich (Männer) mit News (Google News, Blick, SRF), Kader aus
-  Wikipedia, Spiel-Ticker mit den neuesten Spielmeldungen (SRF, Blick, Google News) samt
-  Resultaten und Links zu den Livetickern und dem fiktiven Kurven-Experten «Dani Joggeli Meier», der die echten
-  Schlagzeilen auf Baseldeutsch kommentiert. Erzeugt von `scripts/fcb.py` bei jeder
-  Veröffentlichung.
+- **FCB:** FC-Basel-Bereich (Männer) mit News (direkte Feeds von SRF, Blick, watson,
+  20 Minuten), Kader aus Wikipedia und Live-Ticker: Spielstand, Tore (auch des Gegners) und
+  Platzverweise direkt aus dem SRF-Teletext (`fcb-live.js`), während eines Spiels alle
+  20 Sekunden neu, dazu nächstes Spiel, Tabelle und Spielberichte. Der Ablauf
+  `.github/workflows/fcb-live.yml` (`scripts/fcb_live.py`) schickt bei Toren, Gegentoren,
+  Platzverweisen und beim Schlusspfiff eine Push-Nachricht über ntfy. Dazu der fiktive
+  Kurven-Experte «Dani Joggeli Meier», der die echten Schlagzeilen auf Baseldeutsch
+  kommentiert (`scripts/fcb.py`).
   Unter „Kurve“ zusätzlich „Us dr Kurve“ (Newsfeed von muttenzerkurve.ch und öffentliche
   Telegram-Webvorschau der Muttenzerkurve) und die „Gerüchteküche“ (Transfergerüchte zum FCB
   aus den Medien). Meldungen über Gewalt oder Krawalle werden nicht übernommen.

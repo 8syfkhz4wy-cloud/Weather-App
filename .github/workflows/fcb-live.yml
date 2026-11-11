@@ -1,0 +1,30 @@
+name: FCB live
+
+# Push-Nachrichten bei Toren und Platzverweisen in Spielen des FC Basel.
+# Der Lauf endet sofort, wenn in den nächsten Stunden kein Spiel ansteht.
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Nur lesen und anzeigen (keine Nachrichten)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Immer nur ein Lauf gleichzeitig; weitere Starts während eines Spiels entfallen
+concurrency:
+  group: fcb-live
+  cancel-in-progress: false
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - name: Spiel verfolgen
+        run: python3 -u scripts/fcb_live.py warnungen/orte.json ${{ inputs.test && '--test' || '' }}
