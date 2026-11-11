@@ -237,6 +237,7 @@ body[data-sky^="storm"] .hero-icon { animation: float 5s ease-in-out infinite, z
   color: transparent;
 }
 .condition { font-size: 17px; font-weight: 600; margin-top: 2px; }
+.summary { margin-top: 4px; font-size: 13px; line-height: 1.35; color: #c3cde0; }
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -521,7 +522,7 @@ body[data-sky^="storm"] .hero-icon { animation: float 5s ease-in-out infinite, z
   margin-bottom: 12px;
 }
 .tiles .panel { margin: 0; min-height: 128px; }
-.tiles .wide { grid-column: span 2; }
+.tiles .wide { grid-column: span 2; min-height: 0; }
 .tile-big { font-family: var(--mono); font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
 .tile-big small { font-size: 14px; font-weight: 400; color: var(--muted); }
 .tile-sub { margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.35; }
@@ -728,11 +729,13 @@ body[data-tab="fcb"] { --accent: #ff3b4e; --accent-2: #2f6bff; }
 }
 .tabbar button {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-rows: 24px 12px; /* Symbol und Beschriftung bei allen Tabs auf gleicher Höhe */
+  justify-items: center;
+  align-content: start;
+  padding: 11px 0 0;
   gap: 4px;
+  line-height: 12px;
   border: 0;
   background: none;
   font-size: 10px;

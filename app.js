@@ -327,6 +327,13 @@ const POLLEN = {
   ragweed_pollen: "Ambrosia",
 };
 
+// fetch mit Zeitlimit, damit die App bei schlechtem Netz nicht endlos lädt
+function fetchT(url, ms = 15000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
+}
+
 async function fetchWeather(place) {
   const params = new URLSearchParams({
     latitude: place.lat,
@@ -348,7 +355,7 @@ async function fetchWeather(place) {
       "precipitation_sum", "sunrise", "sunset", "uv_index_max", "wind_gusts_10m_max", "daylight_duration",
     ].join(","),
   });
-  const res = await fetch(`${FORECAST_URL}?${params}`);
+  const res = await fetchT(`${FORECAST_URL}?${params}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -360,7 +367,7 @@ async function fetchAir(place) {
     timezone: "auto",
     current: ["european_aqi", "pm2_5", "pm10", "ozone", "nitrogen_dioxide", ...Object.keys(POLLEN)].join(","),
   });
-  const res = await fetch(`${AIR_URL}?${params}`);
+  const res = await fetchT(`${AIR_URL}?${params}`, 10000);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -492,6 +499,45 @@ function renderWarnings(place, w) {
 
 const state = { place: null, w: null, air: null, chart: store("chartMetric") || "temp" };
 
+// Kurzer Überblick über die nächsten Stunden: Temperatur, Niederschlag, Wind
+function daySummary(w) {
+  const h = w.hourly;
+  const cur = w.current;
+  const start = nextHour(w);
+  const idx = [];
+  for (let i = start; i < Math.min(start + 12, h.time.length); i++) idx.push(i);
+  if (!idx.length) return "";
+  const hourNow = +cur.time.slice(11, 13);
+  const parts = [];
+
+  // Temperatur: tagsüber der Höchstwert, abends der Tiefstwert der Nacht
+  const temps = idx.map((i) => h.temperature_2m[i]);
+  const evening = idx.find((i) => +h.time[i].slice(11, 13) === 19);
+  if (hourNow >= 5 && hourNow < 12) parts.push(`Heute bis ${round(Math.max(w.daily.temperature_2m_max[0], cur.temperature_2m))}°`);
+  else if (hourNow >= 12 && hourNow < 17 && evening !== undefined) parts.push(`Am Abend um ${round(h.temperature_2m[evening])}°`);
+  else parts.push(`In der Nacht bis ${round(Math.min(cur.temperature_2m, ...temps))}°`);
+
+  // Niederschlag: Der Wert einer Stunde gilt für die Stunde davor
+  const wet = (i) => (h.precipitation[i] || 0) >= 0.2 && (h.precipitation_probability[i] ?? 100) >= 40;
+  const hourBefore = (i) => `${(+h.time[i].slice(11, 13) + 23) % 24} Uhr`;
+  const kind = idx.some((i) => (h.snowfall[i] || 0) > 0) ? "Schnee" : "Regen";
+  const raining = cur.weather_code >= 51 && cur.weather_code !== 77 ? true : false;
+  const firstWet = idx.find(wet);
+  if (raining) {
+    const firstDry = idx.find((i) => !wet(i));
+    parts.push(firstDry === undefined ? `${kind} hält an` : `${kind} bis etwa ${hourBefore(firstDry)}`);
+  } else if (firstWet !== undefined) {
+    parts.push(firstWet === start ? `gleich ${kind}` : `${kind} ab etwa ${hourBefore(firstWet)}`);
+  } else {
+    parts.push("trocken");
+  }
+
+  // Wind nur, wenn er auffällt
+  const gust = Math.max(cur.wind_gusts_10m || 0, ...idx.map((i) => h.wind_gusts_10m[i] || 0));
+  if (gust >= 45) parts.push(`Böen bis ${round(gust)} km/h`);
+  return `${parts.join(" · ")}.`;
+}
+
 function renderHero(w) {
   const cur = w.current;
   const now = wmo(cur.weather_code, cur.is_day === 1);
@@ -506,6 +552,7 @@ function renderHero(w) {
   $("#hero-icon").textContent = now.icon;
   $("#temp").textContent = `${round(cur.temperature_2m)}°`;
   $("#condition").textContent = now.text;
+  $("#summary").textContent = daySummary(w);
   $("#h-max").textContent = `${round(w.daily.temperature_2m_max[0])}°`;
   $("#h-min").textContent = `${round(w.daily.temperature_2m_min[0])}°`;
   $("#h-feel").textContent = `${round(cur.apparent_temperature)}°`;
@@ -933,7 +980,7 @@ async function showPlace(place) {
 
 async function reverseGeocode(lat, lon) {
   try {
-    const res = await fetch(`${REVERSE_URL}?latitude=${lat}&longitude=${lon}&localityLanguage=de`);
+    const res = await fetchT(`${REVERSE_URL}?latitude=${lat}&longitude=${lon}&localityLanguage=de`, 6000);
     const r = await res.json();
     return r.city || r.locality || r.principalSubdivision || "Mein Standort";
   } catch {
@@ -1111,7 +1158,7 @@ function renderFcb(d) {
         const row = el("div", "kader-row");
         const info = el("div");
         info.append(el("div", "kader-name", `${p.name} ${p.flags || ""}`.trim()));
-        const meta = [p.since && `seit ${p.since}`, p.from && `von ${p.from}`].filter(Boolean).join(" · ");
+        const meta = [p.since && `seit ${p.since}`, p.from && (/^eigene/i.test(p.from) ? `aus der eigenen Jugend${p.from.replace(/^eigene Jugend/i, "")}` : `von ${p.from}`)].filter(Boolean).join(" · ");
         if (meta) info.append(el("div", "kader-meta", meta));
         row.append(el("span", "kader-nr", p.nr || "–"), info);
         parts.push(row);
@@ -1182,7 +1229,11 @@ async function loadFcb() {
 
 function setTab(tab) {
   document.body.dataset.tab = tab;
-  $$(".tabbar button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+  $$(".tabbar button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.tab === tab);
+    if (b.dataset.tab === tab) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
   ["wetter", "radar", "psalm", "fcb", "warn"].forEach((t) => ($(`#view-${t}`).hidden = t !== tab));
   store("tab", tab);
   window.scrollTo(0, 0);
