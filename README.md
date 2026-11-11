@@ -38,7 +38,9 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   Blättern, Schriftgröße, Kopieren und Teilen
 - **Warnungen:** aktive Unwetterwarnungen für den gewählten Ort und Abo der
   Push-Nachrichten
-- Standort per GPS oder Ortssuche, gespeicherte Orte, funktioniert offline mit den
+- Folgt dem aktuellen Standort (bei jedem Öffnen und alle 15 Minuten neu bestimmt), bis
+  über die Suche ein Ort gewählt wird; der Standort-Knopf schaltet das Folgen wieder ein.
+  Gespeicherte Orte, funktioniert offline mit den
   zuletzt geladenen Daten
 
 ## Wetterwarnungen per Push-Nachricht

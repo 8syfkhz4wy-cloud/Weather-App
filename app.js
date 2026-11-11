@@ -593,9 +593,16 @@ function renderChart() {
     if (labelUnit !== null) {
       const hi = vals.indexOf(Math.max(...vals));
       const lo = vals.indexOf(Math.min(...vals));
+      // alle 3 Stunden beschriften; Höchst- und Tiefstwert ersetzen die Nachbarbeschriftung,
+      // damit sich keine Zahlen überlappen
+      const marks = new Set(vals.map((_, k) => k).filter((k) => k % 3 === 0));
+      for (const k of [hi, lo]) {
+        if (k % 3 === 0) continue;
+        marks.delete(k % 3 === 1 ? k - 1 : k + 1);
+        marks.add(k);
+      }
       vals.forEach((v, k) => {
-        // alle 3 Stunden sowie Höchst- und Tiefstwert beschriften
-        if (k % 3 === 0 || k === hi || k === lo) {
+        if (marks.has(k)) {
           s += `<circle cx="${x(k)}" cy="${y(v)}" r="2.5" fill="${color}"/>`;
           s += `<text class="val" x="${x(k)}" y="${y(v) - 6}" text-anchor="middle">${round(v)}${labelUnit}</text>`;
         }
@@ -870,13 +877,14 @@ function renderTiles(w, air) {
 
 function renderUpdated(t, live) {
   const time = new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  const gps = state.place?.gps ? " · GPS" : "";
+  const gps = state.place?.gps ? " · STANDORT" : "";
   $("#updated").innerHTML = `${live ? '<span class="live">● LIVE</span>' : "○ OFFLINE"} · ${time}${gps}`;
 }
 
 function renderAll() {
   const { place, w, air } = state;
   $("#place").textContent = place.name;
+  $("#place").classList.toggle("gps", Boolean(place.gps));
   if (!w) return;
   renderHero(w);
   renderWarnings(place, w);
@@ -933,25 +941,55 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
-function locate() {
+// Standort folgen: Die App zeigt das Wetter am aktuellen Standort, bis ein Ort
+// über die Suche gewählt wird. Der Standort-Knopf schaltet das Folgen wieder ein.
+const followsGps = () => store("followGps") !== false;
+
+function locate(silent = false) {
   if (!navigator.geolocation) {
-    showStatus("Standortbestimmung wird nicht unterstützt.", 3000);
+    if (!silent) showStatus("Standortbestimmung wird nicht unterstützt.", 3000);
+    if (!state.place) showPlace(DEFAULT_PLACE);
     return;
   }
-  showStatus("Standort wird ermittelt …");
+  if (!silent) showStatus("Standort wird ermittelt …");
+  $("#btn-locate").classList.add("busy");
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
+      $("#btn-locate").classList.remove("busy");
+      store("followGps", true);
       const lat = +pos.coords.latitude.toFixed(3);
       const lon = +pos.coords.longitude.toFixed(3);
-      const name = await reverseGeocode(lat, lon);
+      const cur = state.place;
+      // Gleicher Standort mit frischen Daten: nichts neu laden
+      const moved = !cur || !cur.gps || Math.abs(cur.lat - lat) > 0.005 || Math.abs(cur.lon - lon) > 0.005;
+      if (!moved && Date.now() - (state.fetchedAt || 0) < 5 * 60 * 1000) {
+        if (!silent) hideStatus();
+        return;
+      }
+      const name = moved ? await reverseGeocode(lat, lon) : cur.name;
       showPlace({ name, region: "Aktueller Standort", lat, lon, gps: true });
     },
-    () => {
-      showStatus("Standort nicht verfügbar – Ort über die Lupe suchen.", 4000);
+    (err) => {
+      $("#btn-locate").classList.remove("busy");
+      if (!silent) {
+        showStatus(
+          err.code === 1
+            ? "Standortzugriff ist ausgeschaltet. iPhone: Einstellungen → Datenschutz & Sicherheit → Ortungsdienste → Safari-Websites → „Beim Verwenden“."
+            : "Standort gerade nicht verfügbar – Ort über die Lupe suchen.",
+          err.code === 1 ? 9000 : 4000
+        );
+      }
       if (!state.place) showPlace(DEFAULT_PLACE);
+      else if (silent && Date.now() - (state.fetchedAt || 0) > 5 * 60 * 1000) showPlace(state.place);
     },
-    { enableHighAccuracy: false, timeout: 10000, maximumAge: 15 * 60 * 1000 }
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
   );
+}
+
+// Daten auffrischen: beim Folgen zuerst den Standort neu bestimmen
+function refresh() {
+  if (followsGps()) locate(true);
+  else if (state.place) showPlace(state.place);
 }
 
 // ---------- Radar (RainViewer + Leaflet, wird erst bei Bedarf geladen) ----------
@@ -1183,6 +1221,7 @@ function placeRow(place, onRemove) {
   }
   li.addEventListener("click", () => {
     if (!place.gps) savePlace(place);
+    store("followGps", false); // bewusst gewählter Ort bleibt, bis der Standort-Knopf getippt wird
     $("#search-dialog").close();
     showPlace(place);
   });
@@ -1230,7 +1269,6 @@ function openSearch() {
   $("#search-input").value = "";
   $("#search-results").replaceChildren();
   $("#search-dialog").showModal();
-  $("#search-input").focus();
 }
 
 // ---------- Push-Warnungen (ntfy) ----------
@@ -1288,7 +1326,12 @@ $("#verse-card").addEventListener("click", () => {
 });
 $("#warn-banner").addEventListener("click", () => setTab("warn"));
 $("#radar-play").addEventListener("click", () => toggleRadarPlay());
-$("#btn-locate").addEventListener("click", locate);
+$("#btn-locate").addEventListener("click", () => locate());
+$("#loc").addEventListener("click", openSearch);
+$("#use-gps").addEventListener("click", () => {
+  $("#search-dialog").close();
+  locate();
+});
 $("#btn-refresh").addEventListener("click", () => state.place && showPlace(state.place));
 $("#btn-search").addEventListener("click", openSearch);
 $("#search-input").addEventListener("input", onSearchInput);
@@ -1320,15 +1363,15 @@ setTab(store("tab") || "wetter");
 
 const lastPlace = store("place");
 if (lastPlace) {
-  showPlace(lastPlace);
-  if (lastPlace.gps) locate();
+  showPlace(lastPlace); // sofort die letzten Daten zeigen …
+  if (followsGps()) locate(true); // … und im Hintergrund den aktuellen Standort holen
 } else {
   locate();
 }
 
 // Solange die App offen ist, alle 15 Minuten neue Daten laden
 setInterval(() => {
-  if (document.visibilityState === "visible" && state.place) showPlace(state.place);
+  if (document.visibilityState === "visible" && state.place) refresh();
 }, 15 * 60 * 1000);
 
 // Beim Zurückkehren in die App: Daten und Tagespsalm aktualisieren
@@ -1342,7 +1385,7 @@ document.addEventListener("visibilitychange", () => {
     renderVerse();
   }
   // Nur neu laden, wenn die Daten älter als 5 Minuten sind (schont Akku und Datenvolumen)
-  if (state.place && Date.now() - (state.fetchedAt || 0) > 5 * 60 * 1000) showPlace(state.place);
+  if (state.place && Date.now() - (state.fetchedAt || 0) > 5 * 60 * 1000) refresh();
 });
 
 if ("serviceWorker" in navigator) {

@@ -19,7 +19,7 @@
   <div class="bg" aria-hidden="true"><div class="bg-glow"></div><canvas id="fx"></canvas><div class="bg-grid"></div></div>
 
   <header class="topbar">
-    <div class="loc">
+    <div class="loc" id="loc" role="button" aria-label="Ort wechseln">
       <div id="place" class="loc-name">Wetter</div>
       <div id="updated" class="loc-meta mono">Verbinde …</div>
     </div>
@@ -275,6 +275,10 @@
       <input id="search-input" type="search" placeholder="Stadt oder Ort suchen" autocomplete="off" enterkeyhint="search">
       <button class="link-btn" value="cancel">Fertig</button>
     </form>
+    <button type="button" id="use-gps" class="gps-row">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      <span><b>Aktueller Standort</b><small>Wetter dort, wo du gerade bist</small></span>
+    </button>
     <ul id="search-results" class="list"></ul>
     <h3 class="list-title" id="saved-title">Gespeicherte Orte</h3>
     <ul id="saved-list" class="list"></ul>
