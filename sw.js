@@ -1,5 +1,5 @@
 // Offline-Unterstützung: App-Dateien und Psalmen werden zwischengespeichert.
-const CACHE = "wetter-psalm-v18";
+const CACHE = "wetter-psalm-v19";
 const ASSETS = [
   "./",
   "index.html",

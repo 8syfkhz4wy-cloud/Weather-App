@@ -1064,7 +1064,7 @@ function loadLeaflet() {
 function showFrame(pos) {
   if (!radar.layers.length) return;
   radar.pos = (pos + radar.layers.length) % radar.layers.length;
-  radar.layers.forEach((l, k) => l.setOpacity(k === radar.pos ? 0.75 : 0));
+  radar.layers.forEach((l, k) => l.setOpacity(k === radar.pos ? 0.7 : 0));
   const f = radar.frames[radar.pos];
   const t = new Date(f.time * 1000).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
   $("#radar-time").textContent = `${t}${f.nowcast ? " · PROGNOSE" : ""}`;
@@ -1089,8 +1089,24 @@ async function initRadar() {
   try {
     await loadLeaflet();
     const p = state.place || DEFAULT_PLACE;
-    radar.map = L.map("map", { zoomControl: false, attributionControl: false }).setView([p.lat, p.lon], 7);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom: 12, subdomains: "abcd" }).addTo(radar.map);
+    radar.map = L.map("map", { zoomControl: false, attributionControl: false, minZoom: 5, maxZoom: 12 }).setView([p.lat, p.lon], 8);
+    L.control.zoom({ position: "topright", zoomInTitle: "Näher", zoomOutTitle: "Weiter weg" }).addTo(radar.map);
+    // Helle, gut lesbare Karte unten, Radar in der Mitte, Ortsnamen und Grenzen zuoberst,
+    // damit die Orte auch unter dem Regen sichtbar bleiben
+    const carto = "https://{s}.basemaps.cartocdn.com/rastertiles";
+    const base = L.tileLayer(`${carto}/voyager_nolabels/{z}/{x}/{y}{r}.png`, { maxZoom: 12, subdomains: "abcd" }).addTo(radar.map);
+    radar.map.createPane("labels");
+    radar.map.getPane("labels").style.zIndex = 450;
+    radar.map.getPane("labels").style.pointerEvents = "none";
+    const labels = L.tileLayer(`${carto}/voyager_only_labels/{z}/{x}/{y}{r}.png`, { maxZoom: 12, subdomains: "abcd", pane: "labels" }).addTo(radar.map);
+    // Falls die Karte nicht lädt: auf OpenStreetMap ausweichen (dort sind die Ortsnamen schon drin)
+    let tileErrors = 0;
+    base.on("tileerror", () => {
+      if (++tileErrors !== 4) return;
+      radar.map.removeLayer(base);
+      radar.map.removeLayer(labels);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12 }).addTo(radar.map).bringToBack();
+    });
     radar.marker = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [14, 14] }) }).addTo(radar.map);
     radar.center = (place) => {
       radar.map.setView([place.lat, place.lon], radar.map.getZoom());
