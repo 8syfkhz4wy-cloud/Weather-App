@@ -1524,7 +1524,7 @@ async function loadFcb() {
 
 const chat = { fcb: null, ai: null, log: store("daniChat") || [], ready: false, typing: null, queue: [] };
 
-// Frische Sprüche, die der Veröffentlichungs-Ablauf mit GitHub Models geschrieben hat.
+// Frische Sprüche, die der Veröffentlichungs-Ablauf von Claude hat schreiben lassen.
 // Fehlt die Datei, antwortet Dani mit den festen Sprüchen.
 async function loadDaniAi() {
   const res = await fetch("dani.json", { cache: "no-cache" });
@@ -1532,7 +1532,7 @@ async function loadDaniAi() {
   const d = await res.json();
   if (!d || typeof d.answers !== "object") return;
   chat.ai = d;
-  $("#chat-hint").textContent = `Erfundene Figur. Ein Teil der Sprüche ist von einer KI geschrieben (GitHub Models, ${timeAgo(d.updated)}) und kann danebenliegen. Der Chat bleibt auf deinem Gerät.`;
+  $("#chat-hint").textContent = `Erfundene Figur. Ein Teil der Sprüche ist von einer KI geschrieben (${timeAgo(d.updated)}) und kann danebenliegen. Der Chat bleibt auf deinem Gerät.`;
 }
 
 function chatScroll() {

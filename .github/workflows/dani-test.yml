@@ -1,13 +1,13 @@
 name: Dani-Sprüche testen
 
-# Lässt manuell Danis Sprüche über GitHub Models schreiben und zeigt sie im Protokoll.
+# Lässt manuell Danis Sprüche von Claude schreiben und zeigt sie im Protokoll.
 # Veröffentlicht nichts; die App bekommt neue Sprüche über pages.yml.
+# Braucht das Geheimnis ANTHROPIC_API_KEY (Settings → Secrets and variables → Actions).
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
-  models: read
 
 jobs:
   test:
@@ -17,22 +17,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: FCB-Schlagzeilen holen
         run: curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/fcb.json -o fcb.json || echo '{}' > fcb.json
-      - name: Diagnose (vorübergehend)
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          for P in /en/rest/models/inference /en/rest/models/catalog /en/github-models/quickstart /en/github-models/use-github-models/prototyping-with-ai-models /en/github-models/about-github-models; do
-            echo "=================== $P"
-            curl -sS -L -m 30 -o page.md -w "status %{http_code}\n" "https://docs.github.com/api/article/body?pathname=$P" || true
-            wc -c page.md || true
-            grep -n -i -E "https://[a-z0-9.-]+|deprecat|sunset|retire|no longer|closing down|models: read|GITHUB_TOKEN|api-version|\"model\"" page.md | cut -c1-260 | head -60 || true
-          done
-          echo "=================== api.github.com"
-          curl -sS -i -m 30 -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/models/catalog | head -c 600; echo
-          curl -sS -i -m 30 https://models.github.ai/ | head -c 400; echo
       - name: Sprüche schreiben lassen
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/dani_ki.py fcb.json dani.json
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DANI_MODEL: ${{ vars.DANI_MODEL }}
+          DANI_STUNDEN: "0" # im Test immer neu schreiben
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Das Geheimnis ANTHROPIC_API_KEY fehlt (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          python3 -m venv .venv && .venv/bin/pip install --quiet anthropic
+          .venv/bin/python scripts/dani_ki.py fcb.json dani.json
       - name: Ergebnis zeigen
         run: cat dani.json
