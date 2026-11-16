@@ -33,7 +33,11 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   Kurven-Experte «Dani Joggeli Meier», der die echten Schlagzeilen auf Baseldeutsch
   kommentiert (`scripts/fcb.py`). Unter „Chat“ kann man mit Dani schreiben (`dani-chat.js`): feste
   Antworten auf Baseldeutsch nach Stichworten, dazu Spielstand, nächstes Spiel, Tabelle, News,
-  Kader und Wetter aus den geladenen Daten. Läuft ganz im Gerät, ohne Server und ohne KI.
+  Kader und Wetter aus den geladenen Daten. Der Chat läuft ganz im Gerät, ohne Server; was man
+  schreibt, verlässt das Gerät nicht. Frische Sprüche und Reaktionen auf die Schlagzeilen des
+  Tages schreibt bei jeder Veröffentlichung ein Sprachmodell über GitHub Models
+  (`scripts/dani_ki.py`, angemeldet mit dem Token des Ablaufs, kein eigener Schlüssel nötig) in
+  die Datei `dani.json`. Fehlt sie, antwortet Dani mit den festen Sprüchen.
   Unter „Kurve“ zusätzlich „Us dr Kurve“ (Newsfeed von muttenzerkurve.ch und öffentliche
   Telegram-Webvorschau der Muttenzerkurve) und die „Gerüchteküche“ (Transfergerüchte zum FCB
   aus den Medien). Meldungen über Gewalt oder Krawalle werden nicht übernommen.

@@ -1,8 +1,10 @@
 "use strict";
 
 // Chat mit dem fiktiven Kurven-Experten Dani «Joggeli» Meier.
-// Läuft ganz im Gerät: feste Antworten nach Stichworten, dazu die Daten, die die App
-// ohnehin schon geladen hat (Spielstand, Tabelle, News, Kader, Wetter). Kein Server, keine KI.
+// Läuft ganz im Gerät: Antworten nach Stichworten, dazu die Daten, die die App ohnehin
+// schon geladen hat (Spielstand, Tabelle, News, Kader, Wetter). Kein Server; was man
+// schreibt, verlässt das Gerät nicht. Frische Sprüche kommen fertig aus dani.json, die
+// der Veröffentlichungs-Ablauf mit GitHub Models schreibt (scripts/dani_ki.py).
 // Wie in scripts/fcb.py gilt: derb und emotional, aber keine Gewaltaufrufe und keine
 // Beleidigung echter, namentlich genannter Personen. Geflucht wird über Situationen.
 const DaniChat = (() => {
@@ -137,6 +139,8 @@ const DaniChat = (() => {
 
   // ---------- Feste Antworten nach Stichworten (erste Übereinstimmung gewinnt) ----------
 
+  const squadRule = (q, ctx) => squad(ctx, q);
+
   const RULES = [
     // Gewalt: Dani macht da nicht mit
     [/schläger|schlägerei|prügel|verprügel|verhau|zusammenschlag|uf d schnure|aufs maul|hooligan|krawall|randal|abstechen|umbringen|töten|waffe|messer|boxe mer|haue mer/, () => [
@@ -144,8 +148,10 @@ const DaniChat = (() => {
     ]],
     [/pyro|fackel|bengal|rauch(topf|bombe)|böller|petarde/, () => ["Zu däm Thema sag ych nyt, usser: Finger und Auge bruuchsch no, also pass uf di uf. Singe isch gratis und git kai Buess."]],
     // Wer bist du? Ehrlich bleiben: erfundene Figur, kein Mensch, keine KI
-    [/bist du (echt|ein mensch|eine? ki|ein bot|ein roboter)|bisch (du )?(ächt|echt|e mensch|e bot|e ki)|chatgpt|künstliche intelligenz|\bki\b|\bbot\b|roboter|wer hat dich|programmiert/, () => [
-      "Ohni Seich: Ych bi e erfundeni Figur. Kai Mensch und kai gschydi Maschine – numme e Huffe feschti Sprüch in dere App, wo uf dyni Wörter loose.",
+    [/bist du (echt|ein mensch|eine? ki|ein bot|ein roboter)|bisch (du )?(ächt|echt|e mensch|e bot|e ki)|chatgpt|künstliche intelligenz|\bki\b|\bbot\b|roboter|wer hat dich|programmiert/, (q, ctx) => [
+      ctx.ai && ctx.ai.answers
+        ? "Ohni Seich: Ych bi e erfundeni Figur, kai Mensch. E Dail vo myne Sprüch schrybt e KI alli paar Stund neu, aber die loost dir nit zue – d App suecht numme dr passend Spruch use."
+        : "Ohni Seich: Ych bi e erfundeni Figur. Kai Mensch und kai gschydi Maschine – numme e Huffe feschti Sprüch in dere App, wo uf dyni Wörter loose.",
       "Aber s Härz isch ächt rotblau, das cha me nit programmiere!",
     ]],
     [/wer bist du|wer bisch|wie heisst du|wie heissisch|dein name|di name|stell dich vor|über dich|erzähl.*von dir/, () => [
@@ -168,7 +174,7 @@ const DaniChat = (() => {
     [/tabelle|tabälle|\bplatz\b|\brang\b|punkte|pünkt|leader|tabellen|wo stehen|wo stöhn|meister werden|maischter wärde/, (q, ctx) => table(ctx)],
     [/gerücht|grücht|transfer|wechsel|verpflicht|neuzugang|zugang|abgang/, (q, ctx) => rumors(ctx)],
     [/news|neues|neuigkeit|neis|schlagzeile|was gibts|was git s|was gits|was ist los|was isch los|aktuell/, (q, ctx) => news(ctx)],
-    [/kader|mannschaft|spieler|goalie|torh|torwart|abwehr|verteidig|mittelfeld|sturm|stürmer|angriff|aufstellung|wer spielt/, (q, ctx) => squad(ctx, q)],
+    [/kader|mannschaft|spieler|goalie|torh|torwart|abwehr|verteidig|mittelfeld|sturm|stürmer|angriff|aufstellung|wer spielt/, squadRule],
     // Die anderen
     [/fcz|zürich|züri|zuerich|letzigrund/, () => [pick([
       "ZÜRI?! Do kunnt mir grad dr Kaffi obsi! E Stadt, wo dr See brucht, will si kai rächte Fluss het.",
@@ -251,17 +257,37 @@ const DaniChat = (() => {
 
   const CHIPS = ["Nächstes Spiel?", "Wie stehts?", "Tabelle", "Was gibts Neues?", "Wetter fürs Spiel", "Sing ein Lied", "Was hältst du von Zürich?", "Erzähl einen Witz"];
 
+  // Themen, zu denen dani.json frische Sprüche liefern kann (scripts/dani_ki.py, über GitHub Models).
+  // Ein Beispielwort bestimmt die Regel; Fragen nach Daten und nach Dani selbst bleiben fest.
+  const AI_KEYS = {
+    sali: "gruss", "alles klar": "befinden", fcz: "zuerich", grasshopper: "gc", "young boys": "yb", sanggalle: "stgallen",
+    servette: "andere", europacup: "europa", joggeli: "joggeli", choreo: "kurve", schiri: "schiri", taktik: "trainer",
+    bier: "bier", wurscht: "essen", fasnacht: "fasnacht", bebbi: "basel", witz: "witz", allez: "hopp", merci: "danke", adieu: "tschuess",
+  };
+  for (const [sample, key] of Object.entries(AI_KEYS)) RULES.find(([pattern]) => pattern.test(sample)).key = key;
+  const AI_SHARE = 0.6; // so oft kommt ein frischer statt ein fester Spruch
+
   function reply(text, ctx = {}) {
     const q = String(text).toLowerCase().replace(/[!?.,;:«»"()]+/g, " ").replace(/\s+/g, " ").trim();
-    if (!q) return [pick(FALLBACK)];
+    const ai = ctx.ai || {};
+    const fresh = (key, fixed) => {
+      const lines = (ai.answers || {})[key] || [];
+      return lines.length && Math.random() < AI_SHARE ? [pick(lines)] : fixed();
+    };
+    const fallback = () => fresh("fallback", () => [pick(FALLBACK)]);
+    if (!q) return fallback();
     const hit = (rules) => rules.find(([pattern]) => pattern.test(q));
-    // Erst die Schutzregeln (Gewalt, Pyro), dann ein Spielername aus dem Kader, dann der Rest
+    // Reihenfolge: Schutzregeln (Gewalt, Pyro) → Fragen nach Daten und nach Dani selbst →
+    // Schlagzeile von heute → Spieler aus dem Kader → Sprüche → nicht verstanden
     const guard = hit(RULES.slice(0, GUARDS));
     if (guard) return guard[1](q, ctx);
+    const rule = hit(RULES.slice(GUARDS));
+    if (rule && !rule.key && rule[1] !== squadRule) return rule[1](q, ctx);
+    const topic = (ai.topics || []).find((t) => t.words.some((w) => ` ${q} `.includes(` ${w} `)));
+    if (topic) return [pick(topic.answers)];
     const p = findPlayer(ctx, q);
     if (p) return player(p);
-    const rule = hit(RULES.slice(GUARDS));
-    return rule ? rule[1](q, ctx) : [pick(FALLBACK)];
+    return rule ? fresh(rule.key, () => rule[1](q, ctx)) : fallback();
   }
 
   function greeting() {
