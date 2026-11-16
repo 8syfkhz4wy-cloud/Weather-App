@@ -456,6 +456,41 @@ def expert_comment(news, today, kurve=(), rumors=()):
     return {**EXPERT, "lines": lines}
 
 
+CLUBS = {"zürich": "fcz", "fcz": "fcz", "grasshoppers": "gc", "young boys": "yb", "st. gallen": "st. gallen",
+         "luzern": "luzern", "lugano": "lugano", "servette": "servette", "lausanne": "lausanne", "sion": "sion",
+         "winterthur": "winterthur", "thun": "thun"}
+
+
+def chat_topics(news, rumors, squad, today):
+    """Für den Chat mit Dani: Stichworte (Spieler, Gegner) aus den Schlagzeilen und dazu passende
+    Reaktionen aus den Bausteinen oben. Fragt man im Chat nach einem der Wörter, antwortet Dani darauf."""
+    rnd = random.Random(f"chat-{today.isoformat()}")
+    surnames = {}
+    for group in (squad or {}).get("groups", []):
+        for player in group["players"]:
+            last = player["name"].split()[-1]
+            if len(last) >= 4:
+                surnames[last.lower()] = last
+    topics = []
+    for item, rumor in [(n, False) for n in news[:5]] + [(r, True) for r in list(rumors)[:3]]:
+        title = item["title"]
+        if VIOLENCE.search(title):
+            continue
+        low = title.lower()
+        words = [w for w in surnames if re.search(rf"\b{re.escape(w)}\b", low)]
+        words += [short for name, short in CLUBS.items() if name in low and short not in words]
+        if not words:
+            continue
+        if rumor:
+            mood, pool = "neutral", RUMOR_REACTIONS
+        else:
+            mood, pool = next(((m, r) for pattern, m, r in REACTIONS if re.search(pattern, title, re.I)),
+                              ("neutral", GENERIC))
+        answers = [f"{rnd.choice(AUSRUFE[mood])} «{title}» – {reaction}" for reaction in rnd.sample(pool, min(3, len(pool)))]
+        topics.append({"title": title, "words": words[:4], "answers": answers})
+    return topics
+
+
 def main(out_file):
     data = {"updated": datetime.now(timezone.utc).isoformat(timespec="minutes")}
     try:
@@ -477,6 +512,10 @@ def main(out_file):
     print(f"Gerüchte: {len(data['rumors'])}")
     for r in data["rumors"]:
         print(f"  - {r['title']} ({r['source']})")
+    data["chat"] = chat_topics(data["news"], data["rumors"], data.get("squad"), datetime.now(timezone.utc).date())
+    print(f"Chat-Themen: {len(data['chat'])}")
+    for c in data["chat"]:
+        print(f"  - {', '.join(c['words'])}: {c['title']}")
     data["expert"] = expert_comment(data["news"], datetime.now(timezone.utc).date(), data["kurve"], data["rumors"])
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)

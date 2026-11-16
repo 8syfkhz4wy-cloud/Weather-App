@@ -43,20 +43,6 @@ jobs:
         run: |
           python3 scripts/fcb.py _site/fcb.json || \
             curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/fcb.json -o _site/fcb.json || true
-      # Frische Sprüche für den Chat mit Dani, geschrieben von Claude. Nur mit dem Geheimnis
-      # ANTHROPIC_API_KEY; ohne es oder bei Fehler antwortet der Chat wie bisher.
-      - name: Danis Sprüche schreiben lassen
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          DANI_MODEL: ${{ vars.DANI_MODEL }}
-          DANI_STUNDEN: ${{ vars.DANI_STUNDEN }}
-        run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "Kein ANTHROPIC_API_KEY hinterlegt – Dani antwortet mit den festen Sprüchen."
-            exit 0
-          fi
-          (python3 -m venv .venv && .venv/bin/pip install --quiet anthropic && \
-            .venv/bin/python scripts/dani_ki.py _site/fcb.json _site/dani.json) || true
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

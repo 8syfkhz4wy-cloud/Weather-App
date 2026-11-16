@@ -1522,18 +1522,7 @@ async function loadFcb() {
 
 // ---------- Chat mit Dani (dani-chat.js): läuft ganz im Gerät ----------
 
-const chat = { fcb: null, ai: null, log: store("daniChat") || [], ready: false, typing: null, queue: [] };
-
-// Frische Sprüche, die der Veröffentlichungs-Ablauf von Claude hat schreiben lassen.
-// Fehlt die Datei, antwortet Dani mit den festen Sprüchen.
-async function loadDaniAi() {
-  const res = await fetch("dani.json", { cache: "no-cache" });
-  if (!res.ok) throw new Error(res.status);
-  const d = await res.json();
-  if (!d || typeof d.answers !== "object") return;
-  chat.ai = d;
-  $("#chat-hint").textContent = `Erfundene Figur. Ein Teil der Sprüche ist von einer KI geschrieben (${timeAgo(d.updated)}) und kann danebenliegen. Der Chat bleibt auf deinem Gerät.`;
-}
+const chat = { fcb: null, log: store("daniChat") || [], ready: false, typing: null, queue: [] };
 
 function chatScroll() {
   const log = $("#chat-log");
@@ -1566,7 +1555,7 @@ function chatAnswer(lines) {
   next();
 }
 
-const chatCtx = () => ({ live: live.data, fcb: chat.fcb, ai: chat.ai, w: state.w, place: state.place });
+const chatCtx = () => ({ live: live.data, fcb: chat.fcb, w: state.w, place: state.place });
 
 function chatSend(text) {
   text = text.trim();
@@ -1578,7 +1567,6 @@ function chatSend(text) {
 function openChat() {
   if (!chat.ready) {
     chat.ready = true;
-    loadDaniAi().catch(() => {});
     const typing = el("p", "typing");
     typing.append(el("i"), el("i"), el("i"));
     typing.id = "chat-typing";
