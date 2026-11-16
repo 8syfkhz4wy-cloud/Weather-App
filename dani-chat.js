@@ -4,7 +4,7 @@
 // Läuft ganz im Gerät: Antworten nach Stichworten, dazu die Daten, die die App ohnehin
 // schon geladen hat (Spielstand, Tabelle, News, Kader, Wetter). Kein Server; was man
 // schreibt, verlässt das Gerät nicht. Frische Sprüche kommen fertig aus dani.json, die
-// der Veröffentlichungs-Ablauf mit GitHub Models schreibt (scripts/dani_ki.py).
+// der Veröffentlichungs-Ablauf von Claude schreiben lässt (scripts/dani_ki.py).
 // Wie in scripts/fcb.py gilt: derb und emotional, aber keine Gewaltaufrufe und keine
 // Beleidigung echter, namentlich genannter Personen. Geflucht wird über Situationen.
 const DaniChat = (() => {
@@ -266,7 +266,7 @@ const DaniChat = (() => {
 
   const CHIPS = ["Nächstes Spiel?", "Wie stehts?", "Tabelle", "Was gibts Neues?", "Wetter fürs Spiel", "Sing ein Lied", "Was hältst du von Zürich?", "Erzähl einen Witz"];
 
-  // Themen, zu denen dani.json frische Sprüche liefern kann (scripts/dani_ki.py, über GitHub Models).
+  // Themen, zu denen dani.json frische Sprüche liefern kann (scripts/dani_ki.py).
   // Ein Beispielwort bestimmt die Regel; Fragen nach Daten und nach Dani selbst bleiben fest.
   const AI_KEYS = {
     sali: "gruss", "alles klar": "befinden", fcz: "zuerich", grasshopper: "gc", "young boys": "yb", sanggalle: "stgallen",

@@ -1,13 +1,13 @@
 name: Dani-Sprüche testen
 
-# Lässt manuell Danis Sprüche über GitHub Models schreiben und zeigt sie im Protokoll.
+# Lässt manuell Danis Sprüche von Claude schreiben und zeigt sie im Protokoll.
 # Veröffentlicht nichts; die App bekommt neue Sprüche über pages.yml.
+# Braucht das Geheimnis ANTHROPIC_API_KEY (Settings → Secrets and variables → Actions).
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
-  models: read
 
 jobs:
   test:
@@ -19,7 +19,15 @@ jobs:
         run: curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/fcb.json -o fcb.json || echo '{}' > fcb.json
       - name: Sprüche schreiben lassen
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/dani_ki.py fcb.json dani.json
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DANI_MODEL: ${{ vars.DANI_MODEL }}
+          DANI_STUNDEN: "0" # im Test immer neu schreiben
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Das Geheimnis ANTHROPIC_API_KEY fehlt (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          python3 -m venv .venv && .venv/bin/pip install --quiet anthropic
+          .venv/bin/python scripts/dani_ki.py fcb.json dani.json
       - name: Ergebnis zeigen
         run: cat dani.json

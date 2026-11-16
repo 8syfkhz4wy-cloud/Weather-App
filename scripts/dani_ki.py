@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
-"""Frische Sprüche für den Chat mit Dani «Joggeli» Meier, geschrieben von einem Sprachmodell.
+"""Frische Sprüche für den Chat mit Dani «Joggeli» Meier, geschrieben von Claude.
 
-Läuft im GitHub-Actions-Ablauf über GitHub Models (kostenlos, angemeldet mit dem
-GITHUB_TOKEN des Laufs, Berechtigung "models: read"). Die App selbst ruft kein Modell
-auf: Sie lädt nur die fertige Datei dani.json und mischt die Sprüche unter die festen.
+Läuft im GitHub-Actions-Ablauf. Der Schlüssel für die Claude API liegt als Geheimnis
+ANTHROPIC_API_KEY im Repository und ist nur im Ablauf sichtbar, nie in der App. Die App
+ruft kein Modell auf: Sie lädt nur die fertige Datei dani.json und mischt die Sprüche
+unter die festen aus dani-chat.js.
 
 Aufruf: dani_ki.py fcb.json dani.json
-Ohne Token oder bei einem Fehler endet das Skript mit Code 1; der Chat läuft dann mit
-den festen Antworten aus dani-chat.js weiter.
+
+- Ohne Schlüssel passiert nichts (Code 0); der Chat läuft mit den festen Antworten.
+- Sind die zuletzt veröffentlichten Sprüche jünger als DANI_STUNDEN (Standard 6), werden
+  sie übernommen, ohne das Modell zu fragen. Das hält die Kosten klein.
+- Bei einem Fehler bleiben die zuletzt veröffentlichten Sprüche erhalten (Code 1).
+
+Modell: DANI_MODEL (Standard claude-opus-5-5).
 """
-import gzip
 import json
 import os
 import re
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-API = os.environ.get("DANI_API", "https://models.github.ai")
-# Der Reihe nach probieren; mit DANI_MODELS (Komma-getrennt) überschreibbar
-MODELS = [m.strip() for m in os.environ.get(
-    "DANI_MODELS", "openai/gpt-4.1,openai/gpt-4o,openai/gpt-4.1-mini,openai/gpt-4o-mini").split(",") if m.strip()]
+MODEL = os.environ.get("DANI_MODEL") or "claude-opus-5-5"
+STUNDEN = float(os.environ.get("DANI_STUNDEN") or 6)
+BISHER = os.environ.get("DANI_BISHER", "https://8syfkhz4wy-cloud.github.io/Weather-App/dani.json")
+# Modelle, für die die API bei einer Ablehnung selbst auf ein anderes Modell ausweicht
+MIT_AUSWEICHEN = {"claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-2", "claude-fable-5-1"}
 
 # Schlüssel wie in dani-chat.js (drittes Feld der Regeln) → worum es geht
 THEMEN = {
@@ -72,8 +78,7 @@ Feste Regeln:
   in den Schlagzeilen stehen. Zu Schlagzeilen gibt es nur Gefühl und Meinung.
 - Keine Liedtexte, keine Links, keine Hashtags.
 - Jede Antwort ist 1 bis 3 Sätze lang, höchstens 240 Zeichen, und steht für sich allein.
-
-Antworte nur mit JSON."""
+"""
 
 GEWALT = re.compile(r"schläg|schleg|prüge?l|brüge?l|verhau|krawall|ausschreit|randal|polizei|festnahme|abstech|umbring|töt|waffe|messer|bombe|anzünd|aazünd|"
                     r"pyro|fackle|petard|hooligan|uf d schnure|in d frässe|bluet söll", re.I)
@@ -82,30 +87,64 @@ STOPP = {"basel", "basler", "rotblau", "spiel", "match", "tabelle", "news", "wet
          "stadion", "joggeli", "kurve", "fans", "zürich", "bern", "heute", "morgen", "gegen", "nach", "über"}
 
 
-def call(path, token, body=None):
-    """Anfrage an GitHub Models. Ist die Antwort kein JSON, steht im Fehler, was stattdessen kam."""
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
-               "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "wetter-psalm-app"}
-    data = None
-    if body is not None:
-        data = json.dumps(body).encode()
-        headers["Content-Type"] = "application/json"
-    req = urllib.request.Request(API + path, data=data, headers=headers, method="POST" if data else "GET")
-    with urllib.request.urlopen(req, timeout=120) as res:
-        raw = res.read()
-        if res.headers.get("Content-Encoding") == "gzip" or raw[:2] == b"\x1f\x8b":
-            raw = gzip.decompress(raw)
-        try:
-            return json.loads(raw)
-        except ValueError:
-            raise ValueError(f"kein JSON (Status {res.status}, {res.headers.get('Content-Type')}, {res.geturl()}): "
-                             f"{raw[:300]!r}") from None
+def bisher():
+    """Die zuletzt veröffentlichten Sprüche, falls es welche gibt."""
+    try:
+        req = urllib.request.Request(BISHER, headers={"User-Agent": "wetter-psalm-app"})
+        with urllib.request.urlopen(req, timeout=20) as res:
+            data = json.load(res)
+        return data if isinstance(data.get("answers"), dict) else None
+    except Exception:
+        return None
 
 
-def catalog(token):
-    """Notnagel, falls keins der bekannten Modelle (mehr) angeboten wird."""
-    ids = [m.get("id", "") for m in call("/catalog/models", token)]
-    return [i for i in ids if i.startswith("openai/gpt") and "embedding" not in i][:3]
+def schema():
+    """Form der Antwort; die API hält sich daran (strukturierte Ausgabe)."""
+    lines = {"type": "array", "items": {"type": "string"}}
+    return {
+        "type": "object", "additionalProperties": False, "required": ["antworten", "heute"],
+        "properties": {
+            "antworten": {"type": "object", "additionalProperties": False, "required": list(THEMEN),
+                          "properties": {key: lines for key in THEMEN}},
+            "heute": {"type": "array", "items": {
+                "type": "object", "additionalProperties": False, "required": ["nr", "woerter", "antworten"],
+                "properties": {"nr": {"type": "integer"}, "woerter": lines, "antworten": lines}}},
+        },
+    }
+
+
+def ask(user):
+    """Claude fragen. Gibt (Daten, Modell) zurück oder wirft einen Fehler mit lesbarem Grund."""
+    import anthropic  # erst hier: ohne Schlüssel braucht es das Paket nicht
+
+    client = anthropic.Anthropic()
+    extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} if MODEL in MIT_AUSWEICHEN else {}
+    try:
+        res = client.beta.messages.create(
+            model=MODEL, max_tokens=16000, system=SYSTEM,
+            messages=[{"role": "user", "content": user}],
+            output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema()}},
+            **extra,
+        )
+    except anthropic.AuthenticationError:
+        raise RuntimeError("Der Schlüssel ANTHROPIC_API_KEY ist ungültig.") from None
+    except anthropic.PermissionDeniedError as err:
+        raise RuntimeError(f"Der Schlüssel darf das Modell {MODEL} nicht nutzen: {err.message}") from None
+    except anthropic.NotFoundError:
+        raise RuntimeError(f"Das Modell {MODEL} gibt es nicht (DANI_MODEL prüfen).") from None
+    except anthropic.RateLimitError:
+        raise RuntimeError("Zu viele Anfragen oder Guthaben aufgebraucht – später wieder.") from None
+    except anthropic.APIStatusError as err:
+        raise RuntimeError(f"Fehler der Claude API ({err.status_code}): {err.message}") from None
+    except anthropic.APIConnectionError as err:
+        raise RuntimeError(f"Claude API nicht erreichbar: {err}") from None
+    if res.stop_reason == "refusal":
+        raise RuntimeError("Das Modell hat die Anfrage abgelehnt.")
+    if res.stop_reason == "max_tokens":
+        raise RuntimeError("Die Antwort wurde zu lang und abgeschnitten.")
+    text = next((block.text for block in res.content if block.type == "text"), "")
+    print(f"Verbrauch: {res.usage.input_tokens} Token rein, {res.usage.output_tokens} raus")
+    return json.loads(text), res.model
 
 
 def prompt(fcb):
@@ -114,27 +153,13 @@ def prompt(fcb):
     lines += ["", f"Heute ist der {datetime.now(timezone.utc):%d.%m.%Y}.", "", "Aktuelle Schlagzeilen zum FC Basel:"]
     news = titles("news", 5) + titles("rumors", 2)
     lines += [f"{i + 1}. {t}" for i, t in enumerate(news)] or ["(keine)"]
-    lines += ["", "Schreibe dieses JSON:", "{",
-              '  "antworten": { "<schlüssel>": ["…", "…", "…"], … },',
-              '  "heute": [ { "nr": <Nummer der Schlagzeile>, "woerter": ["…"], "antworten": ["…", "…"] }, … ]',
-              "}", "",
-              "«antworten»: zu JEDEM dieser Schlüssel genau 3 verschiedene Antworten von Dani:"]
+    lines += ["", "«antworten»: zu JEDEM dieser Schlüssel genau 3 verschiedene Antworten von Dani:"]
     lines += [f"- {key}: {text}" for key, text in THEMEN.items()]
     lines += ["",
-              "«heute»: zu jeder Schlagzeile ein Eintrag. «woerter» sind 1 bis 3 Eigennamen aus der Schlagzeile "
+              "«heute»: zu jeder Schlagzeile ein Eintrag, «nr» ist ihre Nummer. «woerter» sind 1 bis 3 Eigennamen aus der Schlagzeile "
               "(Nachname eines Spielers, Gegner, Wettbewerb), klein geschrieben, an denen man eine Frage dazu erkennt. "
               "«antworten» sind 2 Reaktionen von Dani auf diese Schlagzeile."]
     return "\n".join(lines), news
-
-
-def parse(text):
-    try:
-        return json.loads(text)
-    except ValueError:
-        m = re.search(r"\{.*\}", text, re.S)
-        if not m:
-            raise ValueError(f"Antwort des Modells ist kein JSON: {text[:200]!r}") from None
-        return json.loads(m.group(0))
 
 
 def sauber(lines, n):
@@ -149,20 +174,46 @@ def sauber(lines, n):
     return out[:n]
 
 
-def candidates(token):
-    """Erst die bekannten Modelle, dann – nur wenn nötig – was der Katalog sonst anbietet."""
-    yield from MODELS
-    try:
-        yield from (m for m in catalog(token) if m not in MODELS)
-    except Exception as err:
-        print(f"Modellkatalog nicht lesbar: {err}")
+def build(data, news, model):
+    """Antwort des Modells prüfen und in die Form bringen, die der Chat lädt."""
+    answers = {key: sauber((data.get("antworten") or {}).get(key), 4) for key in THEMEN}
+    answers = {key: lines for key, lines in answers.items() if lines}
+    topics = []
+    for item in data.get("heute") or []:
+        if not isinstance(item, dict):
+            continue
+        words = [w.lower().strip() for w in item.get("woerter") or [] if isinstance(w, str)]
+        words = [w for w in words if re.fullmatch(r"[a-zà-ÿ.\- ]{4,30}", w) and w not in STOPP][:3]
+        lines = sauber(item.get("antworten"), 3)
+        nr = item.get("nr")
+        title = news[nr - 1] if isinstance(nr, int) and 0 < nr <= len(news) else ""
+        if words and lines:
+            topics.append({"title": title, "words": words, "answers": lines})
+    if len(answers) < len(THEMEN) // 2:
+        raise RuntimeError(f"nur {len(answers)} von {len(THEMEN)} Themen brauchbar")
+    return {"updated": datetime.now(timezone.utc).isoformat(timespec="minutes"), "model": model,
+            "answers": answers, "topics": topics[:7]}
+
+
+def write(out_file, data):
+    with open(out_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
 
 
 def main(fcb_file, out_file):
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    if not token:
-        print("Kein GITHUB_TOKEN – keine KI-Sprüche.")
-        return 1
+    old = bisher()
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print("Kein ANTHROPIC_API_KEY hinterlegt – Dani antwortet mit den festen Sprüchen.")
+        return 0
+    if old:
+        try:
+            age = datetime.now(timezone.utc) - datetime.fromisoformat(old["updated"])
+        except (KeyError, TypeError, ValueError):
+            age = timedelta(days=99)
+        if age < timedelta(hours=STUNDEN):
+            write(out_file, old)
+            print(f"Sprüche sind {age.total_seconds() / 3600:.1f} Std. alt – bleiben (neu ab {STUNDEN:g} Std.).")
+            return 0
     try:
         with open(fcb_file, encoding="utf-8") as f:
             fcb = json.load(f)
@@ -170,46 +221,19 @@ def main(fcb_file, out_file):
         print(f"FCB-Daten fehlen ({err}) – Sprüche ohne Schlagzeilen.")
         fcb = {}
     user, news = prompt(fcb)
-
-    for model in candidates(token):
-        try:
-            res = call("/inference/chat/completions", token, {
-                "model": model, "temperature": 1.0, "max_tokens": 6000,
-                "response_format": {"type": "json_object"},
-                "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}],
-            })
-            data = parse(res["choices"][0]["message"]["content"])
-        except Exception as err:
-            detail = err.read().decode(errors="replace")[:300] if hasattr(err, "read") else ""
-            print(f"{model}: {err} {detail}")
-            continue
-
-        answers = {key: sauber((data.get("antworten") or {}).get(key), 4) for key in THEMEN}
-        answers = {key: lines for key, lines in answers.items() if lines}
-        topics = []
-        for item in data.get("heute") or []:
-            if not isinstance(item, dict):
-                continue
-            words = [w.lower().strip() for w in item.get("woerter") or [] if isinstance(w, str)]
-            words = [w for w in words if re.fullmatch(r"[a-zà-ÿ.\- ]{4,30}", w) and w not in STOPP][:3]
-            lines = sauber(item.get("antworten"), 3)
-            nr = item.get("nr")
-            title = news[nr - 1] if isinstance(nr, int) and 0 < nr <= len(news) else ""
-            if words and lines:
-                topics.append({"title": title, "words": words, "answers": lines})
-        if len(answers) < len(THEMEN) // 2:
-            print(f"{model}: nur {len(answers)} von {len(THEMEN)} Themen brauchbar")
-            continue
-
-        out = {"updated": datetime.now(timezone.utc).isoformat(timespec="minutes"), "model": model,
-               "answers": answers, "topics": topics[:7]}
-        with open(out_file, "w", encoding="utf-8") as f:
-            json.dump(out, f, ensure_ascii=False, indent=1)
-        print(f"{model}: {sum(len(v) for v in answers.values())} Sprüche zu {len(answers)} Themen, "
-              f"{len(topics)} Schlagzeilen")
-        return 0
-    print("Kein Modell hat geantwortet.")
-    return 1
+    try:
+        data, model = ask(user)
+        out = build(data, news, model)
+    except Exception as err:
+        print(f"Keine neuen Sprüche: {err}")
+        if old:
+            write(out_file, old)
+            print("Die bisherigen Sprüche bleiben.")
+        return 1
+    write(out_file, out)
+    print(f"{model}: {sum(len(v) for v in out['answers'].values())} Sprüche zu {len(out['answers'])} Themen, "
+          f"{len(out['topics'])} Schlagzeilen")
+    return 0
 
 
 if __name__ == "__main__":
