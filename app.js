@@ -8,10 +8,35 @@ const $$ = (sel) => document.querySelectorAll(sel);
 function store(key, value) {
   try {
     if (value === undefined) return JSON.parse(localStorage.getItem(key));
-    localStorage.setItem(key, JSON.stringify(value));
+    const json = JSON.stringify(value);
+    try {
+      localStorage.setItem(key, json);
+    } catch {
+      pruneWeatherCache(0); // Speicher voll: alte Wetterdaten weg, dann noch einmal
+      localStorage.setItem(key, json);
+    }
   } catch {
     return null;
   }
+}
+
+// Zwischengespeicherte Wetterdaten ("wx:Breite,Länge") nur für die zuletzt gezeigten Orte
+// behalten. Beim Folgen des Standorts käme sonst mit jedem Ortswechsel ein Eintrag dazu,
+// bis der Speicher voll ist und sich gar nichts mehr merken lässt.
+function pruneWeatherCache(keep, except) {
+  try {
+    const entries = Object.keys(localStorage)
+      .filter((k) => k.startsWith("wx:") && k !== except)
+      .map((k) => {
+        let t = 0;
+        try {
+          t = JSON.parse(localStorage.getItem(k)).t || 0;
+        } catch {}
+        return [k, t];
+      })
+      .sort((a, b) => b[1] - a[1]);
+    for (const [k] of entries.slice(keep)) localStorage.removeItem(k);
+  } catch {}
 }
 
 function el(tag, cls, text) {
@@ -963,6 +988,7 @@ async function showPlace(place) {
     const [w, air] = await Promise.all([fetchWeather(place), fetchAir(place).catch(() => null)]);
     if (seq !== loadSeq) return; // inzwischen anderer Ort gewählt
     const t = Date.now();
+    pruneWeatherCache(5, cacheKey);
     store(cacheKey, { t, w, air });
     state.fetchedAt = t;
     Object.assign(state, { w, air });
@@ -1255,6 +1281,7 @@ function matchToast(kind, title, text, dani) {
   box.hidden = false;
   clearTimeout(live.toastTimer);
   live.toastTimer = setTimeout(() => (box.hidden = true), 3 * 60000);
+  chatAdd(`${title} ${text} – ${dani}`); // steht auch im Chat mit Dani
   showStatus(`${title} ${text}`, 12000);
   const sc = $("#sb-score");
   sc.classList.remove("flash");
@@ -1539,19 +1566,23 @@ function chatAnswer(lines) {
   next();
 }
 
+const chatCtx = () => ({ live: live.data, fcb: chat.fcb, ai: chat.ai, w: state.w, place: state.place });
+
 function chatSend(text) {
   text = text.trim();
   if (!text) return;
   chatAdd(text, true);
-  chatAnswer(DaniChat.reply(text, { live: live.data, fcb: chat.fcb, ai: chat.ai, w: state.w, place: state.place }));
+  chatAnswer(DaniChat.reply(text, chatCtx()));
 }
 
 function openChat() {
   if (!chat.ready) {
     chat.ready = true;
     loadDaniAi().catch(() => {});
-    const typing = el("p", "typing", "Dani schrybt …");
+    const typing = el("p", "typing");
+    typing.append(el("i"), el("i"), el("i"));
     typing.id = "chat-typing";
+    typing.setAttribute("aria-label", "Dani schreibt");
     typing.hidden = true;
     $("#chat-log").replaceChildren(...chat.log.map((m) => el("p", m.me ? "me" : null, m.text)), typing);
     $("#chat-chips").replaceChildren(
@@ -1574,9 +1605,9 @@ function openChat() {
       chat.log = [];
       store("daniChat", chat.log);
       $("#chat-log").replaceChildren($("#chat-typing"));
-      chatAnswer(DaniChat.greeting());
+      chatAnswer(DaniChat.greeting(chatCtx()));
     });
-    if (!chat.log.length) chatAnswer(DaniChat.greeting());
+    if (!chat.log.length) chatAnswer(DaniChat.greeting(chatCtx()));
   }
   chatScroll();
 }

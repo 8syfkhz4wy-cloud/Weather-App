@@ -13,6 +13,8 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
+  <link rel="preconnect" href="https://air-quality-api.open-meteo.com" crossorigin>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-sky="clear-day" data-tab="wetter">
@@ -153,7 +155,6 @@
       </div>
     </section>
 
-    <!-- ===== Warnungen ===== -->
     <!-- ===== FC Basel ===== -->
     <section class="view" id="view-fcb" hidden>
       <div class="fcb-hero">
@@ -260,6 +261,7 @@
       <p id="fcb-empty" class="hint" hidden>FC-Basel-Daten werden beim nächsten Update geladen.</p>
     </section>
 
+    <!-- ===== Warnungen ===== -->
     <section class="view" id="view-warn" hidden>
       <div class="panel">
         <div class="panel-head"><span class="tag">// AKTIVE WARNUNGEN</span><span id="warn-place" class="tag-r"></span></div>

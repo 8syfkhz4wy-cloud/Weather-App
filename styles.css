@@ -760,7 +760,7 @@ body[data-tab="fcb"] { --accent: #ff3b4e; --accent-2: #2f6bff; }
 .chat-who { flex: 1; min-width: 0; }
 .chat-clear { flex: 0 0 auto; min-height: 44px; padding: 0 4px; font-size: 14px; }
 .chat-log {
-  display: flex; flex-direction: column; gap: 8px; height: min(46vh, 420px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px; height: min(46vh, 420px); height: min(46dvh, 420px); overflow-y: auto;
   padding: 2px 2px 8px; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
 }
 .chat-log p {
@@ -772,7 +772,14 @@ body[data-tab="fcb"] { --accent: #ff3b4e; --accent-2: #2f6bff; }
   align-self: flex-end; border-radius: 14px 4px 14px 14px;
   background: rgba(47, 107, 255, 0.18); border-color: rgba(47, 107, 255, 0.4);
 }
-.chat-log p.typing { background: none; border-color: transparent; padding: 2px 4px; font-size: 13px; color: var(--muted); animation: livepulse 1.1s ease-in-out infinite; }
+.chat-log p.typing { display: flex; gap: 5px; padding: 13px 14px; }
+.chat-log p.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--text); opacity: 0.35; animation: chatdot 1.1s ease-in-out infinite; }
+.chat-log p.typing i:nth-child(2) { animation-delay: 0.18s; }
+.chat-log p.typing i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes chatdot { 0%, 60%, 100% { opacity: 0.35; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .chat-log p.typing i { animation: none; } }
+.chat-log p:not(.typing) { animation: chatin 0.18s ease-out; }
+@keyframes chatin { from { opacity: 0; transform: translateY(6px); } }
 .chat-log p[hidden] { display: none; }
 .chat-chips { display: flex; gap: 6px; margin: 8px -14px 0; padding: 2px 14px 8px; overflow-x: auto; scrollbar-width: none; }
 .chat-chips::-webkit-scrollbar { display: none; }

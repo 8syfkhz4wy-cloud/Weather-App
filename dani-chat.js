@@ -8,7 +8,16 @@
 // Wie in scripts/fcb.py gilt: derb und emotional, aber keine Gewaltaufrufe und keine
 // Beleidigung echter, namentlich genannter Personen. Geflucht wird über Situationen.
 const DaniChat = (() => {
-  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+  // Zufällig wählen, aber nicht, was Dani gerade erst gesagt hat
+  const recent = [];
+  const pick = (list) => {
+    const unused = list.filter((x) => !recent.includes(x));
+    const pool = unused.length ? unused : list;
+    const choice = pool[Math.floor(Math.random() * pool.length)];
+    recent.push(choice);
+    if (recent.length > 25) recent.shift();
+    return choice;
+  };
   const OUT = [
     "ALLEZ FCB! ❤️💙", "HOPP BASEL, gopferdammi! ❤️💙", "Rotblau bis in d Chnoche! ❤️💙",
     "Mir gsehn is im Joggeli! ❤️💙", "Z Basel an mym Rhy! ❤️💙",
@@ -290,8 +299,16 @@ const DaniChat = (() => {
     return rule ? fresh(rule.key, () => rule[1](q, ctx)) : fallback();
   }
 
-  function greeting() {
-    return ["Sali, du Bebbi! Dr Dani isch do – Schal um, Schnuure uf. 🧣", "Frog mi nach em nögschte Spiel, dr Tabälle, de News, em Kader oder em Wätter. Oder schwätz aifach mit mir über dr FCB!"];
+  function greeting(ctx = {}) {
+    const d = ctx.live;
+    const fx = d && [d.fx, d.next].find((f) => f && f.kickoff && f.kickoff.getTime() > Date.now());
+    const hours = fx ? (fx.kickoff.getTime() - Date.now()) / 3600000 : Infinity;
+    const second = d && d.live && d.fx
+      ? `Mir spile GRAD gege ${opponent(d.fx)}! Frog mi, wie s stoht – ych lueg mit eim Aug uf e Platz.`
+      : hours < 30
+        ? `${hours < 12 ? "HÜT" : "Glyy"} isch Matchdaag gege ${opponent(fx)}, ych ha scho Härzchlopfe! Frog mi, was de wotsch.`
+        : "Frog mi nach em nögschte Spiel, dr Tabälle, de News, em Kader oder em Wätter. Oder schwätz aifach mit mir über dr FCB!";
+    return ["Sali, du Bebbi! Dr Dani isch do – Schal um, Schnuure uf. 🧣", second];
   }
 
   return { reply, greeting, CHIPS };
