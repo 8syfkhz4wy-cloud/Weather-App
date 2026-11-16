@@ -1,0 +1,25 @@
+name: Dani-Sprüche testen
+
+# Lässt manuell Danis Sprüche über GitHub Models schreiben und zeigt sie im Protokoll.
+# Veröffentlicht nichts; die App bekommt neue Sprüche über pages.yml.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  models: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: FCB-Schlagzeilen holen
+        run: curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/fcb.json -o fcb.json || echo '{}' > fcb.json
+      - name: Sprüche schreiben lassen
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/dani_ki.py fcb.json dani.json
+      - name: Ergebnis zeigen
+        run: cat dani.json
