@@ -9,6 +9,7 @@ Aufruf: dani_ki.py fcb.json dani.json
 Ohne Token oder bei einem Fehler endet das Skript mit Code 1; der Chat läuft dann mit
 den festen Antworten aus dani-chat.js weiter.
 """
+import gzip
 import json
 import os
 import re
@@ -81,21 +82,29 @@ STOPP = {"basel", "basler", "rotblau", "spiel", "match", "tabelle", "news", "wet
          "stadion", "joggeli", "kurve", "fans", "zürich", "bern", "heute", "morgen", "gegen", "nach", "über"}
 
 
-def post(path, body, token):
-    req = urllib.request.Request(
-        API + path, data=json.dumps(body).encode(), method="POST",
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json",
-                 "Accept": "application/vnd.github+json", "User-Agent": "wetter-psalm-app"})
+def call(path, token, body=None):
+    """Anfrage an GitHub Models. Ist die Antwort kein JSON, steht im Fehler, was stattdessen kam."""
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+               "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "wetter-psalm-app"}
+    data = None
+    if body is not None:
+        data = json.dumps(body).encode()
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(API + path, data=data, headers=headers, method="POST" if data else "GET")
     with urllib.request.urlopen(req, timeout=120) as res:
-        return json.load(res)
+        raw = res.read()
+        if res.headers.get("Content-Encoding") == "gzip" or raw[:2] == b"\x1f\x8b":
+            raw = gzip.decompress(raw)
+        try:
+            return json.loads(raw)
+        except ValueError:
+            raise ValueError(f"kein JSON (Status {res.status}, {res.headers.get('Content-Type')}, {res.geturl()}): "
+                             f"{raw[:300]!r}") from None
 
 
 def catalog(token):
     """Notnagel, falls keins der bekannten Modelle (mehr) angeboten wird."""
-    req = urllib.request.Request(API + "/catalog/models", headers={
-        "Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "User-Agent": "wetter-psalm-app"})
-    with urllib.request.urlopen(req, timeout=30) as res:
-        ids = [m.get("id", "") for m in json.load(res)]
+    ids = [m.get("id", "") for m in call("/catalog/models", token)]
     return [i for i in ids if i.startswith("openai/gpt") and "embedding" not in i][:3]
 
 
@@ -124,7 +133,7 @@ def parse(text):
     except ValueError:
         m = re.search(r"\{.*\}", text, re.S)
         if not m:
-            raise
+            raise ValueError(f"Antwort des Modells ist kein JSON: {text[:200]!r}") from None
         return json.loads(m.group(0))
 
 
@@ -164,11 +173,11 @@ def main(fcb_file, out_file):
 
     for model in candidates(token):
         try:
-            res = post("/inference/chat/completions", {
+            res = call("/inference/chat/completions", token, {
                 "model": model, "temperature": 1.0, "max_tokens": 6000,
                 "response_format": {"type": "json_object"},
                 "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}],
-            }, token)
+            })
             data = parse(res["choices"][0]["message"]["content"])
         except Exception as err:
             detail = err.read().decode(errors="replace")[:300] if hasattr(err, "read") else ""
