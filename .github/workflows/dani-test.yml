@@ -21,13 +21,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          B='{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"Sag Hoi."}],"max_tokens":20}'
-          echo "== curl catalog"; curl -sS -i -m 30 -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://models.github.ai/catalog/models | head -c 900; echo
-          echo "== curl chat"; curl -sS -i -m 60 -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" -d "$B" https://models.github.ai/inference/chat/completions | head -c 1500; echo
-          echo "== curl chat http1.1"; curl -sS -i --http1.1 -m 60 -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -d "$B" https://models.github.ai/inference/chat/completions | head -c 900; echo
-          echo "== curl ohne Token"; curl -sS -i -m 30 https://models.github.ai/catalog/models | head -c 500; echo
-          echo "== azure"; curl -sS -i -m 60 -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Sag Hoi."}],"max_tokens":20}' https://models.inference.ai.azure.com/chat/completions | head -c 900; echo
-          env | grep -i -E "proxy|^GITHUB_API|RUNNER_ENV" || true
+          for P in /en/rest/models/inference /en/rest/models/catalog /en/github-models/quickstart /en/github-models/use-github-models/prototyping-with-ai-models /en/github-models/about-github-models; do
+            echo "=================== $P"
+            curl -sS -L -m 30 -o page.md -w "status %{http_code}\n" "https://docs.github.com/api/article/body?pathname=$P" || true
+            wc -c page.md || true
+            grep -n -i -E "https://[a-z0-9.-]+|deprecat|sunset|retire|no longer|closing down|models: read|GITHUB_TOKEN|api-version|\"model\"" page.md | cut -c1-260 | head -60 || true
+          done
+          echo "=================== api.github.com"
+          curl -sS -i -m 30 -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/models/catalog | head -c 600; echo
+          curl -sS -i -m 30 https://models.github.ai/ | head -c 400; echo
       - name: Sprüche schreiben lassen
         env:
           GITHUB_TOKEN: ${{ github.token }}
