@@ -8,10 +8,35 @@ const $$ = (sel) => document.querySelectorAll(sel);
 function store(key, value) {
   try {
     if (value === undefined) return JSON.parse(localStorage.getItem(key));
-    localStorage.setItem(key, JSON.stringify(value));
+    const json = JSON.stringify(value);
+    try {
+      localStorage.setItem(key, json);
+    } catch {
+      pruneWeatherCache(0); // Speicher voll: alte Wetterdaten weg, dann noch einmal
+      localStorage.setItem(key, json);
+    }
   } catch {
     return null;
   }
+}
+
+// Zwischengespeicherte Wetterdaten ("wx:Breite,Länge") nur für die zuletzt gezeigten Orte
+// behalten. Beim Folgen des Standorts käme sonst mit jedem Ortswechsel ein Eintrag dazu,
+// bis der Speicher voll ist und sich gar nichts mehr merken lässt.
+function pruneWeatherCache(keep, except) {
+  try {
+    const entries = Object.keys(localStorage)
+      .filter((k) => k.startsWith("wx:") && k !== except)
+      .map((k) => {
+        let t = 0;
+        try {
+          t = JSON.parse(localStorage.getItem(k)).t || 0;
+        } catch {}
+        return [k, t];
+      })
+      .sort((a, b) => b[1] - a[1]);
+    for (const [k] of entries.slice(keep)) localStorage.removeItem(k);
+  } catch {}
 }
 
 function el(tag, cls, text) {
@@ -963,6 +988,7 @@ async function showPlace(place) {
     const [w, air] = await Promise.all([fetchWeather(place), fetchAir(place).catch(() => null)]);
     if (seq !== loadSeq) return; // inzwischen anderer Ort gewählt
     const t = Date.now();
+    pruneWeatherCache(5, cacheKey);
     store(cacheKey, { t, w, air });
     state.fetchedAt = t;
     Object.assign(state, { w, air });
@@ -1169,11 +1195,13 @@ async function initRadar() {
 
 // ---------- FC Basel ----------
 
+const FCB_SECTIONS = ["news", "kader", "ticker", "kurve", "chat"];
+
 function setFcbSection(name) {
+  if (!FCB_SECTIONS.includes(name)) name = "ticker";
   $$("#fcb-seg button").forEach((b) => b.classList.toggle("on", b.dataset.s === name));
-  if (!["news", "kader", "ticker", "kurve"].includes(name)) name = "ticker";
-  $$("#fcb-seg button").forEach((b) => b.classList.toggle("on", b.dataset.s === name));
-  ["news", "kader", "ticker", "kurve"].forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
+  FCB_SECTIONS.forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
+  if (name === "chat") openChat();
   store("fcbSection", name);
   if (name === "ticker") {
     loadFcb().catch(() => {});
@@ -1253,6 +1281,7 @@ function matchToast(kind, title, text, dani) {
   box.hidden = false;
   clearTimeout(live.toastTimer);
   live.toastTimer = setTimeout(() => (box.hidden = true), 3 * 60000);
+  chatAdd(`${title} ${text} – ${dani}`); // steht auch im Chat mit Dani
   showStatus(`${title} ${text}`, 12000);
   const sc = $("#sb-score");
   sc.classList.remove("flash");
@@ -1394,6 +1423,7 @@ function liveNext() {
 }
 
 function renderFcb(d) {
+  chat.fcb = d;
   // News
   const news = d.news || [];
   $("#fcb-news-meta").textContent = d.updated ? `Stand ${new Date(d.updated).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "";
@@ -1488,6 +1518,98 @@ async function loadFcb() {
   const res = await fetch("fcb.json", { cache: "no-cache" });
   if (!res.ok) throw new Error(res.status);
   renderFcb(await res.json());
+}
+
+// ---------- Chat mit Dani (dani-chat.js): läuft ganz im Gerät ----------
+
+const chat = { fcb: null, ai: null, log: store("daniChat") || [], ready: false, typing: null, queue: [] };
+
+// Frische Sprüche, die der Veröffentlichungs-Ablauf mit GitHub Models geschrieben hat.
+// Fehlt die Datei, antwortet Dani mit den festen Sprüchen.
+async function loadDaniAi() {
+  const res = await fetch("dani.json", { cache: "no-cache" });
+  if (!res.ok) throw new Error(res.status);
+  const d = await res.json();
+  if (!d || typeof d.answers !== "object") return;
+  chat.ai = d;
+  $("#chat-hint").textContent = `Erfundene Figur. Ein Teil der Sprüche ist von einer KI geschrieben (GitHub Models, ${timeAgo(d.updated)}) und kann danebenliegen. Der Chat bleibt auf deinem Gerät.`;
+}
+
+function chatScroll() {
+  const log = $("#chat-log");
+  log.scrollTop = log.scrollHeight;
+}
+
+function chatAdd(text, me) {
+  const m = { text, me: Boolean(me) };
+  chat.log.push(m);
+  chat.log = chat.log.slice(-60);
+  store("daniChat", chat.log);
+  $("#chat-log").insertBefore(el("p", me ? "me" : null, text), $("#chat-typing"));
+  chatScroll();
+}
+
+// Dani "tippt" kurz, dann kommen seine Antworten nacheinander
+function chatAnswer(lines) {
+  chat.queue.push(...lines);
+  if (chat.typing) return;
+  const next = () => {
+    chat.typing = null;
+    $("#chat-typing").hidden = !chat.queue.length;
+    if (!chat.queue.length) return;
+    chatScroll();
+    chat.typing = setTimeout(() => {
+      chatAdd(chat.queue.shift());
+      next();
+    }, 450 + Math.min(900, chat.queue[0].length * 8));
+  };
+  next();
+}
+
+const chatCtx = () => ({ live: live.data, fcb: chat.fcb, ai: chat.ai, w: state.w, place: state.place });
+
+function chatSend(text) {
+  text = text.trim();
+  if (!text) return;
+  chatAdd(text, true);
+  chatAnswer(DaniChat.reply(text, chatCtx()));
+}
+
+function openChat() {
+  if (!chat.ready) {
+    chat.ready = true;
+    loadDaniAi().catch(() => {});
+    const typing = el("p", "typing");
+    typing.append(el("i"), el("i"), el("i"));
+    typing.id = "chat-typing";
+    typing.setAttribute("aria-label", "Dani schreibt");
+    typing.hidden = true;
+    $("#chat-log").replaceChildren(...chat.log.map((m) => el("p", m.me ? "me" : null, m.text)), typing);
+    $("#chat-chips").replaceChildren(
+      ...DaniChat.CHIPS.map((c) => {
+        const b = el("button", null, c);
+        b.type = "button";
+        b.addEventListener("click", () => chatSend(c));
+        return b;
+      })
+    );
+    $("#chat-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      chatSend($("#chat-input").value);
+      $("#chat-input").value = "";
+    });
+    $("#chat-clear").addEventListener("click", () => {
+      clearTimeout(chat.typing);
+      chat.typing = null;
+      chat.queue = [];
+      chat.log = [];
+      store("daniChat", chat.log);
+      $("#chat-log").replaceChildren($("#chat-typing"));
+      chatAnswer(DaniChat.greeting(chatCtx()));
+    });
+    if (!chat.log.length) chatAnswer(DaniChat.greeting(chatCtx()));
+  }
+  chatScroll();
 }
 
 // ---------- Tabs ----------

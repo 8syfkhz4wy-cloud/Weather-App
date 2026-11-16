@@ -12,6 +12,7 @@ permissions:
   pages: write
   id-token: write
   actions: write
+  models: read # GitHub Models für Danis frische Sprüche (scripts/dani_ki.py)
 
 concurrency:
   group: pages
@@ -30,7 +31,7 @@ jobs:
       - name: Webseite zusammenstellen
         run: |
           mkdir _site
-          cp -r index.html styles.css app.js weather-fx.js fcb-live.js sw.js psalms.json manifest.webmanifest icons warnungen _site/
+          cp -r index.html styles.css app.js weather-fx.js fcb-live.js dani-chat.js sw.js psalms.json manifest.webmanifest icons warnungen _site/
           export APP_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || true)"
           git log -1 --format='%cI%n%s' | python3 -c 'import json,os,sys; d,t=sys.stdin.read().splitlines()[:2]; print(json.dumps({"version": os.environ["APP_VERSION"], "date": d, "title": t}, ensure_ascii=False))' > _site/version.json
       # Fussball-Top-Meldung; schlägt das fehl, bleibt die zuletzt veröffentlichte erhalten
@@ -43,6 +44,14 @@ jobs:
         run: |
           python3 scripts/fcb.py _site/fcb.json || \
             curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/fcb.json -o _site/fcb.json || true
+      # Frische Sprüche für den Chat mit Dani, geschrieben von GitHub Models. Bei Fehler bleibt
+      # der letzte Stand; ohne Datei antwortet der Chat mit den festen Sprüchen.
+      - name: Danis Sprüche schreiben lassen
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/dani_ki.py _site/fcb.json _site/dani.json || \
+            curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/dani.json -o _site/dani.json || true
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -58,7 +67,7 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           if git cat-file -e "$BEFORE^{commit}" 2>/dev/null && \
-             git diff --quiet "$BEFORE" HEAD -- index.html styles.css app.js weather-fx.js fcb-live.js sw.js psalms.json manifest.webmanifest icons; then
+             git diff --quiet "$BEFORE" HEAD -- index.html styles.css app.js weather-fx.js fcb-live.js dani-chat.js sw.js psalms.json manifest.webmanifest icons; then
             echo "Keine Änderung an der App – keine Nachricht."
           else
             python3 scripts/update_nachricht.py warnungen/orte.json "$COMMIT_MESSAGE"
