@@ -55,7 +55,11 @@ const DaniChat = (() => {
   function score(ctx) {
     const d = ctx.live;
     const fx = d && d.fx;
-    if (!fx || !d.score) return ["Grad lauft kai Spiel und ych ha kai Resultat. " + nextMatch(ctx)[0]];
+    if (!fx || !d.score) {
+      const report = ((ctx.fcb && ctx.fcb.ticker) || [])[0];
+      const last = report ? `Grad lauft kai Spiel. Dr letscht Bricht: «${report.title}» (${report.source || "Medie"}).` : "Grad lauft kai Spiel und ych ha kai Resultat.";
+      return [last, nextMatch(ctx)[0]];
+    }
     const mine = fx.baselHome ? 0 : 1;
     const [us, them] = [d.score[mine], d.score[1 - mine]];
     const stand = `${us}:${them} gege ${opponent(fx)}`;
@@ -71,16 +75,40 @@ const DaniChat = (() => {
     return [`${us}:${them} gege ${opponent(fx)}.${extra} E Pünktli isch wie Bier ohni Schuum, aber besser als nyt.`];
   }
 
-  function table(ctx) {
+  // Wie man im Chat nach einem Team fragt → Name in der Teletext-Tabelle
+  const TABLE_TEAMS = [
+    [/\bgc\b|grasshopper|hoppers/, "GC"], [/\byb\b|young boys|bern|bärn/, "YB"], [/fcz|zürich|züri|zuerich/, "Zürich"],
+    [/st\.? ?gallen|sanggalle/, "St.Gallen"], [/luzern|luzärn/, "Luzern"], [/lugano/, "Lugano"], [/sion|sitten/, "Sion"],
+    [/thun/, "Thun"], [/lausanne/, "Lausanne"], [/servette|genf/, "Servette"], [/winterthur|winti/, "Winterthur"], [/vaduz/, "Vaduz"],
+  ];
+
+  function table(ctx, q = "") {
     const rows = (ctx.live && ctx.live.table) || [];
     const us = rows.find((r) => r.team === "Basel");
     if (!us) return ["D Tabälle han ych grad nit do – dr Teletext schloft. Lueg im Ticker, dört kunnt si, sobald s goht."];
+    const asked = TABLE_TEAMS.find(([pattern]) => pattern.test(q));
+    const other = asked && rows.find((r) => r.team === asked[1]);
+    if (other) {
+      const diff = other.points - us.points;
+      const rel = diff > 0 ? `${diff} Pünkt vor uns – no, gopferdammi!` : diff < 0 ? `${-diff} Pünkt hinter uns, und dört blybe si au!` : "pünktglych mit uns. Das ändere mir glyy!";
+      const name = team(other.team);
+      return [`${name[0].toUpperCase()}${name.slice(1)} stoht uf Platz ${other.rank} mit ${other.points} Pünkt us ${other.played} Spiel, ${rel}`, `Mir sälber sinn uf Platz ${us.rank} mit ${us.points} Pünkt.`];
+    }
     const first = rows[0];
     const base = `Mir sinn uf Platz ${us.rank} mit ${us.points} Pünkt us ${us.played} Spiel (Tor ${us.goals}).`;
-    if (us.rank === 1) return [`${base} GANZ OBE, wo mir ane ghöre! Vo dört obe gseht me dr Rhy am beschte!`];
+    if (us.rank === 1) {
+      const second = rows[1];
+      return [`${base} GANZ OBE, wo mir ane ghöre!${second ? ` ${us.points - second.points} Pünkt vor ${team(second.team)}.` : ""} Vo dört obe gseht me dr Rhy am beschte!`];
+    }
     const gap = first.points - us.points;
     const mood = us.rank <= 3 ? "Mir sinn dra, das wird no heiss!" : us.rank <= 6 ? "Do goht no meh, gopferdammi – ufe mit uns!" : "Das isch nit unsere Platz, verreckt nomol. Aber d Kurve singt in jedere Lag!";
     return [`${base} Vorne isch ${team(first.team)}, ${gap} Pünkt vor uns. ${mood}`];
+  }
+
+  function kurveNews(ctx) {
+    const items = (ctx.fcb && ctx.fcb.kurve) || [];
+    if (!items.length) return ["Us dr Kurve git s grad nyt Neis. Aber kai Angscht: Sobald ebbis lauft, stoht s unter «Kurve»."];
+    return [`Us dr Kurve: «${items[0].title}».`, items[1] ? `Und no: «${items[1].title}». Alles drzue findsch unter «Kurve» – alli derby, ihr Bebbi!` : "Meh drzue findsch unter «Kurve» – alli derby, ihr Bebbi!"];
   }
 
   function news(ctx) {
@@ -126,15 +154,34 @@ const DaniChat = (() => {
     return [`${all.length} Maa stöhn im Kader. Alli Näme und Nummere findsch unter «Kader» – oder frog mi noch eim, zum Bispil noch em Goalie.`];
   }
 
-  function weather(ctx) {
+  const skyText = (code) => (code >= 95 ? "es gwitteret" : code >= 71 && code <= 86 && ![80, 81, 82].includes(code) ? "es schneit" : code >= 51 ? "es schifft" : code >= 45 ? "es het Näbel" : code >= 2 ? "es isch bewölggt" : "dr Himmel isch offe");
+  const wearTip = (code, t) => (code >= 95 ? "Bi däm Wätter blybt sogar ych e Momänt unterem Dach." : code >= 51 ? "Rägejagge aa – e Schirm in dr Kurve isch öbbis für Zürcher!" : t <= 3 ? "Schal dopplet umwiggle und e Glüehwy in d Hand, denn goht das." : t >= 27 ? "Viel trinke, Lüt. Und ych main nit nur Bier. Aber au." : "Perfekts Fuessballwätter, was wotsch meh?");
+
+  // Vorhersage für die Stunde des Anpfiffs, falls sie in den geladenen Wetterdaten liegt
+  function kickoffWeather(ctx) {
+    const d = ctx.live;
+    const fx = d && [d.fx, d.next].find((f) => f && f.kickoff && f.kickoff.getTime() > Date.now());
+    const h = ctx.w && ctx.w.hourly;
+    if (!fx || !h || !h.time) return null;
+    const k = fx.kickoff;
+    const pad = (n) => String(n).padStart(2, "0");
+    const key = `${k.getFullYear()}-${pad(k.getMonth() + 1)}-${pad(k.getDate())}T${pad(k.getHours())}:00`;
+    const i = h.time.indexOf(key);
+    if (i < 0 || h.temperature_2m[i] == null) return null;
+    return { fx, t: Math.round(h.temperature_2m[i]), code: h.weather_code[i], rain: (h.precipitation_probability || [])[i] };
+  }
+
+  function weather(ctx, q = "") {
     const c = ctx.w && ctx.w.current;
     if (!c) return ["S Wätter lädt grad no. Aber egal: E Rotblaue goht bi jedem Wätter an Match!"];
+    const where = ctx.place && ctx.place.name ? `z ${ctx.place.name}` : "dusse";
+    const k = /spiel|match|anpfiff|samstag|sonntag|samschtig|sunntig|wochenende|wuchenänd/.test(q) ? kickoffWeather(ctx) : null;
+    if (k) {
+      const rain = k.rain != null ? `, Rägerisiko ${k.rain} %` : "";
+      return [`Bim Aapfiff gege ${opponent(k.fx)} (${when(k.fx.kickoff)}) git s ${where} ${k.t} Grad, ${skyText(k.code)}${rain}. ${wearTip(k.code, k.t)}`];
+    }
     const t = Math.round(c.temperature_2m);
-    const code = c.weather_code;
-    const where = ctx.place && ctx.place.name ? `Z ${ctx.place.name}` : "Dusse";
-    const sky = code >= 95 ? "und es gwitteret" : code >= 71 && code <= 86 && code !== 80 && code !== 81 && code !== 82 ? "und es schneit" : code >= 51 ? "und es schifft" : code >= 45 ? "und es het Näbel" : code >= 2 ? "und es isch bewölggt" : "und dr Himmel isch offe";
-    const tip = code >= 95 ? "Bi däm Wätter blybt sogar ych e Momänt unterem Dach." : code >= 51 ? "Rägejagge aa – e Schirm in dr Kurve isch öbbis für Zürcher!" : t <= 3 ? "Schal dopplet umwiggle und e Glüehwy in d Hand, denn goht das." : t >= 27 ? "Viel trinke, Lüt. Und ych main nit nur Bier. Aber au." : "Perfekts Fuessballwätter, was wotsch meh?";
-    return [`${where} het s ${t} Grad ${sky}. ${tip}`];
+    return [`Jetzt het s ${where} ${t} Grad und ${skyText(c.weather_code)}. ${wearTip(c.weather_code, t)}`];
   }
 
   function tip(ctx) {
@@ -175,10 +222,11 @@ const DaniChat = (() => {
       pick(["Wie s am ene Rotblaue halt goht: Härzrase vo Mäntig bis Sunntig!", "Guet! Ych ha e Kaffi, e Gipfeli und dr FCB im Grind. Meh bruucht s nit.", "Verchateret, heiser und glügglig. Also wie immer."]),
     ]],
     // Daten
-    [/wetter|wätter|regen|räge|regnet|schifft|schnee|schneit|kalt|warm|heiss\b|sonne|temperatur|schirm|jacke/, (q, ctx) => weather(ctx)],
+    [/us dr kurve|aus der kurve|kurve.*(neu|news|los|lauft|läuft|termin|ankünd|plant)|extrazug|auswärtsfahrt|usswärtsfahrt|fanmarsch|treffpunkt/, (q, ctx) => kurveNews(ctx)],
+    [/wetter|wätter|regen|räge|regnet|schifft|schnee|schneit|kalt|warm|heiss\b|sonne|temperatur|schirm|jacke/, (q, ctx) => weather(ctx, q)],
     [/\blive\b|spielstand|wie stehts|wie steht es|wie stoht|resultat|ergebnis|gewonnen|verloren|gwunne|verlore|hän mir|haben wir|tore heute|letztes spiel|letscht/, (q, ctx) => score(ctx)],
-    [/nächst|nögscht|naechst|wann spiel|wenn spiel|gegen wen|gege wär|gegner|anpfiff|spieltag|match|heimspiel|auswärts|usswärts/, (q, ctx) => nextMatch(ctx)],
-    [/tabelle|tabälle|\bplatz\b|\brang\b|punkte|pünkt|leader|tabellen|wo stehen|wo stöhn|meister werden|maischter wärde/, (q, ctx) => table(ctx)],
+    [/nächst|nögscht|naechst|wann spiel|wenn spiel|gegen wen|gege wär|gegner|anpfiff|spieltag|match|heimspiel|auswärts|usswärts|wie lange noch|wie lang no|countdown/, (q, ctx) => nextMatch(ctx)],
+    [/tabelle|tabälle|\bplatz\b|\brang\b|punkte|pünkt|leader|tabellen|wo stehen|wo stöhn|wo steht|wo stoht|rückstand|vorsprung|meister werden|maischter wärde/, (q, ctx) => table(ctx, q)],
     [/gerücht|grücht|transfer|wechsel|verpflicht|neuzugang|zugang|abgang/, (q, ctx) => rumors(ctx)],
     [/news|neues|neuigkeit|neis|schlagzeile|was gibts|was git s|was gits|was ist los|was isch los|aktuell/, (q, ctx) => news(ctx)],
     [/kader|mannschaft|spieler|goalie|torh|torwart|abwehr|verteidig|mittelfeld|sturm|stürmer|angriff|aufstellung|wer spielt/, squadRule],
@@ -262,7 +310,7 @@ const DaniChat = (() => {
     "Das isch mir z hoch. Aber eis waiss ych sicher: HOPP FCB! Frog mi ebbis über dr Club.",
   ];
 
-  const CHIPS = ["Nächstes Spiel?", "Wie stehts?", "Tabelle", "Was gibts Neues?", "Wetter fürs Spiel", "Sing ein Lied", "Was hältst du von Zürich?", "Erzähl einen Witz"];
+  const CHIPS = ["Nächstes Spiel?", "Wie stehts?", "Tabelle", "Was gibts Neues?", "Wetter fürs Spiel", "Us dr Kurve", "Sing ein Lied", "Was hältst du von Zürich?", "Erzähl einen Witz", "Noch einen!"];
 
   // Weitere Sprüche je Thema, damit Dani nicht immer dasselbe sagt. Ein Beispielwort bestimmt
   // die Regel, zu der sie gehören; gewählt wird aus diesen und den Sprüchen der Regel.
@@ -351,12 +399,41 @@ const DaniChat = (() => {
 
   const wordIn = (q, w) => ` ${q} `.includes(` ${w} `);
 
-  function reply(text, ctx = {}) {
-    const q = String(text).toLowerCase().replace(/[!?.,;:«»"()]+/g, " ").replace(/\s+/g, " ").trim();
-    if (!q) return [pick(FALLBACK)];
+  // Wörter, auf die die Regeln hören. Ein vertipptes Wort wird auf das nächstliegende gezogen.
+  const VOCAB = ["tabelle", "spielstand", "resultat", "nächstes", "spiel", "gegner", "anpfiff", "wetter", "kader", "goalie", "spieler",
+    "news", "gerüchte", "transfer", "zürich", "grasshoppers", "luzern", "lugano", "servette", "lausanne", "winterthur", "joggeli",
+    "stadion", "kurve", "choreo", "schiri", "trainer", "fasnacht", "bier", "wurst", "witz", "lied", "basel", "danke", "tschüss", "hallo"];
+
+  function distance(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      const row = [i];
+      for (let j = 1; j <= b.length; j++) row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = row;
+    }
+    return prev[b.length];
+  }
+
+  // "tabele" → "tabelle", "naechstes" → "nächstes"; kurze Wörter bleiben, wie sie sind
+  function fixTypos(q) {
+    return q.split(" ").map((word) => {
+      if (word.length < 5 || VOCAB.includes(word)) return word;
+      const plain = word.replace(/ae/g, "ä").replace(/oe/g, "ö").replace(/ue/g, "ü");
+      if (VOCAB.includes(plain)) return plain;
+      const near = VOCAB.find((v) => v.length >= 5 && distance(word, v) <= (v.length >= 8 ? 2 : 1));
+      return near || word;
+    }).join(" ");
+  }
+
+  const AGAIN = /^(noch (einen|eine|eins|ein|mal|mehr)|nochmal|nochmals|nomol|no eine|no eis|no meh|mehr|weiter|und (noch|sonst)|gleich nochmal)\b/;
+  let lastQuestion = "";
+
+  // Gibt die Antwort oder null, wenn Dani nichts dazu weiss
+  function answer(q, ctx) {
     const hit = (rules) => rules.find(([pattern]) => pattern.test(q));
     // Reihenfolge: Schutzregeln (Gewalt, Pyro) → Fragen nach Daten und nach Dani selbst →
-    // Schlagzeile von heute → Spieler aus dem Kader → Sprüche → nicht verstanden
+    // Schlagzeile von heute → Spieler aus dem Kader → Sprüche
     const guard = hit(RULES.slice(0, GUARDS));
     if (guard) return guard[1](q, ctx);
     const rule = hit(RULES.slice(GUARDS));
@@ -367,10 +444,28 @@ const DaniChat = (() => {
     if (topic && !(banter && Math.random() < 0.5)) return [pick(topic.answers)];
     const p = findPlayer(ctx, q);
     if (p) return player(p);
-    if (!rule) return [pick(FALLBACK)];
+    if (!rule) return null;
     if (!banter) return rule[1](q, ctx);
     // Aus den Sprüchen der Regel und den zusätzlichen wählen, gewichtet nach Anzahl
     return Math.random() < rule.more.length / (rule.more.length + 2) ? [pick(rule.more)] : rule[1](q, ctx);
+  }
+
+  function reply(text, ctx = {}) {
+    let q = String(text).toLowerCase().replace(/[!?.,;:«»"()]+/g, " ").replace(/\s+/g, " ").trim();
+    if (!q) return [pick(FALLBACK)];
+    // «Noch einen!» wiederholt die letzte Frage (noch ein Witz, noch ein Lied …)
+    if (AGAIN.test(q) && lastQuestion) q = lastQuestion;
+    let out = answer(q, ctx);
+    if (!out) {
+      const fixed = fixTypos(q);
+      if (fixed !== q) {
+        q = fixed;
+        out = answer(q, ctx);
+      }
+    }
+    if (!out) return [pick(FALLBACK)];
+    lastQuestion = q;
+    return out;
   }
 
   function greeting(ctx = {}) {
@@ -382,7 +477,9 @@ const DaniChat = (() => {
       : hours < 30
         ? `${hours < 12 ? "HÜT" : "Glyy"} isch Matchdaag gege ${opponent(fx)}, ych ha scho Härzchlopfe! Frog mi, was de wotsch.`
         : "Frog mi nach em nögschte Spiel, dr Tabälle, de News, em Kader oder em Wätter. Oder schwätz aifach mit mir über dr FCB!";
-    return ["Sali, du Bebbi! Dr Dani isch do – Schal um, Schnuure uf. 🧣", second];
+    const hour = new Date().getHours();
+    const hello = hour < 5 ? "Hösch, no wach? Dr Dani au" : hour < 10 ? "Guete Morge, du Bebbi! Dr Dani isch do" : hour >= 18 ? "Guete Obe, du Bebbi! Dr Dani isch do" : "Sali, du Bebbi! Dr Dani isch do";
+    return [`${hello} – Schal um, Schnuure uf. 🧣`, second];
   }
 
   return { reply, greeting, CHIPS };
