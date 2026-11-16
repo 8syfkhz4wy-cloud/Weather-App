@@ -2,9 +2,9 @@
 
 // Chat mit dem fiktiven Kurven-Experten Dani «Joggeli» Meier.
 // Läuft ganz im Gerät: Antworten nach Stichworten, dazu die Daten, die die App ohnehin
-// schon geladen hat (Spielstand, Tabelle, News, Kader, Wetter). Kein Server; was man
-// schreibt, verlässt das Gerät nicht. Frische Sprüche kommen fertig aus dani.json, die
-// der Veröffentlichungs-Ablauf von Claude schreiben lässt (scripts/dani_ki.py).
+// schon geladen hat (Spielstand, Tabelle, News, Kader, Wetter). Kein Server, keine KI,
+// keine Kosten; was man schreibt, verlässt das Gerät nicht. Reaktionen auf die
+// Schlagzeilen des Tages kommen fertig aus fcb.json (scripts/fcb.py, chat_topics).
 // Wie in scripts/fcb.py gilt: derb und emotional, aber keine Gewaltaufrufe und keine
 // Beleidigung echter, namentlich genannter Personen. Geflucht wird über Situationen.
 const DaniChat = (() => {
@@ -157,10 +157,8 @@ const DaniChat = (() => {
     ]],
     [/pyro|fackel|bengal|rauch(topf|bombe)|böller|petarde/, () => ["Zu däm Thema sag ych nyt, usser: Finger und Auge bruuchsch no, also pass uf di uf. Singe isch gratis und git kai Buess."]],
     // Wer bist du? Ehrlich bleiben: erfundene Figur, kein Mensch, keine KI
-    [/bist du (echt|ein mensch|eine? ki|ein bot|ein roboter)|bisch (du )?(ächt|echt|e mensch|e bot|e ki)|chatgpt|künstliche intelligenz|\bki\b|\bbot\b|roboter|wer hat dich|programmiert/, (q, ctx) => [
-      ctx.ai && ctx.ai.answers
-        ? "Ohni Seich: Ych bi e erfundeni Figur, kai Mensch. E Dail vo myne Sprüch schrybt e KI alli paar Stund neu, aber die loost dir nit zue – d App suecht numme dr passend Spruch use."
-        : "Ohni Seich: Ych bi e erfundeni Figur. Kai Mensch und kai gschydi Maschine – numme e Huffe feschti Sprüch in dere App, wo uf dyni Wörter loose.",
+    [/bist du (echt|ein mensch|eine? ki|ein bot|ein roboter)|bisch (du )?(ächt|echt|e mensch|e bot|e ki)|chatgpt|künstliche intelligenz|\bki\b|\bbot\b|roboter|wer hat dich|programmiert/, () => [
+      "Ohni Seich: Ych bi e erfundeni Figur. Kai Mensch und kai gschydi Maschine – numme e Huffe feschti Sprüch in dere App, wo uf dyni Wörter loose.",
       "Aber s Härz isch ächt rotblau, das cha me nit programmiere!",
     ]],
     [/wer bist du|wer bisch|wie heisst du|wie heissisch|dein name|di name|stell dich vor|über dich|erzähl.*von dir/, () => [
@@ -266,37 +264,113 @@ const DaniChat = (() => {
 
   const CHIPS = ["Nächstes Spiel?", "Wie stehts?", "Tabelle", "Was gibts Neues?", "Wetter fürs Spiel", "Sing ein Lied", "Was hältst du von Zürich?", "Erzähl einen Witz"];
 
-  // Themen, zu denen dani.json frische Sprüche liefern kann (scripts/dani_ki.py).
-  // Ein Beispielwort bestimmt die Regel; Fragen nach Daten und nach Dani selbst bleiben fest.
-  const AI_KEYS = {
-    sali: "gruss", "alles klar": "befinden", fcz: "zuerich", grasshopper: "gc", "young boys": "yb", sanggalle: "stgallen",
-    servette: "andere", europacup: "europa", joggeli: "joggeli", choreo: "kurve", schiri: "schiri", taktik: "trainer",
-    bier: "bier", wurscht: "essen", fasnacht: "fasnacht", bebbi: "basel", witz: "witz", allez: "hopp", merci: "danke", adieu: "tschuess",
+  // Weitere Sprüche je Thema, damit Dani nicht immer dasselbe sagt. Ein Beispielwort bestimmt
+  // die Regel, zu der sie gehören; gewählt wird aus diesen und den Sprüchen der Regel.
+  const MORE = {
+    sali: [
+      "Sali, sali! Kumm yne, d Kurve het immer no e Platz frei. Was git s?",
+      "Hoi zämme! Ych bi grad am Schal bügle – jo, das macht me. Was wotsch wüsse?",
+      "Lueg do, e Bebbi! Sitz ane, nimm e Bier, verzell.",
+    ],
+    "alles klar": [
+      "Solang dr FCB spilt, goht s mir guet. In dr Sommerpause bin ych e Wrack.",
+      "Mi Stimm isch wäg, mi Härz isch voll. Besser goht s nit!",
+      "Ych ha hüt scho drüümol d Tabälle agluegt. Also: normal.",
+    ],
+    fcz: [
+      "Z Züri hän si alles: Gäld, See, Banke. Numme kai Fuessball, wo me cha aaluege.",
+      "Dr FCZ isch wie s Wätter im Novämber: Me mues es halt ushalte. Aber d Pünkt blybe z Basel!",
+      "Wenn ych «Züri» ghör, zuggt mi rächts Aug. Dr Doggter sait, das syg unheilbar.",
+    ],
+    grasshopper: [
+      "GC – Rekordmaischter vo anno Tubak. Sit do lueget si uns vo unde zue.",
+      "D Heugümper! Bi dene kennt me d Zueschauer bim Vorname. Alli zwölf.",
+    ],
+    "young boys": [
+      "YB het johrzähntelang Zwaite gmacht, das mues me au zerscht könne. Ych gunn ne s – aber nit gege uns.",
+      "Z Bärn isch alles gmüetlig. Usser wenn mir kömme, denn wird s ungmüetlig!",
+    ],
+    sanggalle: [
+      "D Sanggaller sinn luti Sieche, Reschpäggt. Aber lut sy ellai längt nit – mir sinn lut UND guet.",
+      "Oschtschwyz, dört wo d Wurscht ohni Sänf gässe wird. Do bruucht s kai wytere Kommentar.",
+    ],
+    servette: [
+      "Jede Gegner isch e guete Gegner – wenn er mit null Pünkt wieder haigoht.",
+      "Ych ha Reschpäggt vor allne, wo in d Kurve stöhn, egal wo. Aber gwünne tüen mir!",
+    ],
+    europacup: [
+      "Unter dr Wuche Fuessball am Obe, Fluetliecht, grossi Näme – und mir mittedrin. Do läbt e Bebbi uf!",
+      "Mir hän in Europa scho Grossi gärgeret, und mir mache s wieder. Dr Joggeli vergisst nyt!",
+    ],
+    joggeli: [
+      "Bim erschte Schritt us em Tram gsehsch s Joggeli und s Härz macht e Gump. Jedes Mol, sit 1998.",
+      "Dehai isch, wo s Joggeli stoht. D Wohnig isch numme zum Schlofe.",
+    ],
+    choreo: [
+      "Mir sueche kai Applaus, mir sueche Gänsehut. Wenn dr Sektor als Aine singt, hesch si.",
+      "Kurve haisst: früeh ko, lang blybe, alles gä. Wär sitze wott, het e Sofa dehai.",
+      "D Trummle git dr Takt, d Kurve dr Räscht. Und ych mi Stimm – jedes Wuchenänd nei.",
+    ],
+    schiri: [
+      "Dr Schiri het s nit eifach, ych waiss. Aber in däm Momänt waiss ych s amme nümme!",
+      "Früener het e Tor zellt, wenn dr Ball dinne gsi isch. Hüt bruuchsch drzue e Sitzig.",
+    ],
+    taktik: [
+      "Vierer-Kettene, Dreier-Kettene – Hauptsach d Kettene hebe. Und vorne aine, wo s Tor trifft.",
+      "Ych ha kai Trainerschyn, aber e Mainig. Und die isch lut!",
+    ],
+    bier: [
+      "S erschte Bier isch für dr Durscht, s zwaite für d Stimm, s dritte für d Träne – Fraid oder Leid.",
+      "Ohni Bier kai Kurve? Dumms Züg. Aber mit Bier singt s sich ringer.",
+    ],
+    wurscht: [
+      "Wurscht, Brot, Sänf – das isch e Basler Menü mit drei Gäng.",
+      "Vor em Match e Wurscht, noch em Match e Wurscht. Dr Doggter sait nai, s Härz sait jo.",
+    ],
+    fasnacht: [
+      "Piccolo, Drummle und Räppli in dr Unterhose bis im Mai. Das isch Basel!",
+      "An dr Fasnacht bin ych still und los zue. Das isch s ainzig Mol im Johr.",
+    ],
+    bebbi: [
+      "E Bebbi blybt e Bebbi, au wenn er wägzieht. Dr Rhy fliesst jo au wyter und isch glych vo do.",
+      "Glaibasel oder Grossbasel, das isch e Glaubensfrog. Bim FCB sinn mir alli glych.",
+    ],
+    witz: [
+      "Was isch s Schönschte an Züri? S Usfahrtsschild «Basel». 😄",
+      "Zwei Zürcher laufe in e Bar. Dr FCZ verliert trotzdäm. 😄",
+      "Wie haisst e Bärner im Sprint? Kunnt no. 😄",
+    ],
+    allez: [
+      "HOPP FCB! Ych ha grad d Nochbere gweggt, aber das isch s wärt! ❤️💙",
+      "JOOO! Genau so! Und jetzt alli zämme: ROT! BLAU! ❤️💙",
+    ],
+    merci: ["Scho rächt, Kolleeg. Under Rotblaue hilft me sich.", "Für das bin ych do! Susch no ebbis?"],
+    adieu: ["Tschau zämme! Und nit vergässe: Am Matchdaag isch Pflicht. ❤️💙", "Mach s guet! Ych gang jetzt e Fahne go bügle. ❤️💙"],
   };
-  for (const [sample, key] of Object.entries(AI_KEYS)) RULES.find(([pattern]) => pattern.test(sample)).key = key;
-  const AI_SHARE = 0.6; // so oft kommt ein frischer statt ein fester Spruch
+  for (const [sample, lines] of Object.entries(MORE)) RULES.find(([pattern]) => pattern.test(sample)).more = lines;
+
+  const wordIn = (q, w) => ` ${q} `.includes(` ${w} `);
 
   function reply(text, ctx = {}) {
     const q = String(text).toLowerCase().replace(/[!?.,;:«»"()]+/g, " ").replace(/\s+/g, " ").trim();
-    const ai = ctx.ai || {};
-    const fresh = (key, fixed) => {
-      const lines = (ai.answers || {})[key] || [];
-      return lines.length && Math.random() < AI_SHARE ? [pick(lines)] : fixed();
-    };
-    const fallback = () => fresh("fallback", () => [pick(FALLBACK)]);
-    if (!q) return fallback();
+    if (!q) return [pick(FALLBACK)];
     const hit = (rules) => rules.find(([pattern]) => pattern.test(q));
     // Reihenfolge: Schutzregeln (Gewalt, Pyro) → Fragen nach Daten und nach Dani selbst →
     // Schlagzeile von heute → Spieler aus dem Kader → Sprüche → nicht verstanden
     const guard = hit(RULES.slice(0, GUARDS));
     if (guard) return guard[1](q, ctx);
     const rule = hit(RULES.slice(GUARDS));
-    if (rule && !rule.key && rule[1] !== squadRule) return rule[1](q, ctx);
-    const topic = (ai.topics || []).find((t) => t.words.some((w) => ` ${q} `.includes(` ${w} `)));
-    if (topic) return [pick(topic.answers)];
+    const banter = rule && rule.more;
+    if (rule && !banter && rule[1] !== squadRule) return rule[1](q, ctx);
+    const topic = ((ctx.fcb && ctx.fcb.chat) || []).find((t) => t.words.some((w) => wordIn(q, w)));
+    // Zu einem Gegner gibt es Sprüche und vielleicht eine Schlagzeile: mal so, mal so
+    if (topic && !(banter && Math.random() < 0.5)) return [pick(topic.answers)];
     const p = findPlayer(ctx, q);
     if (p) return player(p);
-    return rule ? fresh(rule.key, () => rule[1](q, ctx)) : fallback();
+    if (!rule) return [pick(FALLBACK)];
+    if (!banter) return rule[1](q, ctx);
+    // Aus den Sprüchen der Regel und den zusätzlichen wählen, gewichtet nach Anzahl
+    return Math.random() < rule.more.length / (rule.more.length + 2) ? [pick(rule.more)] : rule[1](q, ctx);
   }
 
   function greeting(ctx = {}) {
