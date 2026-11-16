@@ -1,5 +1,5 @@
 // Offline-Unterstützung: App-Dateien und Psalmen werden zwischengespeichert.
-const CACHE = "wetter-psalm-v22";
+const CACHE = "wetter-psalm-v23";
 const ASSETS = [
   "./",
   "index.html",
@@ -7,6 +7,7 @@ const ASSETS = [
   "app.js",
   "weather-fx.js",
   "fcb-live.js",
+  "dani-chat.js",
   "psalms.json",
   "manifest.webmanifest",
   "icons/apple-touch-icon.png",

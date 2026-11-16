@@ -174,6 +174,7 @@
         <button data-s="kader">Kader</button>
         <button data-s="ticker">Ticker</button>
         <button data-s="kurve">Kurve</button>
+        <button data-s="chat">Chat</button>
       </div>
 
       <div class="fcb-pane" id="fcb-news">
@@ -238,6 +239,22 @@
         <div class="panel" id="rumor-card" hidden>
           <div class="panel-head"><span class="tag">// GERÜCHTEKÜCHE</span><span class="tag-r">unbestätigt</span></div>
           <ul id="rumor-feed" class="fcb-news"></ul>
+        </div>
+      </div>
+      <div class="fcb-pane" id="fcb-chat" hidden>
+        <div class="panel chat">
+          <div class="kurve-head">
+            <div class="kurve-avatar" aria-hidden="true">🧣</div>
+            <div class="chat-who"><div class="kurve-name">Dani «Joggeli» Meier</div><div class="kurve-bio">Fiktiver Ultra · schwätzt Baseldytsch</div></div>
+            <button type="button" class="link-btn chat-clear" id="chat-clear">Leeren</button>
+          </div>
+          <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Chat mit Dani"></div>
+          <div id="chat-chips" class="chat-chips"></div>
+          <form id="chat-form" class="chat-form">
+            <input id="chat-input" type="text" placeholder="Schryb em Dani …" autocomplete="off" enterkeyhint="send" maxlength="200" aria-label="Nachricht an Dani">
+            <button class="btn accent" aria-label="Senden">➤</button>
+          </form>
+          <p class="hint">Erfundene Figur mit festen Antworten, keine KI. Der Chat bleibt auf deinem Gerät.</p>
         </div>
       </div>
       <p id="fcb-empty" class="hint" hidden>FC-Basel-Daten werden beim nächsten Update geladen.</p>
@@ -308,6 +325,7 @@
 
   <script src="weather-fx.js"></script>
   <script src="fcb-live.js"></script>
+  <script src="dani-chat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

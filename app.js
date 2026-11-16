@@ -1169,11 +1169,13 @@ async function initRadar() {
 
 // ---------- FC Basel ----------
 
+const FCB_SECTIONS = ["news", "kader", "ticker", "kurve", "chat"];
+
 function setFcbSection(name) {
+  if (!FCB_SECTIONS.includes(name)) name = "ticker";
   $$("#fcb-seg button").forEach((b) => b.classList.toggle("on", b.dataset.s === name));
-  if (!["news", "kader", "ticker", "kurve"].includes(name)) name = "ticker";
-  $$("#fcb-seg button").forEach((b) => b.classList.toggle("on", b.dataset.s === name));
-  ["news", "kader", "ticker", "kurve"].forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
+  FCB_SECTIONS.forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
+  if (name === "chat") openChat();
   store("fcbSection", name);
   if (name === "ticker") {
     loadFcb().catch(() => {});
@@ -1394,6 +1396,7 @@ function liveNext() {
 }
 
 function renderFcb(d) {
+  chat.fcb = d;
   // News
   const news = d.news || [];
   $("#fcb-news-meta").textContent = d.updated ? `Stand ${new Date(d.updated).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "";
@@ -1488,6 +1491,82 @@ async function loadFcb() {
   const res = await fetch("fcb.json", { cache: "no-cache" });
   if (!res.ok) throw new Error(res.status);
   renderFcb(await res.json());
+}
+
+// ---------- Chat mit Dani (dani-chat.js): läuft ganz im Gerät ----------
+
+const chat = { fcb: null, log: store("daniChat") || [], ready: false, typing: null, queue: [] };
+
+function chatScroll() {
+  const log = $("#chat-log");
+  log.scrollTop = log.scrollHeight;
+}
+
+function chatAdd(text, me) {
+  const m = { text, me: Boolean(me) };
+  chat.log.push(m);
+  chat.log = chat.log.slice(-60);
+  store("daniChat", chat.log);
+  $("#chat-log").insertBefore(el("p", me ? "me" : null, text), $("#chat-typing"));
+  chatScroll();
+}
+
+// Dani "tippt" kurz, dann kommen seine Antworten nacheinander
+function chatAnswer(lines) {
+  chat.queue.push(...lines);
+  if (chat.typing) return;
+  const next = () => {
+    chat.typing = null;
+    $("#chat-typing").hidden = !chat.queue.length;
+    if (!chat.queue.length) return;
+    chatScroll();
+    chat.typing = setTimeout(() => {
+      chatAdd(chat.queue.shift());
+      next();
+    }, 450 + Math.min(900, chat.queue[0].length * 8));
+  };
+  next();
+}
+
+function chatSend(text) {
+  text = text.trim();
+  if (!text) return;
+  chatAdd(text, true);
+  chatAnswer(DaniChat.reply(text, { live: live.data, fcb: chat.fcb, w: state.w, place: state.place }));
+}
+
+function openChat() {
+  if (!chat.ready) {
+    chat.ready = true;
+    const typing = el("p", "typing", "Dani schrybt …");
+    typing.id = "chat-typing";
+    typing.hidden = true;
+    $("#chat-log").replaceChildren(...chat.log.map((m) => el("p", m.me ? "me" : null, m.text)), typing);
+    $("#chat-chips").replaceChildren(
+      ...DaniChat.CHIPS.map((c) => {
+        const b = el("button", null, c);
+        b.type = "button";
+        b.addEventListener("click", () => chatSend(c));
+        return b;
+      })
+    );
+    $("#chat-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      chatSend($("#chat-input").value);
+      $("#chat-input").value = "";
+    });
+    $("#chat-clear").addEventListener("click", () => {
+      clearTimeout(chat.typing);
+      chat.typing = null;
+      chat.queue = [];
+      chat.log = [];
+      store("daniChat", chat.log);
+      $("#chat-log").replaceChildren($("#chat-typing"));
+      chatAnswer(DaniChat.greeting());
+    });
+    if (!chat.log.length) chatAnswer(DaniChat.greeting());
+  }
+  chatScroll();
 }
 
 // ---------- Tabs ----------
