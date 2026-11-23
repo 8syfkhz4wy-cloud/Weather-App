@@ -2,10 +2,14 @@
 
 ## v2.1.0
 
+- **GTA 6 – Tipp des Tages:** neuer Banner auf der Startseite mit einem Artikel zu GTA 6 – jeden Tag ein anderer Schwerpunkt: Tipps & Tricks, Cheats, versteckte Orte, Autos, Waffen und Geld, dazu je Schwerpunkt ein weiterer Artikel aus GameStar, GamePro, IGN und weiteren Spielemagazinen
+- **Chat mit Dani:** im FCB-Tab mit Dani «Joggeli» Meier auf Baseldytsch schreiben – zu Spielstand, nächstem Spiel, Tabelle, News, Kader und Wetter zum Anpfiff, ganz im Gerät und kostenlos
 - **Live-Ticker FC Basel:** Spielstand, Tore (auch des Gegners) und Platzverweise direkt aus dem SRF-Teletext, während eines Spiels alle 20 Sekunden neu – mit Meldung in der App und Push-Nachricht
 - **Nächstes Spiel und Tabelle** der Super League im Ticker
 - **Links repariert:** Meldungen öffnen direkt den Artikel (SRF, Blick, watson, 20 Minuten), der Blick-Knopf funktioniert wieder
 - **Standort genauer:** Gemeinden wie Allschwil werden richtig erkannt
+- **Immer aktuell:** News, GTA-Tipp und FCB-Daten laden beim Zurückkehren in die App und beim Aktualisieren neu
+- **Korrekturen:** genauere Wetter-Zusammenfassung (Regen oder Schnee, keine vergangenen Uhrzeiten), Ortssuche und Radar hängen bei schlechtem Netz nicht mehr, zuverlässigere Push-Warnungen
 
 ## v2.0.0
 
