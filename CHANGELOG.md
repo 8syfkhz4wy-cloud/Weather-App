@@ -1,5 +1,14 @@
 # Versionen
 
+## v2.2.0
+
+- **GTA 6 im neuen Look:** neue Illustration mit echtem Sportwagen – drehende Felgen, Bremssättel, LED-Scheinwerfer mit Lichtkegel, Rücklicht mit Lichtspur und Neon-Unterbodenbeleuchtung
+- **Neon-Stadt:** Retro-Sonne hinter der Skyline mit beleuchteten Fenstern, Palmen im Wind, Hotel-Leuchtschild, Flugzeug mit Werbebanner und Lichtspuren auf der Uferstrasse
+- **Leuchtreklame je Thema:** Stern, Glühbirne, Controller, Kartennadel, Tacho, Fadenkreuz oder Dollar mit blinkenden Glühbirnen – und das Auto fährt in der Farbe des Themas
+- **Abends und nachts** mit Mond und Sternenhimmel
+- **Neon-Karte:** leuchtender Rahmen, Knopf „Zum Artikel“ als Neon-Pille, Themen-Chips und Artikel in ihren Farben
+- Die Versionszeile unten zeigt keine internen Vermerke mehr
+
 ## v2.1.2
 
 - **FCB-Ticker auch im Ausland richtig:** Anpfiff, Countdown und Live-Ticker stimmen jetzt auf jedem iPhone, egal in welcher Zeitzone (Ferien, Auswärtsfahrt). Ausserhalb der Schweiz steht die Schweizer Zeit in Klammern dabei

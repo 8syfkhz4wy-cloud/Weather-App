@@ -8,6 +8,7 @@ const path = require("node:path");
 const FcbLive = require("../fcb-live.js");
 const swiss = FcbLive.zurichParts;
 const DaniChat = require("../dani-chat.js");
+const GtaArt = require("../gta-art.js");
 
 test("Teletext: Partie mit Resultat und Halbzeitstand", () => {
   const fx = FcbLive.parseFixture("FUSSBALL 22.11.26 17:45 Super League GC - Lugano 1:1 (0:0) Basel - YB 2:1 (1:0) Sion - Thun 0:0");
@@ -88,6 +89,30 @@ const swissDay = (add, hh, mm) => {
   const s = swiss(new Date());
   return FcbLive.zurichDate(s.y, s.mo, s.d + add, hh, mm);
 };
+
+test("GTA-Illustration: Sportwagen, Leuchtreklame je Thema, Tag und Nacht", () => {
+  const day = new Date(2026, 10, 23, 15, 0);
+  const night = new Date(2026, 10, 23, 23, 0);
+  const motifs = ["heute", "tipps", "cheats", "orte", "autos", "waffen", "geld"];
+  const svgs = motifs.map((m) => GtaArt.svg("#3ddcff", m, day));
+  for (const [i, s] of svgs.entries()) {
+    assert.match(s, /^<svg viewBox="0 0 640 300"/, motifs[i]);
+    assert.match(s, /class="ga-car"/, motifs[i]);
+    assert.equal((s.match(/class="ga-spin"/g) || []).length, 2, `${motifs[i]}: zwei Räder`);
+    assert.doesNotMatch(s, /NaN|undefined|Infinity/, motifs[i]);
+  }
+  assert.equal(new Set(svgs).size, motifs.length, "jedes Thema hat eine eigene Leuchtreklame");
+  assert.match(svgs[0], /class="ga-sun"/);
+  const n = GtaArt.svg("#3ddcff", "heute", night);
+  assert.doesNotMatch(n, /class="ga-sun"/);
+  assert.match(n, /url\(#gaMoonGlow\)/);
+  assert.doesNotMatch(n, /NaN|undefined/);
+  // Lack in der Farbe des Themas, unbekanntes Thema fällt auf den Stern zurück
+  assert.match(GtaArt.svg("#ff8a3d", "autos", day), /stop-color="#ff8a3d"/);
+  assert.equal(GtaArt.svg("#3ddcff", "gibtsnicht", day), svgs[0]);
+  assert.equal(GtaArt.shade("#808080", 0.5), "#c0c0c0");
+  assert.equal(GtaArt.shade("#808080", -0.5), "#404040");
+});
 
 test("Dani: Spiel heute Abend heisst «HÜT», auch wenn es noch über 12 Stunden dauert", (t) => {
   if (swiss(new Date()).h >= 23) return t.skip("kurz vor Mitternacht nicht aussagekräftig");

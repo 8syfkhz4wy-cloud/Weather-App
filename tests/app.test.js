@@ -74,8 +74,14 @@ test("Diagramm, 7-Tage-Details und GTA-Themen reagieren auf Tippen", async () =>
   await row.click();
   assert.equal(await row.getAttribute("aria-expanded"), "true");
   assert.equal(await page.locator("#daily .day-detail").nth(1).isVisible(), true);
+  // GTA: Illustration mit Sportwagen, Chips und Artikel in ihrer Themenfarbe
+  assert.equal(await page.locator("#gta-art svg .ga-car").count(), 1);
+  assert.equal(await page.locator('#gta-cats [data-k="geld"]').evaluate((b) => b.style.getPropertyValue("--c")), "#7dff8a");
   await page.click('#gta-cats [data-k="tipps"]');
   assert.match(await text(page, "#gta-kicker"), /TIPPS/);
+  assert.equal(await page.locator("#gta-card").evaluate((c) => c.style.getPropertyValue("--gta-accent")), "#ffd34d");
+  assert.match(await page.locator("#gta-art svg").innerHTML(), /stop-color="#ffd34d"/); // Lack in der Themenfarbe
+  assert.equal(await page.locator("#gta-more a").first().evaluate((a) => a.style.getPropertyValue("--c")), "#ffd34d");
   assert.equal(await page.locator("#gta-more li").count(), 1);
   await page.click('#gta-cats [data-k="orte"]'); // Thema ohne Artikel
   assert.match(await text(page, "#gta-title"), /keine Artikel/);
