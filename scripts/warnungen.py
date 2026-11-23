@@ -171,7 +171,12 @@ def main(places_file, state_file, test=False):
             if state.get(key, {}).get("level", 0) >= w["level"]:
                 continue
             title = f"⚠️ {w['label']} – {place['name']}"
-            send(place["topic"], title, f"{when_text(w['when'])}: {w['text']}", w["tags"], w["priority"])
+            try:
+                send(place["topic"], title, f"{when_text(w['when'])}: {w['text']}", w["tags"], w["priority"])
+            except Exception as err:  # ntfy nicht erreichbar: beim nächsten Lauf erneut versuchen
+                print(f"Senden fehlgeschlagen: {title} ({err})")
+                failed = True
+                continue
             state[key] = {"level": w["level"], "sent": datetime.now().isoformat(timespec="minutes")}
             print(f"Gesendet: {title}")
         if not warnings:

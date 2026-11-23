@@ -21,7 +21,7 @@
   <div class="bg" aria-hidden="true"><div class="bg-glow"></div><canvas id="fx"></canvas><div class="bg-grid"></div></div>
 
   <header class="topbar">
-    <div class="loc" id="loc" role="button" aria-label="Ort wechseln">
+    <div class="loc" id="loc" role="button" tabindex="0" aria-label="Ort wechseln">
       <div id="place" class="loc-name">Wetter</div>
       <div id="updated" class="loc-meta mono">Verbinde …</div>
     </div>
@@ -97,7 +97,7 @@
             <div class="gta-foot"><span id="gta-source" class="mono"></span><span class="gta-go">Zum Artikel ›</span></div>
           </div>
         </a>
-        <div class="gta-cats" id="gta-cats" aria-label="Schwerpunkte der Woche"></div>
+        <div class="gta-cats" id="gta-cats" aria-label="Schwerpunkte im täglichen Wechsel"></div>
         <ul class="gta-more" id="gta-more"></ul>
       </section>
 
@@ -110,7 +110,7 @@
       <div class="panel">
         <div class="panel-head">
           <span class="tag">// VERLAUF 24 STD</span>
-          <div class="seg" id="chart-seg" role="tablist">
+          <div class="seg" id="chart-seg">
             <button data-m="temp" class="on">Temp</button>
             <button data-m="rain">Regen</button>
             <button data-m="wind">Wind</button>

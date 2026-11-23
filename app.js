@@ -290,6 +290,7 @@ const NEWS_ACCENTS = {
 };
 
 function timeAgo(iso) {
+  if (!iso || isNaN(new Date(iso))) return "";
   const min = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
   if (min < 60) return `vor ${min} Min.`;
   const h = Math.round(min / 60);
@@ -642,13 +643,17 @@ function daySummary(w) {
   // Niederschlag: Der Wert einer Stunde gilt für die Stunde davor
   const wet = (i) => (h.precipitation[i] || 0) >= 0.2 && (h.precipitation_probability[i] ?? 100) >= 40;
   const hourBefore = (i) => `${(+h.time[i].slice(11, 13) + 23) % 24} Uhr`;
-  const kind = idx.some((i) => (h.snowfall[i] || 0) > 0) ? "Schnee" : "Regen";
-  const raining = cur.weather_code >= 51 && cur.weather_code !== 77 ? true : false;
+  // Art nach dem aktuellen Wetter bzw. nach der Stunde, in der es losgeht
+  const snowNow = [71, 73, 75, 77, 85, 86].includes(cur.weather_code);
+  const raining = cur.weather_code >= 51 && cur.weather_code !== 77;
   const firstWet = idx.find(wet);
   if (raining) {
+    const kind = snowNow ? "Schnee" : "Regen";
     const firstDry = idx.find((i) => !wet(i));
-    parts.push(firstDry === undefined ? `${kind} hält an` : `${kind} bis etwa ${hourBefore(firstDry)}`);
+    // Ist schon die laufende Stunde trocken gerechnet, hört es bald auf (keine Uhrzeit in der Vergangenheit)
+    parts.push(firstDry === undefined ? `${kind} hält an` : firstDry === start ? `${kind} hört bald auf` : `${kind} bis etwa ${hourBefore(firstDry)}`);
   } else if (firstWet !== undefined) {
+    const kind = (h.snowfall[firstWet] || 0) > 0 ? "Schnee" : "Regen";
     parts.push(firstWet === start ? `gleich ${kind}` : `${kind} ab etwa ${hourBefore(firstWet)}`);
   } else {
     parts.push("trocken");
@@ -949,7 +954,7 @@ function renderTiles(w, air) {
   hum.append(html("div", "tile-big", `${cur.relative_humidity_2m}<small> %</small>`));
   const dew = nowValue(w, "dew_point_2m");
   const feel = dew >= 21 ? "drückend schwül" : dew >= 18 ? "schwül" : dew >= 16 ? "leicht schwül" : dew >= 10 ? "angenehm" : "trocken";
-  hum.append(el("div", "tile-sub", `Taupunkt ${round(dew)}° · ${feel}`));
+  if (dew != null) hum.append(el("div", "tile-sub", `Taupunkt ${round(dew)}° · ${feel}`));
   const meter = html("div", "meter", `<i style="left:${cur.relative_humidity_2m}%"></i>`);
   meter.style.background = "linear-gradient(90deg,#ffb020,#3ddc97,#4da3ff)";
   hum.append(meter);
@@ -1231,7 +1236,7 @@ async function loadRadarFrames(place) {
     $("#radar-src").textContent = "Deutscher Wetterdienst";
     $("#radar-src").href = "https://www.dwd.de/";
   } else {
-    const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+    const res = await fetchT("https://api.rainviewer.com/public/weather-maps.json", 10000);
     const data = await res.json();
     radar.frames = [...(data.radar?.past || []), ...(data.radar?.nowcast || []).map((f) => ({ ...f, nowcast: true }))];
     if (!radar.frames.length) throw new Error("keine Radardaten");
@@ -1532,7 +1537,7 @@ function renderFcb(d) {
           a.href = n.url;
           a.target = "_blank";
           a.rel = "noopener";
-          a.append(el("b", null, n.title), el("small", null, `${n.source || "Quelle"} · ${timeAgo(n.published)}`));
+          a.append(el("b", null, n.title), el("small", null, [n.source || "Quelle", timeAgo(n.published)].filter(Boolean).join(" · ")));
           li.append(a);
           return li;
         })
@@ -1576,7 +1581,7 @@ function renderFcb(d) {
           a.rel = "noopener";
           const text = el("div");
           text.append(el("b", null, t.title));
-          text.append(el("small", null, `${t.source || "Quelle"} · ${timeAgo(t.published)}`));
+          text.append(el("small", null, [t.source || "Quelle", timeAgo(t.published)].filter(Boolean).join(" · ")));
           a.append(el("span", `ticker-score${t.score ? "" : " none"}`, t.score || "⚽"), text);
           li.append(a);
           return li;
@@ -1594,7 +1599,7 @@ function renderFcb(d) {
         link.href = n.url;
         link.target = "_blank";
         link.rel = "noopener";
-        link.append(el("b", null, n.title), el("small", null, `${n.source || "Quelle"} · ${timeAgo(n.published)}`));
+        link.append(el("b", null, n.title), el("small", null, [n.source || "Quelle", timeAgo(n.published)].filter(Boolean).join(" · ")));
         li.append(link);
         return li;
       })
@@ -1657,6 +1662,11 @@ const chatCtx = () => ({ live: live.data, fcb: chat.fcb, w: state.w, place: stat
 function chatSend(text) {
   text = text.trim();
   if (!text) return;
+  if (chat.typing) {
+    clearTimeout(chat.typing);
+    chat.typing = null;
+    while (chat.queue.length) chatAdd(chat.queue.shift());
+  }
   chatAdd(text, true);
   chatAnswer(DaniChat.reply(text, chatCtx()));
 }
@@ -1769,7 +1779,7 @@ function onSearchInput() {
   searchTimer = setTimeout(async () => {
     const seq = ++searchSeq;
     try {
-      const res = await fetch(`${GEOCODE_URL}?name=${encodeURIComponent(q)}&count=8&language=de&format=json`);
+      const res = await fetchT(`${GEOCODE_URL}?name=${encodeURIComponent(q)}&count=8&language=de&format=json`, 10000);
       const data = await res.json();
       if (seq !== searchSeq) return;
       const results = (data.results || []).map((r) => ({
@@ -1851,11 +1861,20 @@ $("#warn-banner").addEventListener("click", () => setTab("warn"));
 $("#radar-play").addEventListener("click", () => toggleRadarPlay());
 $("#btn-locate").addEventListener("click", () => locate());
 $("#loc").addEventListener("click", openSearch);
+$("#loc").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    openSearch();
+  }
+});
 $("#use-gps").addEventListener("click", () => {
   $("#search-dialog").close();
   locate();
 });
-$("#btn-refresh").addEventListener("click", () => state.place && showPlace(state.place));
+$("#btn-refresh").addEventListener("click", () => {
+  if (state.place) showPlace(state.place);
+  loadFeeds();
+});
 $("#btn-search").addEventListener("click", openSearch);
 $("#search-input").addEventListener("input", onSearchInput);
 
@@ -1869,9 +1888,17 @@ loadPsalms().catch(() => {
   $("#psalm-ref").textContent = "Psalm konnte nicht geladen werden";
 });
 loadAlerts().catch(() => {});
-loadNews().catch(() => {});
-loadGta().catch(() => {});
-loadFcb().catch(() => ($("#fcb-empty").hidden = false));
+// News, GTA-Tipp und FCB-Daten: werden auf dem Server alle paar Stunden neu erstellt
+let feedsAt = 0;
+function loadFeeds() {
+  feedsAt = Date.now();
+  loadNews().catch(() => {});
+  loadGta().catch(() => {});
+  loadFcb()
+    .then(() => ($("#fcb-empty").hidden = true))
+    .catch(() => ($("#fcb-empty").hidden = !!chat.fcb));
+}
+loadFeeds();
 liveTick(); // Spielstand auch ausserhalb des FCB-Tabs im Blick behalten
 $$("#fcb-seg button").forEach((b) => b.addEventListener("click", () => setFcbSection(b.dataset.s)));
 setFcbSection(store("fcbSection") || "news");
@@ -1904,6 +1931,7 @@ let lastDay = new Date().toDateString();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   liveTick();
+  if (Date.now() - feedsAt > 30 * 60 * 1000) loadFeeds();
   if (new Date().toDateString() !== lastDay) {
     lastDay = new Date().toDateString();
     psalm.offset = 0;

@@ -17,9 +17,9 @@ HINWEIS = "Zum Laden die App ganz schließen und neu öffnen."
 
 
 def main(places_file, commit_message):
-    lines = [l.strip() for l in commit_message.strip().splitlines()]
+    lines = [line.strip() for line in commit_message.strip().splitlines()]
     title = lines[0] if lines else "Neue Version"
-    info = next((l[5:].strip() for l in lines if l.lower().startswith("info:")), "")
+    info = next((line[5:].strip() for line in lines if line.lower().startswith("info:")), "")
     message = f"{info}\n\n{HINWEIS}" if info else HINWEIS
 
     with open(places_file, encoding="utf-8") as f:
