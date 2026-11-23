@@ -29,6 +29,12 @@ const DaniChat = (() => {
   const team = (t) => TEAMS[t] || t;
   const opponent = (fx) => team(fx.baselHome ? fx.away : fx.home);
 
+  // Kalendertage bis zum Datum (0 = heute, 1 = morgen), unabhängig von der Uhrzeit
+  const daysUntil = (date) => {
+    const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    return Math.round((midnight(date) - midnight(new Date())) / 86400000);
+  };
+
   function when(date) {
     const days = ["Sunntig", "Mäntig", "Zyschtig", "Mittwuch", "Dunnschtig", "Frytig", "Samschtig"];
     const time = date.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
@@ -44,7 +50,7 @@ const DaniChat = (() => {
     const fx = [d.fx, d.next].find((f) => f && f.kickoff && f.kickoff.getTime() > Date.now());
     if (!fx) return ["Im Momänt isch kai Spiel agsetzt – und ych halt das fascht nit us, ohni Fuessball! Lueg im Ticker, sobald d nögschti Rundi stoht."];
     const place = fx.baselHome ? "dehai im Joggeli" : "usswärts";
-    const days = Math.round((fx.kickoff.getTime() - Date.now()) / 86400000);
+    const days = daysUntil(fx.kickoff);
     const wait = days <= 0 ? "Das isch HÜT, ych ha scho Härzchlopfe!" : days === 1 ? "Das isch scho MORN – ych cha hüt z Nacht nit schlofe!" : `No ${days} Dääg – ych zell d Stunde!`;
     return [
       `Gege ${opponent(fx)}, ${place}, ${when(fx.kickoff)}. ${wait}`,
@@ -471,11 +477,11 @@ const DaniChat = (() => {
   function greeting(ctx = {}) {
     const d = ctx.live;
     const fx = d && [d.fx, d.next].find((f) => f && f.kickoff && f.kickoff.getTime() > Date.now());
-    const hours = fx ? (fx.kickoff.getTime() - Date.now()) / 3600000 : Infinity;
+    const days = fx ? daysUntil(fx.kickoff) : Infinity;
     const second = d && d.live && d.fx
       ? `Mir spile GRAD gege ${opponent(d.fx)}! Frog mi, wie s stoht – ych lueg mit eim Aug uf e Platz.`
-      : hours < 30
-        ? `${hours < 12 ? "HÜT" : "Glyy"} isch Matchdaag gege ${opponent(fx)}, ych ha scho Härzchlopfe! Frog mi, was de wotsch.`
+      : days <= 1
+        ? `${days <= 0 ? "HÜT" : "Morn"} isch Matchdaag gege ${opponent(fx)}, ych ha scho Härzchlopfe! Frog mi, was de wotsch.`
         : "Frog mi nach em nögschte Spiel, dr Tabälle, de News, em Kader oder em Wätter. Oder schwätz aifach mit mir über dr FCB!";
     const hour = new Date().getHours();
     const hello = hour < 5 ? "Hösch, no wach? Dr Dani au" : hour < 10 ? "Guete Morge, du Bebbi! Dr Dani isch do" : hour >= 18 ? "Guete Obe, du Bebbi! Dr Dani isch do" : "Sali, du Bebbi! Dr Dani isch do";

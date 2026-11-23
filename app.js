@@ -57,6 +57,11 @@ const round = (n) => Math.round(n);
 const fmtTime = (iso) => iso.slice(11, 16);
 const parseLocal = (iso) => new Date(iso.length === 10 ? `${iso}T00:00` : iso);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+// Sekunden -> [Stunden, Minuten], gerundet auf ganze Minuten (nie "8 h 60 min")
+const hoursMinutes = (sec) => {
+  const total = Math.round((sec || 0) / 60);
+  return [Math.floor(total / 60), total % 60];
+};
 
 // ---------- Wettercodes (WMO) ----------
 
@@ -304,7 +309,8 @@ async function loadNews() {
   if (!n.title) return;
   const accent = NEWS_ACCENTS[n.topic] || "#ffd34d";
   const card = $("#news-card");
-  card.href = n.url;
+  if (n.url) card.href = n.url;
+  else card.removeAttribute("href");
   card.style.setProperty("--news-accent", accent);
   $("#news-art").innerHTML = newsArtSvg(accent);
   $("#news-topic").textContent = `${n.emoji || "⚽"} ${n.topic || "Top-Meldung"}`;
@@ -730,8 +736,8 @@ function renderHero(w) {
   $("#temp").textContent = `${round(cur.temperature_2m)}°`;
   $("#condition").textContent = now.text;
   $("#summary").textContent = daySummary(w);
-  $("#h-max").textContent = `${round(w.daily.temperature_2m_max[0])}°`;
-  $("#h-min").textContent = `${round(w.daily.temperature_2m_min[0])}°`;
+  $("#h-max").textContent = `${round(Math.max(w.daily.temperature_2m_max[0], cur.temperature_2m))}°`;
+  $("#h-min").textContent = `${round(Math.min(w.daily.temperature_2m_min[0], cur.temperature_2m))}°`;
   $("#h-feel").textContent = `${round(cur.apparent_temperature)}°`;
   // Regenwahrscheinlichkeit für den Rest des heutigen Tages (nicht für bereits vergangene Stunden)
   const h = w.hourly;
@@ -744,11 +750,15 @@ function renderHero(w) {
 
 function renderNowcast(w) {
   const m = w.minutely_15;
-  if (!m) return;
   // Jeder Wert gilt für die vorausgehenden 15 Minuten: "15:15" = 15:00–15:15.
   // Angezeigt wird deshalb der Beginn des Zeitfensters.
-  let start = m.time.findIndex((t) => t > w.current.time);
-  if (start < 0) return;
+  const start = m ? m.time.findIndex((t) => t > w.current.time) : -1;
+  if (start < 0) {
+    $("#nowcast-text").textContent = "Keine Kurzfristvorhersage verfügbar.";
+    $("#nowcast-sum").textContent = "";
+    $("#nowcast").replaceChildren();
+    return;
+  }
   const begin = (t) => {
     const d = new Date(parseLocal(t).getTime() - 15 * 60000);
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -912,8 +922,7 @@ function renderDaily(w) {
       range.append(el("span", "lo", `${round(lo)}°`), bar, el("span", "hi", `${round(hi)}°`));
       row.append(el("span", "n", name), el("span", "i", info.icon), el("span", "p", p >= 20 ? `${p}%` : ""), range);
 
-      const hours = Math.floor((d.daylight_duration[i] || 0) / 3600);
-      const mins = Math.round(((d.daylight_duration[i] || 0) % 3600) / 60);
+      const [hours, mins] = hoursMinutes(d.daylight_duration[i]);
       const detail = el("div", "day-detail");
       detail.hidden = true;
       [
@@ -928,7 +937,11 @@ function renderDaily(w) {
         c.append(el("span", null, k), v);
         detail.append(c);
       });
-      row.addEventListener("click", () => (detail.hidden = !detail.hidden));
+      row.setAttribute("aria-expanded", "false");
+      row.addEventListener("click", () => {
+        detail.hidden = !detail.hidden;
+        row.setAttribute("aria-expanded", String(!detail.hidden));
+      });
       li.append(row, detail);
       return li;
     })
@@ -1017,9 +1030,10 @@ function renderTiles(w, air) {
   // Kurz nach Mitternacht fehlen die Vorstunden, dann die nächsten 3 Stunden.
   // Für die Differenz durchgehend die Stundenreihe verwenden (gleiche Datenbasis)
   const nowP = cur.pressure_msl;
+  const series = h.pressure_msl || [];
   const seriesNow = nowValue(w, "pressure_msl") ?? nowP;
-  const past = s >= 3 ? h.pressure_msl[s - 3] : null;
-  const diff = past != null ? seriesNow - past : (h.pressure_msl[Math.min(s + 3, h.pressure_msl.length - 1)] - seriesNow);
+  const past = s >= 3 ? series[s - 3] : null;
+  const diff = past != null ? seriesNow - past : (series[Math.min(s + 3, series.length - 1)] ?? seriesNow) - seriesNow;
   const span = past != null ? "letzte 3 h" : "nächste 3 h";
   const trend = diff >= 3 ? "⇈ stark steigend" : diff >= 1 ? "↗ steigend" : diff <= -3 ? "⇊ stark fallend" : diff <= -1 ? "↘ fallend" : "→ stabil";
   const hint = diff <= -3 ? " · Wetterverschlechterung möglich" : nowP >= 1020 && diff > -1 ? " · Hochdruck" : nowP < 1000 ? " · Tiefdruck" : "";
@@ -1028,12 +1042,15 @@ function renderTiles(w, air) {
   tiles.push(press);
 
   // Sichtweite
-  const vis = tile("// SICHT");
-  const km = (nowValue(w, "visibility") ?? 0) / 1000;
-  const kmText = km >= 10 ? round(km) : km >= 1 ? km.toFixed(1) : km.toFixed(2);
-  vis.append(html("div", "tile-big", `${km < 1 ? round(km * 1000) : kmText}<small> ${km < 1 ? "m" : "km"}</small>`));
-  vis.append(el("div", "tile-sub", km >= 20 ? "Sehr gute Fernsicht" : km >= 10 ? "Gute Sicht" : km >= 4 ? "Mäßige Sicht (Dunst)" : km >= 1 ? "Schlechte Sicht (Dunst)" : "Nebel – sehr schlechte Sicht"));
-  tiles.push(vis);
+  const visM = nowValue(w, "visibility");
+  if (visM != null) {
+    const vis = tile("// SICHT");
+    const km = visM / 1000;
+    const kmText = km >= 10 ? round(km) : km.toFixed(1);
+    vis.append(html("div", "tile-big", `${km < 1 ? round(km * 1000) : kmText}<small> ${km < 1 ? "m" : "km"}</small>`));
+    vis.append(el("div", "tile-sub", km >= 20 ? "Sehr gute Fernsicht" : km >= 10 ? "Gute Sicht" : km >= 4 ? "Mäßige Sicht (Dunst)" : km >= 1 ? "Schlechte Sicht (Dunst)" : "Nebel – sehr schlechte Sicht"));
+    tiles.push(vis);
+  }
 
   // UV
   const uvT = tile("// UV-INDEX");
@@ -1055,8 +1072,8 @@ function renderTiles(w, air) {
   // Sonne
   const sun = tile("// SONNE", "wide");
   sun.append(html("div", null, sunArcSvg(w)));
-  const dl = d.daylight_duration[0] || 0;
-  sun.append(html("div", "kv", `<span>Aufgang</span><b>${fmtTime(d.sunrise[0])}</b><span>Untergang</span><b>${fmtTime(d.sunset[0])}</b><span>Tageslänge</span><b>${Math.floor(dl / 3600)} h ${round((dl % 3600) / 60)} min</b>`));
+  const [dlH, dlM] = hoursMinutes(d.daylight_duration[0]);
+  sun.append(html("div", "kv", `<span>Aufgang</span><b>${fmtTime(d.sunrise[0])}</b><span>Untergang</span><b>${fmtTime(d.sunset[0])}</b><span>Tageslänge</span><b>${dlH} h ${dlM} min</b>`));
   tiles.push(sun);
 
   // Luftqualität & Pollen
@@ -1120,19 +1137,45 @@ function renderAll() {
   radar.center?.(place);
 }
 
+// Neuer Ort ohne zwischengespeicherte Daten: nicht die Werte des vorigen Orts unter
+// dem neuen Namen stehen lassen
+function clearWeatherView() {
+  Object.assign(state, { w: null, air: null, fetchedAt: 0 });
+  $("#hero-icon").textContent = "–";
+  $("#temp").textContent = "--°";
+  $("#condition").textContent = "Wird geladen …";
+  $("#summary").textContent = "";
+  ["#h-max", "#h-min", "#h-feel"].forEach((id) => ($(id).textContent = "--°"));
+  $("#h-rain").textContent = "--%";
+  $("#updated").textContent = "Lade …";
+  $("#warn-banner").hidden = true;
+  $("#warn-badge").hidden = true;
+  $("#warn-list").replaceChildren();
+  $("#nowcast-text").textContent = "";
+  $("#nowcast-sum").textContent = "";
+  ["#nowcast", "#chart", "#hourly", "#daily", "#tiles"].forEach((id) => $(id).replaceChildren());
+}
+
+const placeKey = (place) => `wx:${place.lat},${place.lon}`;
+
 let loadSeq = 0;
 async function showPlace(place) {
   const seq = ++loadSeq;
+  const prev = state.place;
   state.place = place;
   store("place", place);
   $("#place").textContent = place.name;
 
-  const cacheKey = `wx:${place.lat},${place.lon}`;
+  const cacheKey = placeKey(place);
+  state.loading = cacheKey;
   const cached = store(cacheKey);
   if (cached && cached.w) {
     Object.assign(state, { w: cached.w, air: cached.air });
     renderAll();
     renderUpdated(cached.t, false);
+  } else if (state.w && (!prev || placeKey(prev) !== cacheKey)) {
+    clearWeatherView();
+    renderAll();
   }
 
   $("#btn-refresh").classList.add("spin");
@@ -1152,7 +1195,10 @@ async function showPlace(place) {
     showStatus(cached ? "Offline – zeige zuletzt geladene Daten." : "Wetterdaten konnten nicht geladen werden.");
     if (!cached) $("#condition").textContent = "Keine Verbindung";
   } finally {
-    if (seq === loadSeq) $("#btn-refresh").classList.remove("spin");
+    if (seq === loadSeq) {
+      state.loading = null;
+      $("#btn-refresh").classList.remove("spin");
+    }
   }
 }
 
@@ -1187,9 +1233,9 @@ function locate(silent = false) {
       const lat = +pos.coords.latitude.toFixed(3);
       const lon = +pos.coords.longitude.toFixed(3);
       const cur = state.place;
-      // Gleicher Standort mit frischen Daten: nichts neu laden
+      // Gleicher Standort mit frischen (oder gerade ladenden) Daten: nichts neu laden
       const moved = !cur || !cur.gps || Math.abs(cur.lat - lat) > 0.005 || Math.abs(cur.lon - lon) > 0.005;
-      if (!moved && Date.now() - (state.fetchedAt || 0) < 5 * 60 * 1000) {
+      if (!moved && (Date.now() - (state.fetchedAt || 0) < 5 * 60 * 1000 || state.loading === placeKey(cur))) {
         if (!silent) hideStatus();
         return;
       }
@@ -1270,6 +1316,7 @@ async function loadRadarFrames(place) {
   radar.layers = [];
   radar.kind = kind;
   radar.loadedAt = Date.now();
+  radar.frames = [];
   if (kind === "dwd") {
     // Amtliches Radar: letzte Stunde und Vorhersage für die nächste Stunde, alle 10 Minuten
     const step = 10 * 60000;
@@ -1286,10 +1333,25 @@ async function loadRadarFrames(place) {
     $("#radar-src").textContent = "Deutscher Wetterdienst";
     $("#radar-src").href = "https://www.dwd.de/";
   } else {
-    const res = await fetchT("https://api.rainviewer.com/public/weather-maps.json", 10000);
-    const data = await res.json();
+    let data;
+    try {
+      const res = await fetchT("https://api.rainviewer.com/public/weather-maps.json", 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+    } catch (err) {
+      radar.kind = null; // beim nächsten Öffnen erneut versuchen
+      radar.loadedAt = 0;
+      $("#radar-msg").textContent = "Radar konnte nicht geladen werden. Bitte später erneut versuchen.";
+      throw err;
+    }
+    if (radar.kind !== kind) return; // inzwischen anderer Ort mit anderem Radar
     radar.frames = [...(data.radar?.past || []), ...(data.radar?.nowcast || []).map((f) => ({ ...f, nowcast: true }))];
-    if (!radar.frames.length) throw new Error("keine Radardaten");
+    if (!radar.frames.length) {
+      radar.kind = null;
+      radar.loadedAt = 0;
+      $("#radar-msg").textContent = "Gerade keine Radardaten verfügbar.";
+      return;
+    }
     radar.layers = radar.frames.map((f) =>
       L.tileLayer(`${data.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`, { opacity: 0, maxNativeZoom: 7, maxZoom: 12, zIndex: 5 }).addTo(radar.map)
     );
@@ -1302,16 +1364,23 @@ async function loadRadarFrames(place) {
   showFrame(latest < 0 ? radar.frames.length - 1 : latest);
 }
 
+let radarInit = null;
 async function initRadar() {
-  const p = state.place || DEFAULT_PLACE;
   if (radar.map) {
     radar.map.invalidateSize();
-    loadRadarFrames(p).catch(() => {});
+    loadRadarFrames(state.place || DEFAULT_PLACE).catch(() => {});
     return;
   }
+  if (radarInit) return; // Leaflet lädt schon
   $("#radar-msg").textContent = "Radar wird geladen …";
+  radarInit = buildRadar().finally(() => (radarInit = null));
+}
+
+async function buildRadar() {
   try {
     await loadLeaflet();
+    // erst jetzt lesen: während des Ladens kann der Ort schon bestimmt worden sein
+    const p = state.place || DEFAULT_PLACE;
     radar.map = L.map("map", { zoomControl: false, attributionControl: false, minZoom: 5, maxZoom: 12 }).setView([p.lat, p.lon], 8);
     L.control.zoom({ position: "topright", zoomInTitle: "Näher", zoomOutTitle: "Weiter weg" }).addTo(radar.map);
     // Karte: OpenStreetMap für die ganze Welt, darüber in der Schweiz und im Grenzgebiet
@@ -1356,7 +1425,7 @@ function setFcbSection(name) {
   if (name === "chat") openChat();
   store("fcbSection", name);
   if (name === "ticker") {
-    loadFcb().catch(() => {});
+    if (Date.now() - feedsAt > 60000) loadFcb().catch(() => {});
     liveTick(true);
   }
 }
@@ -1759,14 +1828,17 @@ function openChat() {
 
 // ---------- Tabs ----------
 
+const TABS = ["wetter", "radar", "psalm", "fcb", "warn"];
+
 function setTab(tab) {
+  if (!TABS.includes(tab)) tab = "wetter";
   document.body.dataset.tab = tab;
   $$(".tabbar button").forEach((b) => {
     b.classList.toggle("on", b.dataset.tab === tab);
     if (b.dataset.tab === tab) b.setAttribute("aria-current", "page");
     else b.removeAttribute("aria-current");
   });
-  ["wetter", "radar", "psalm", "fcb", "warn"].forEach((t) => ($(`#view-${t}`).hidden = t !== tab));
+  TABS.forEach((t) => ($(`#view-${t}`).hidden = t !== tab));
   store("tab", tab);
   window.scrollTo(0, 0);
   if (tab === "wetter") renderChart();
@@ -1819,17 +1891,23 @@ function renderSaved() {
 
 let searchTimer;
 let searchSeq = 0;
+let searchShown = ""; // Suchbegriff, zu dem die angezeigten Treffer gehören
 function onSearchInput() {
   clearTimeout(searchTimer);
+  searchTimer = null;
   const q = $("#search-input").value.trim();
   if (q.length < 2) {
+    searchSeq++; // noch laufende Suche nicht mehr anzeigen
+    searchShown = "";
     $("#search-results").replaceChildren();
     return;
   }
   searchTimer = setTimeout(async () => {
+    searchTimer = null;
     const seq = ++searchSeq;
     try {
       const res = await fetchT(`${GEOCODE_URL}?name=${encodeURIComponent(q)}&count=8&language=de&format=json`, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (seq !== searchSeq) return;
       const results = (data.results || []).map((r) => ({
@@ -1841,6 +1919,7 @@ function onSearchInput() {
       $("#search-results").replaceChildren(
         ...(results.length ? results.map((p) => placeRow(p)) : [el("li", "empty", "Kein Ort gefunden")])
       );
+      searchShown = q;
     } catch {
       if (seq === searchSeq) $("#search-results").replaceChildren(el("li", "empty", "Suche nicht möglich (offline?)"));
     }
@@ -1850,6 +1929,7 @@ function onSearchInput() {
 function openSearch() {
   renderSaved();
   $("#search-input").value = "";
+  searchShown = "";
   $("#search-results").replaceChildren();
   $("#search-dialog").showModal();
 }
@@ -1927,6 +2007,18 @@ $("#btn-refresh").addEventListener("click", () => {
 });
 $("#btn-search").addEventListener("click", openSearch);
 $("#search-input").addEventListener("input", onSearchInput);
+// Enter / "Suchen" auf der Tastatur: sofort suchen statt den Dialog zu schliessen
+// (das Formular mit method="dialog" würde ihn sonst beenden)
+$("#search-input").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const first = $("#search-results li:not(.empty)");
+  if (first && searchShown === $("#search-input").value.trim()) first.click();
+  else {
+    onSearchInput();
+    $("#search-input").blur(); // Tastatur weg, Treffer sichtbar
+  }
+});
 
 let resizeTimer;
 window.addEventListener("resize", () => {
@@ -1961,8 +2053,6 @@ fetch("version.json")
   })
   .catch(() => {});
 
-setTab(store("tab") || "wetter");
-
 const lastPlace = store("place");
 if (lastPlace) {
   showPlace(lastPlace); // sofort die letzten Daten zeigen …
@@ -1970,6 +2060,8 @@ if (lastPlace) {
 } else {
   locate();
 }
+// Erst nach dem Ort, damit z. B. das Radar gleich am richtigen Ort öffnet
+setTab(store("tab") || "wetter");
 
 // Solange die App offen ist, alle 15 Minuten neue Daten laden
 setInterval(() => {

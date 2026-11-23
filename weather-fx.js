@@ -47,7 +47,11 @@ const WeatherFx = (() => {
     canvas.width = W * dpr;
     canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (cfg) build();
+    if (!cfg) return;
+    build();
+    // Das Setzen der Grösse leert das Canvas; das ruhige Standbild (Bewegung reduziert)
+    // muss deshalb neu gezeichnet werden
+    if (reduced.matches) start();
   }
 
   function build() {
