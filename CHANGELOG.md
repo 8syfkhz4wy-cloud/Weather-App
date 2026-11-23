@@ -1,5 +1,20 @@
 # Versionen
 
+## v3.0.0
+
+- **Layout wie im Spiel:** Kopf wie ein HUD mit Temperatur und Fahndungssternen, Reiter oben wie im Pausenmenü, Statistiken mit Segmentbalken, Vers des Tages als Handy-Nachricht, Radar als Kartenbildschirm mit Legende, Psalm als Briefing, Warnungen als Fahndung mit grossen Sternen und Missionszielen, Ortssuche als Schnellreise – der FCB-Bereich behält seinen Inhalt in Rot-Blau
+- **Die ganze App im GTA-6-Look:** Abendhimmel mit Retro-Sonne, Skyline und Palmen, Neon-Gitterboden, violette Glasflächen mit Neonkanten, durchgehend kräftige kursive Schrift und eine dunkle Neon-Karte im Radar – der FCB-Bereich bleibt rot-blau
+- **Ladebildschirm wie im Spiel:** beim Öffnen kurz ein Bild mit Tipp zur App, antippen zum Überspringen
+- **Neon-Wettersymbole** statt Emojis – oben, in der Stundenleiste, bei den 7 Tagen und bei den Warnungen; der Mond zeigt seine echte Phase
+- **Fahndungssterne:** je gefährlicher das Wetter, desto mehr Sterne (★★☆☆☆ bis ★★★★★)
+- **Spielerpfeil** für deinen Standort im Radar, Meldungen im Stil der Spiel-Benachrichtigungen, Wetteranimation in Neonfarben
+- **GTA-Banner im neuen Look:** neue Illustration mit echtem Sportwagen – drehende Felgen, Bremssättel, LED-Scheinwerfer mit Lichtkegel, Rücklicht mit Lichtspur und Neon-Unterbodenbeleuchtung
+- **Neon-Stadt:** Retro-Sonne hinter der Skyline mit beleuchteten Fenstern, Palmen im Wind, Hotel-Leuchtschild, Flugzeug mit Werbebanner und Lichtspuren auf der Uferstrasse
+- **Leuchtreklame je Thema:** Stern, Glühbirne, Controller, Kartennadel, Tacho, Fadenkreuz oder Dollar mit blinkenden Glühbirnen – und das Auto fährt in der Farbe des Themas
+- **Abends und nachts** mit Mond und Sternenhimmel
+- **Neon-Karte:** leuchtender Rahmen, Knopf „Zum Artikel“ als Neon-Pille, Themen-Chips und Artikel in ihren Farben
+- Die Versionszeile unten zeigt keine internen Vermerke mehr
+
 ## v2.1.2
 
 - **FCB-Ticker auch im Ausland richtig:** Anpfiff, Countdown und Live-Ticker stimmen jetzt auf jedem iPhone, egal in welcher Zeitzone (Ferien, Auswärtsfahrt). Ausserhalb der Schweiz steht die Schweizer Zeit in Klammern dabei

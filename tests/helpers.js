@@ -163,7 +163,7 @@ async function mockNetwork(page, opts = {}) {
   await page.route(/\/news\.json/, (r) => r.fulfill({ json: NEWS }));
   await page.route(/\/gta6\.json/, (r) => r.fulfill({ json: GTA }));
   await page.route(/\/fcb\.json/, (r) => r.fulfill({ json: FCB }));
-  await page.route(/\/version\.json/, (r) => r.fulfill({ json: { version: "v9.9.9", date: new Date().toISOString(), title: "Testversion" } }));
+  await page.route(/\/version\.json/, (r) => r.fulfill({ json: { version: "v9.9.9", date: new Date().toISOString(), title: "Testversion [ohne Nachricht] (#9)" } }));
   return ctl;
 }
 

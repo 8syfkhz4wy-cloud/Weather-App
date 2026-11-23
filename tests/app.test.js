@@ -32,6 +32,11 @@ async function openApp({ device = devices["iPhone 13"], viewport, storage, net, 
       for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, JSON.stringify(v));
     }, storage);
   }
+  await ctx.addInitScript(() => {
+    new MutationObserver(() => {
+      if (document.querySelector(".intro")) window.__intro = true;
+    }).observe(document, { childList: true, subtree: true });
+  });
   const page = await ctx.newPage();
   const errors = watchErrors(page);
   const ctl = await mockNetwork(page, net);
@@ -57,7 +62,8 @@ test("Startseite: Wetter, Kacheln, News und GTA-Tipp ohne Fehler", async () => {
   assert.doesNotMatch(sun, /60 min/);
   assert.equal(await page.locator("#news-card").isVisible(), true);
   assert.equal(await page.locator("#gta-card").isVisible(), true);
-  assert.match(await text(page, "#version"), /Version 9\.9\.9/);
+  // Versionszeile ohne interne Vermerke der Commit-Nachricht
+  assert.match(await text(page, "#version"), /^Version 9\.9\.9 · Stand .+ · Neu: Testversion$/);
   assert.match(await text(page, "#verse-ref"), /^PS \d+,\d+$/);
   assert.deepEqual(errors, []);
   await ctx.close();
@@ -73,8 +79,14 @@ test("Diagramm, 7-Tage-Details und GTA-Themen reagieren auf Tippen", async () =>
   await row.click();
   assert.equal(await row.getAttribute("aria-expanded"), "true");
   assert.equal(await page.locator("#daily .day-detail").nth(1).isVisible(), true);
+  // GTA: Illustration mit Sportwagen, Chips und Artikel in ihrer Themenfarbe
+  assert.equal(await page.locator("#gta-art svg .ga-car").count(), 1);
+  assert.equal(await page.locator('#gta-cats [data-k="geld"]').evaluate((b) => b.style.getPropertyValue("--c")), "#7dff8a");
   await page.click('#gta-cats [data-k="tipps"]');
   assert.match(await text(page, "#gta-kicker"), /TIPPS/);
+  assert.equal(await page.locator("#gta-card").evaluate((c) => c.style.getPropertyValue("--gta-accent")), "#ffd34d");
+  assert.match(await page.locator("#gta-art svg").innerHTML(), /stop-color="#ffd34d"/); // Lack in der Themenfarbe
+  assert.equal(await page.locator("#gta-more a").first().evaluate((a) => a.style.getPropertyValue("--c")), "#ffd34d");
   assert.equal(await page.locator("#gta-more li").count(), 1);
   await page.click('#gta-cats [data-k="orte"]'); // Thema ohne Artikel
   assert.match(await text(page, "#gta-title"), /keine Artikel/);
@@ -252,6 +264,103 @@ for (const tz of ["Europe/Zurich", "America/New_York", "Asia/Tokyo"]) {
     await ctx.close();
   });
 }
+
+test("GTA-Look in allen Bereichen, der FCB-Inhalt bleibt rot-blau", async () => {
+  const { ctx, page, errors } = await openApp();
+  const look = () => page.evaluate(() => ({
+    ortsname: getComputedStyle(document.querySelector("#place")).fontStyle,
+    szene: getComputedStyle(document.querySelector("#bg-scene")).display,
+    palmen: document.querySelectorAll("#bg-scene .bg-palms").length,
+    sonne: document.querySelectorAll("#bg-scene .bg-sun").length,
+  }));
+  for (const tab of ["wetter", "radar", "psalm", "warn"]) {
+    await page.click(`.tabbar [data-tab=${tab}]`);
+    assert.deepEqual(await look(), { ortsname: "italic", szene: "block", palmen: 2, sonne: 1 }, tab);
+  }
+  // FCB: Rahmen (Kopf, Reiter) im GTA-Layout, Inhalt und Hintergrund wie bisher
+  await page.click(".tabbar [data-tab=fcb]");
+  assert.deepEqual(await look(), { ortsname: "italic", szene: "none", palmen: 2, sonne: 1 });
+  const fcb = await page.evaluate(() => ({
+    akzent: getComputedStyle(document.body).getPropertyValue("--accent").trim(),
+    flaeche: getComputedStyle(document.body).getPropertyValue("--panel").trim(),
+    panel: getComputedStyle(document.querySelector("#view-fcb .panel")).backgroundColor,
+    rand: getComputedStyle(document.querySelector("#view-fcb .panel")).borderTopColor,
+  }));
+  assert.deepEqual(fcb, { akzent: "#ff3b4e", flaeche: "rgba(13, 20, 34, 0.66)", panel: "rgba(13, 20, 34, 0.66)", rand: "rgba(120, 200, 255, 0.14)" });
+  // zurück: wieder GTA
+  await page.click(".tabbar [data-tab=wetter]");
+  assert.equal((await look()).szene, "block");
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("GTA-Look: Neon-Symbole statt Emojis, Fahndungssterne, Ladebildschirm", async () => {
+  const { ctx, page, errors } = await openApp({ net: { weather: { storm: true, hail: true, gust: 95 } } });
+  // Ladebildschirm erscheint beim Start und verschwindet, sobald das Wetter steht
+  assert.equal(await page.evaluate(() => window.__intro), true);
+  await page.waitForFunction(() => !document.querySelector(".intro"), null, { timeout: 5000 });
+  // Symbole aus dem Sprite statt Emojis
+  assert.ok((await page.locator("body > svg symbol[id^='wi-']").count()) >= 20);
+  assert.equal(await page.locator("#hero-icon svg.wi use").getAttribute("href"), "#wi-cloudy");
+  assert.equal(await page.locator("#hourly svg.wi").count(), 24);
+  assert.equal(await page.locator("#hourly .hour:not(.now) use").first().getAttribute("href"), "#wi-hail");
+  assert.equal(await page.locator("#daily svg.wi").count(), 7);
+  assert.equal(await page.locator("#nowcast-text svg.wi").count(), 1);
+  assert.equal(await page.locator("#tiles .moonphase").count(), 1);
+  // Die früheren Wetter-Emojis kommen in den Wetterbereichen nicht mehr vor
+  const weatherText = await page.$$eval("#hero-icon, #hourly, #daily, #nowcast-text, #warn-banner, #warn-list, #tiles, .thresholds", (els) => els.map((e) => e.textContent).join(" "));
+  assert.doesNotMatch(weatherText, /[☀🌤🌙⛅☁🌫🌦🌧🌨❄⛈🌡💨🥵🥶🧊✅☂🌑🌒🌓🌔🌕🌖🌗🌘]/u, "keine Wetter-Emojis mehr");
+  // Fahndungssterne: Gewitter mit Hagel 5, Sturmböen 4, Banner zeigt die höchste Stufe
+  const stars = await page.$$eval("#warn-list li", (lis) => lis.map((li) => [li.querySelector("b").firstChild.textContent, li.querySelector(".stars").dataset.n]));
+  assert.deepEqual(Object.fromEntries(stars.filter(([l]) => /Hagel|Sturm/.test(l))), { "Gewitter mit Hagel": "5", "Schwere Sturmböen": "4" });
+  assert.equal(await page.locator("#warn-banner .stars").getAttribute("data-n"), "5");
+  // Überschriften ohne "//" (ausser im FCB-Bereich), Schrift im GTA-Look
+  const tags = await page.$$eval(".view:not(#view-fcb) .tag", (t) => t.map((x) => x.textContent));
+  assert.ok(tags.length >= 9 && tags.every((t) => !t.startsWith("//")), tags.join());
+  assert.ok((await page.$$eval("#view-fcb .tag", (t) => t.map((x) => x.textContent))).every((t) => t.startsWith("//")));
+  assert.match(await page.evaluate(() => getComputedStyle(document.body).fontFamily), /^"Avenir Next"/);
+  await page.click(".tabbar [data-tab=fcb]");
+  assert.doesNotMatch(await page.evaluate(() => getComputedStyle(document.body).fontFamily), /Avenir Next/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("GTA-Layout: HUD-Kopf mit Reitern, Statistiken, Fahndung, Briefing", async () => {
+  const { ctx, page, errors } = await openApp({ net: { weather: { storm: true, hail: true, gust: 95 } } });
+  await page.waitForFunction(() => !document.querySelector(".intro"), null, { timeout: 5000 });
+  // Reiter oben im Kopf, HUD mit Temperatur und Fahndungssternen
+  assert.equal(await page.locator(".topbar .tabbar button").count(), 5);
+  assert.equal(await text(page, "#hud-temp"), await text(page, "#temp"));
+  assert.equal(await page.locator("#hud-stars").getAttribute("data-n"), "5");
+  const top = await page.evaluate(() => document.querySelector(".tabbar").getBoundingClientRect().top);
+  assert.ok(top < 150, `Reiterleiste oben (${top})`);
+  // Statistiken mit Segmentbalken
+  assert.equal(await page.locator("#gstats .gstat").count(), 10);
+  assert.equal(await page.locator("#gstats .gstat").first().locator(".gbar i").count(), 10);
+  assert.equal(await page.locator("#view-wetter .hero-stats").isVisible(), false);
+  // Warnungen: grosse Fahndungsanzeige
+  await page.click(".tabbar [data-tab=warn]");
+  assert.equal(await page.locator("#wanted").isVisible(), true);
+  assert.equal(await page.locator("#wanted-stars").getAttribute("data-n"), "5");
+  assert.match(await text(page, "#wanted-sub"), /5 von 5/);
+  // Psalm als Briefing: Menü über dem Text
+  await page.click(".tabbar [data-tab=psalm]");
+  const order = await page.evaluate(() => [document.querySelector("#psalm-prev").getBoundingClientRect().top, document.querySelector("#psalm-text").getBoundingClientRect().top]);
+  assert.ok(order[0] < order[1], "Menü über dem Psalm");
+  // Ortssuche als Schnellreise
+  await page.click("#btn-search");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector("#search-dialog"), "::before").content), '"SCHNELLREISE"');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Kein Ladebildschirm, wenn die App im FCB-Bereich startet", async () => {
+  const { ctx, page, errors } = await openApp({ storage: { tab: "fcb" } });
+  assert.equal(await page.evaluate(() => window.__intro || false), false);
+  assert.equal(await page.evaluate(() => document.body.dataset.tab), "fcb");
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
 
 test("Radar-Tab: ohne Kartendienst eine verständliche Meldung statt eines Fehlers", async () => {
   const { ctx, page, errors } = await openApp();

@@ -97,9 +97,26 @@ const WMO = {
   99: ["Schweres Gewitter mit Hagel", "⛈️", "⛈️", "storm"],
 };
 
+// Neon-Symbol (Sprite aus gta-art.js) je Wettercode
+function wiId(code, isDay) {
+  if (code <= 1) return isDay ? "wi-sun" : "wi-moon";
+  if (code === 2) return isDay ? "wi-partly-day" : "wi-partly-night";
+  if (code === 45 || code === 48) return "wi-fog";
+  if ([56, 57, 66, 67].includes(code)) return "wi-freezing";
+  if (code >= 51 && code <= 55) return "wi-drizzle";
+  if (code === 65 || code === 82) return "wi-heavy-rain";
+  if ((code >= 61 && code <= 64) || code === 80 || code === 81) return "wi-rain";
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "wi-snow";
+  if (code === 96 || code === 99) return "wi-hail";
+  if (code >= 95) return "wi-storm";
+  return "wi-cloudy";
+}
+const wiSvg = (id, label) =>
+  `<svg class="wi" viewBox="0 0 48 48" ${label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"'}><use href="#${id}"/></svg>`;
+
 function wmo(code, isDay = true) {
   const [text, day, night, sky] = WMO[code] || ["Unbekannt", "🌡️", "🌡️", "cloudy"];
-  return { text, icon: isDay ? day : night, sky: `${sky}-${isDay ? "day" : "night"}` };
+  return { text, icon: isDay ? day : night, wi: wiId(code, isDay), sky: `${sky}-${isDay ? "day" : "night"}` };
 }
 
 const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
@@ -339,60 +356,25 @@ const GTA_CATS = [
   ["geld", "💰", "Geld", "#7dff8a"],
 ];
 
-// Eigene Illustration: Küstenstadt im Neon-Sonnenuntergang mit Palmen und Sportwagen
-function gtaArtSvg(accent) {
-  const sky = Array.from({ length: 34 }, (_, i) => {
-    const w = 10 + ((i * 7) % 9);
-    const h = 28 + ((i * 53) % 70);
-    const x = 140 + i * 11;
-    return `<rect x="${x}" y="${200 - h}" width="${w}" height="${h}" fill="#1b0f33"/>` +
-      (i % 3 === 0 ? `<rect x="${x + 3}" y="${206 - h}" width="2" height="2" fill="${accent}" opacity="0.8"/>` : "");
-  }).join("");
-  const palm = (x, s, flip) => `<g transform="translate(${x} 240) scale(${flip ? -s : s} ${s})" fill="#0a0518">
-    <path d="M0 0 C 4 -40 6 -80 2 -120 L 7 -120 C 11 -80 10 -40 6 0 Z"/>
-    <path d="M4 -120 C -20 -130 -45 -120 -60 -100 C -38 -112 -20 -114 4 -116 Z"/>
-    <path d="M4 -120 C 25 -134 52 -128 66 -108 C 44 -118 26 -118 4 -116 Z"/>
-    <path d="M4 -120 C -10 -142 -32 -150 -50 -146 C -30 -140 -14 -132 4 -118 Z"/>
-    <path d="M4 -120 C 18 -146 40 -154 58 -148 C 38 -142 22 -134 4 -118 Z"/>
-    <path d="M4 -120 C 0 -142 8 -158 18 -164 C 10 -150 8 -136 6 -118 Z"/></g>`;
-  return `<svg viewBox="0 0 640 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="gsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#140a2e"/><stop offset="0.55" stop-color="#7a1f6e"/><stop offset="1" stop-color="#ff7a59"/></linearGradient>
-    <linearGradient id="gsun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe26b"/><stop offset="1" stop-color="#ff3d8b"/></linearGradient>
-    <linearGradient id="gsea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0f4a"/><stop offset="1" stop-color="#05030f"/></linearGradient>
-    <clipPath id="gclip"><rect width="640" height="300"/></clipPath>
-  </defs>
-  <g clip-path="url(#gclip)">
-    <rect width="640" height="300" fill="url(#gsky)"/>
-    <g class="gta-sun"><circle cx="330" cy="175" r="92" fill="url(#gsun)"/>
-      ${[0, 1, 2, 3, 4, 5].map((k) => `<rect x="230" y="${150 + k * 11}" width="200" height="${2 + k}" fill="#7a1f6e"/>`).join("")}</g>
-    ${sky}
-    <rect y="200" width="640" height="100" fill="url(#gsea)"/>
-    ${[0, 1, 2, 3, 4, 5, 6].map((k) => `<rect class="gta-wave" x="${250 - k * 14}" y="${208 + k * 12}" width="${160 + k * 28}" height="2" fill="#ff7ab8" opacity="${0.5 - k * 0.06}"/>`).join("")}
-    <!-- Strasse mit Sportwagen -->
-    <rect y="246" width="640" height="54" fill="#0b0716"/>
-    <g stroke="${accent}" stroke-width="3" stroke-dasharray="26 22" class="gta-road"><line x1="-50" y1="276" x2="700" y2="276"/></g>
-    <g class="gta-car">
-      <path d="M380 266 L 396 248 Q 420 238 452 238 L 484 240 Q 506 244 522 256 L 548 260 Q 560 262 560 270 L 560 274 L 380 274 Z" fill="#12082a" stroke="${accent}" stroke-width="2"/>
-      <path d="M404 250 Q 424 242 450 242 L 478 244 L 492 256 L 400 258 Z" fill="${accent}" opacity="0.35"/>
-      <circle cx="414" cy="274" r="10" fill="#05030f" stroke="#ff7ab8" stroke-width="2"/>
-      <circle cx="526" cy="274" r="10" fill="#05030f" stroke="#ff7ab8" stroke-width="2"/>
-      <rect x="552" y="262" width="8" height="4" rx="1" fill="#fff6c8"/>
-      <path d="M560 264 L 640 254 L 640 278 Z" fill="#fff6c8" opacity="0.12"/>
-    </g>
-    ${palm(70, 1, false)}${palm(130, 0.78, true)}${palm(610, 0.95, true)}
-    <rect width="640" height="300" fill="none" stroke="${accent}" stroke-opacity="0.4" stroke-width="2"/>
-  </g></svg>`;
-}
-
 const gta = { data: null, sel: "heute" };
+const gtaColor = (key) => (GTA_CATS.find((c) => c[0] === key) || [])[3] || "#ff3d8b";
+// Neon-Symbol eines Themas (Sprite aus gta-art.js), unbekannte Themen bekommen den Stern
+const gtaIcon = (key) => {
+  const k = GTA_CATS.some((c) => c[0] === key) ? key : "heute";
+  return html("span", "gta-ico", `<svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#cat-${k}"/></svg>`);
+};
+// Thema mit Symbol und Text (Text aus den Daten, deshalb als Textknoten)
+const gtaLabel = (key, text) => [gtaIcon(key), document.createTextNode(text)];
 
 function gtaLink(m) {
   const a = el("a");
   a.href = m.url;
   a.target = "_blank";
   a.rel = "noopener";
-  a.append(el("span", "gta-more-cat", `${m.emoji} ${m.label}`), el("span", "gta-more-title", m.title), el("span", "gta-more-src mono", m.source));
+  a.style.setProperty("--c", gtaColor(m.category));
+  const label = el("span", "gta-more-cat");
+  label.append(...gtaLabel(m.category, m.label || "GTA 6"));
+  a.append(label, el("span", "gta-more-title", m.title), el("span", "gta-more-src mono", m.source));
   const li = el("li");
   li.append(a);
   return li;
@@ -407,14 +389,14 @@ function renderGta() {
   const cat = GTA_CATS.find((c) => c[0] === (list ? gta.sel : t.category));
   const accent = cat ? cat[3] : "#ff3d8b";
   $("#gta-card").style.setProperty("--gta-accent", accent);
-  $("#gta-art").innerHTML = gtaArtSvg(accent);
+  $("#gta-art").innerHTML = GtaArt.svg(accent, list ? gta.sel : "heute");
   $("#gta-kicker").textContent = list ? `GTA 6 · ${cat[2].toUpperCase()}` : "GTA 6 · TIPP DES TAGES";
 
   const link = $("#gta-link");
   if (t) {
     link.href = t.url;
     link.classList.remove("empty");
-    $("#gta-topic").textContent = `${t.emoji || "🌴"} ${t.label || "News"}`;
+    $("#gta-topic").replaceChildren(...gtaLabel(list ? gta.sel : t.category, t.label || "News"));
     $("#gta-title").textContent = t.title;
     $("#gta-teaser").textContent = t.teaser || "";
     $("#gta-teaser").hidden = !t.teaser;
@@ -423,7 +405,7 @@ function renderGta() {
   } else {
     link.removeAttribute("href");
     link.classList.add("empty");
-    $("#gta-topic").textContent = `${cat[1]} ${cat[2]}`;
+    $("#gta-topic").replaceChildren(...gtaLabel(cat[0], cat[2]));
     $("#gta-title").textContent = "Gerade keine Artikel zu diesem Thema";
     $("#gta-teaser").textContent = "Schau später wieder vorbei – die Artikel werden alle paar Stunden neu gesammelt.";
     $("#gta-teaser").hidden = false;
@@ -460,10 +442,12 @@ async function loadGta() {
   const cats = d.cats || {};
   // Chips: Tipp des Tages und die sechs Schwerpunkte, jeder einzeln antippbar
   $("#gta-cats").replaceChildren(
-    ...[["heute", "⭐", "Heute"], ...GTA_CATS].map(([key, emoji, name]) => {
-      const b = el("button", null, `${emoji} ${name}`);
+    ...[["heute", "⭐", "Heute"], ...GTA_CATS].map(([key, , name]) => {
+      const b = el("button");
+      b.append(...gtaLabel(key, name));
       b.type = "button";
       b.dataset.k = key;
+      b.style.setProperty("--c", gtaColor(key));
       if (key !== "heute" && d.cats && !(cats[key] || []).length) b.classList.add("none");
       if (key === d.focus) b.title = "Schwerpunkt heute";
       b.addEventListener("click", () => selectGta(key));
@@ -594,43 +578,69 @@ function computeWarnings(w) {
   const storm = idx.filter((i) => h.weather_code[i] >= 95);
   if (storm.length) {
     const hail = storm.some((i) => [96, 99].includes(h.weather_code[i]));
-    add("⛈️", hail ? "Gewitter mit Hagel" : "Gewitter", hail, h.time[storm[0]],
+    add(hail ? "wi-hail" : "wi-storm", hail ? "Gewitter mit Hagel" : "Gewitter", hail, h.time[storm[0]],
       hail ? "Gewitter mit Hagel möglich." : "Blitz, Starkregen und Böen möglich.");
   }
 
   const gust = Math.max(...idx.map((i) => h.wind_gusts_10m[i] || 0));
   if (gust >= 60) {
     const label = gust >= 120 ? "Orkanböen" : gust >= 105 ? "Orkanartige Böen" : gust >= 90 ? "Schwere Sturmböen" : gust >= 75 ? "Sturmböen" : "Starke Windböen";
-    add("💨", label, gust >= 90, first((i) => (h.wind_gusts_10m[i] || 0) >= 60), `Böen bis ${round(gust)} km/h.`);
+    add("wi-wind", label, gust >= 90, first((i) => (h.wind_gusts_10m[i] || 0) >= 60), `Böen bis ${round(gust)} km/h.`);
   }
 
   const tmax = Math.max(...idx.map((i) => h.temperature_2m[i]));
   if (tmax >= 30) {
-    add("🥵", tmax >= 35 ? "Starke Hitze" : "Hitze", tmax >= 35, first((i) => h.temperature_2m[i] >= 30),
+    add("wi-heat", tmax >= 35 ? "Starke Hitze" : "Hitze", tmax >= 35, first((i) => h.temperature_2m[i] >= 30),
       `Bis ${round(tmax)} °C. Viel trinken, Mittagssonne meiden.`);
   }
 
   const tmin = Math.min(...idx.map((i) => h.temperature_2m[i]));
   if (tmin <= -10) {
-    add("🥶", tmin <= -15 ? "Sehr strenger Frost" : "Strenger Frost", tmin <= -15, first((i) => h.temperature_2m[i] <= -10),
+    add("wi-cold", tmin <= -15 ? "Sehr strenger Frost" : "Strenger Frost", tmin <= -15, first((i) => h.temperature_2m[i] <= -10),
       `Bis ${round(tmin)} °C. Warm anziehen, Leitungen schützen.`);
   }
 
   const snow = idx.reduce((s, i) => s + (h.snowfall[i] || 0), 0);
   if (snow >= 3) {
-    add("❄️", snow >= 25 ? "Extrem starker Schneefall" : snow >= 10 ? "Starker Schneefall" : "Schneefall", snow >= 10,
+    add("wi-flake", snow >= 25 ? "Extrem starker Schneefall" : snow >= 10 ? "Starker Schneefall" : "Schneefall", snow >= 10,
       first((i) => (h.snowfall[i] || 0) > 0), `Etwa ${round(snow)} cm Neuschnee in 24 Stunden.`);
   }
 
   const freezing = first((i) => [56, 57, 66, 67].includes(h.weather_code[i]));
   if (freezing) {
-    add("🧊", "Glatteis", true, freezing, "Gefrierender Regen – Straßen können spiegelglatt werden.");
+    add("wi-ice", "Glatteis", true, freezing, "Gefrierender Regen – Straßen können spiegelglatt werden.");
   } else {
-    add("🧊", "Glättegefahr", false,
+    add("wi-ice", "Glättegefahr", false,
       first((i) => h.temperature_2m[i] <= 1 && ((h.rain[i] || 0) + (h.showers[i] || 0) + (h.snowfall[i] || 0)) > 0),
       "Nässe oder Schnee um den Gefrierpunkt – Vorsicht auf Wegen.");
   }
   return out;
+}
+
+// Höchste Unwetterstufe im HUD oben und gross auf der Warnseite
+function setWanted(list) {
+  const n = list.length ? Math.max(...list.map((x) => +warnStars(x).dataset.n)) : 0;
+  const fill = (node) => {
+    node.replaceChildren("★".repeat(n), el("i", null, "★".repeat(5 - n)));
+    node.setAttribute("aria-label", `Unwetterstufe ${n} von 5`);
+    node.dataset.n = n;
+  };
+  fill($("#hud-stars"));
+  fill($("#wanted-stars"));
+  $("#wanted").classList.toggle("on", n > 0);
+  $("#wanted-label").textContent = n ? (list.length === 1 ? list[0].label : `${list.length} Warnungen`) : "Keine Unwetter";
+  $("#wanted-sub").textContent = `Unwetterstufe ${n} von 5`;
+}
+
+// Unwetterstufe als Fahndungssterne (GTA-Look): Warnung 2, Unwetter 4, extrem 5 von 5
+function warnStars(x) {
+  const n = x.severe ? (/Orkan|Extrem|Sehr strenger|Hagel/.test(x.label) ? 5 : 4) : 2;
+  const s = el("span", "stars", "★".repeat(n));
+  s.append(el("i", null, "★".repeat(5 - n)));
+  s.setAttribute("role", "img");
+  s.setAttribute("aria-label", `Stufe ${n} von 5`);
+  s.dataset.n = n;
+  return s;
 }
 
 function whenText(iso) {
@@ -644,20 +654,23 @@ function renderWarnings(place, w) {
   const badge = $("#warn-badge");
   $("#warn-place").textContent = place.name;
 
+  setWanted(list);
   if (!list.length) {
     banner.hidden = true;
     badge.hidden = true;
-    $("#warn-list").replaceChildren(html("li", null, '<span class="ico">✅</span><div><b class="ok">Keine Warnungen</b><small>Für die nächsten 24 Stunden ist kein Unwetter vorhergesagt.</small></div>'));
+    $("#warn-list").replaceChildren(html("li", null, `<span class="ico">${wiSvg("wi-ok")}</span><div><b class="ok">Keine Warnungen</b><small>Für die nächsten 24 Stunden ist kein Unwetter vorhergesagt.</small></div>`));
     return;
   }
 
   const severe = list.some((x) => x.severe);
   banner.hidden = false;
   banner.className = `warn-banner${severe ? " danger" : ""}`;
-  banner.replaceChildren(el("span", null, list[0].icon));
+  banner.replaceChildren(html("span", "ico", wiSvg(list[0].icon)));
   const g = el("span", "grow", list.length === 1 ? list[0].label : `${list.length} Wetterwarnungen`);
   g.append(el("small", null, list.length === 1 ? whenText(list[0].when) : list.map((x) => x.label).join(" · ")));
-  banner.append(g, el("span", null, "›"));
+  // Höchste Stufe aller Warnungen als Sterne
+  const top = list.map(warnStars).sort((a, b) => b.dataset.n - a.dataset.n)[0];
+  banner.append(g, top, el("span", null, "›"));
   badge.hidden = false;
   badge.textContent = list.length;
 
@@ -667,8 +680,8 @@ function renderWarnings(place, w) {
       const body = el("div");
       const b = el("b", null, x.label);
       b.append(el("span", `lv ${x.severe ? "lv2" : "lv1"}`, x.severe ? "UNWETTER" : "WARNUNG"));
-      body.append(b, el("small", null, `${whenText(x.when)} · ${x.text}`));
-      li.append(el("span", "ico", x.icon), body);
+      body.append(b, warnStars(x), el("small", null, `${whenText(x.when)} · ${x.text}`));
+      li.append(html("span", "ico", wiSvg(x.icon)), body);
       return li;
     })
   );
@@ -732,13 +745,14 @@ function renderHero(w) {
     windDir: cur.wind_direction_10m,
     cloud: cur.cloud_cover,
   });
-  $("#hero-icon").textContent = now.icon;
+  $("#hero-icon").innerHTML = wiSvg(now.wi, now.text);
   $("#temp").textContent = `${round(cur.temperature_2m)}°`;
   $("#condition").textContent = now.text;
   $("#summary").textContent = daySummary(w);
   $("#h-max").textContent = `${round(Math.max(w.daily.temperature_2m_max[0], cur.temperature_2m))}°`;
   $("#h-min").textContent = `${round(Math.min(w.daily.temperature_2m_min[0], cur.temperature_2m))}°`;
   $("#h-feel").textContent = `${round(cur.apparent_temperature)}°`;
+  $("#hud-temp").textContent = `${round(cur.temperature_2m)}°`;
   // Regenwahrscheinlichkeit für den Rest des heutigen Tages (nicht für bereits vergangene Stunden)
   const h = w.hourly;
   const today = w.current.time.slice(0, 10);
@@ -746,6 +760,38 @@ function renderHero(w) {
   for (let i = nextHour(w); i < h.time.length && h.time[i].slice(0, 10) === today; i++) rest.push(h.precipitation_probability[i] ?? 0);
   if (h.time[nextHour(w)]?.slice(0, 10) !== today) rest.push(h.precipitation_probability[nextHour(w)] ?? 0);
   $("#h-rain").textContent = `${Math.max(0, ...rest)}%`;
+  renderStats(w, Math.max(0, ...rest));
+}
+
+// Statistiken wie die Fähigkeiten im Spiel: Wert als Balken aus 10 Segmenten
+function renderStats(w, rainPct) {
+  const cur = w.current;
+  const air = state.air && state.air.current;
+  const uv = Math.max(0, nowValue(w, "uv_index") ?? 0);
+  const rows = [
+    ["Jetzt", cur.temperature_2m, -10, 35, `${round(cur.temperature_2m)}°`],
+    ["Gefühlt", cur.apparent_temperature, -10, 35, `${round(cur.apparent_temperature)}°`],
+    ["Max", Math.max(w.daily.temperature_2m_max[0], cur.temperature_2m), -10, 35, `${round(Math.max(w.daily.temperature_2m_max[0], cur.temperature_2m))}°`],
+    ["Min", Math.min(w.daily.temperature_2m_min[0], cur.temperature_2m), -10, 35, `${round(Math.min(w.daily.temperature_2m_min[0], cur.temperature_2m))}°`],
+    ["Regen", rainPct, 0, 100, `${rainPct}%`],
+    ["Wind", cur.wind_speed_10m, 0, 100, `${round(cur.wind_speed_10m)} km/h`],
+    ["Böen", cur.wind_gusts_10m || 0, 0, 120, `${round(cur.wind_gusts_10m || 0)} km/h`],
+    ["Feuchte", cur.relative_humidity_2m, 0, 100, `${cur.relative_humidity_2m}%`],
+    ["UV", uv, 0, 11, uv.toFixed(1)],
+  ];
+  if (air && air.european_aqi != null) rows.push(["Luft", air.european_aqi, 0, 100, `${round(air.european_aqi)} AQI`]);
+  $("#gstats-list").replaceChildren(
+    ...rows.map(([label, v, lo, hi, text]) => {
+      const n = clamp(Math.round(((v - lo) / (hi - lo)) * 10), v > lo ? 1 : 0, 10);
+      const row = el("div", "gstat");
+      const bar = el("span", "gbar");
+      for (let k = 0; k < 10; k++) bar.append(el("i", k < n ? "on" : null));
+      bar.setAttribute("aria-hidden", "true");
+      row.append(el("span", "gl", label), bar, el("span", "gv", text));
+      return row;
+    })
+  );
+  $("#gstats").hidden = false;
 }
 
 function renderNowcast(w) {
@@ -770,15 +816,20 @@ function renderNowcast(w) {
   const kind = snowCodes.includes(w.current.weather_code) || w.current.temperature_2m <= 0.5 ? "Schnee" : "Regen";
 
   let text;
+  const wet = kind === "Schnee" ? "wi-snow" : "wi-rain";
+  let ico = wet;
   // Spuren unter 0.05 mm (Rundungsrauschen) zählen nicht als Niederschlag
   const firstWet = slots.findIndex((s) => s.v >= 0.05);
-  if (firstWet < 0) text = `☂️ Kein ${kind} in den nächsten 2 Stunden.`;
-  else if (firstWet === 0) {
+  if (firstWet < 0) {
+    ico = "wi-umbrella";
+    text = `Kein ${kind} in den nächsten 2 Stunden.`;
+  } else if (firstWet === 0) {
     const dry = slots.findIndex((s) => s.v < 0.05);
-    text = dry < 0 ? `🌧️ ${kind} hält mindestens 2 Stunden an.` : `🌧️ ${kind} lässt gegen ${slots[dry].t} Uhr nach.`;
-  } else text = `🌦️ ${kind} ab etwa ${slots[firstWet].t} Uhr erwartet.`;
+    if (kind === "Regen" && dry < 0) ico = "wi-heavy-rain";
+    text = dry < 0 ? `${kind} hält mindestens 2 Stunden an.` : `${kind} lässt gegen ${slots[dry].t} Uhr nach.`;
+  } else text = `${kind} ab etwa ${slots[firstWet].t} Uhr erwartet.`;
 
-  $("#nowcast-text").textContent = text;
+  $("#nowcast-text").replaceChildren(html("span", "nc-ico", wiSvg(ico)), document.createTextNode(text));
   $("#nowcast-sum").textContent = `Σ ${sum.toFixed(1)} mm`;
   $("#nowcast").replaceChildren(
     ...slots.map((s, k) => {
@@ -886,14 +937,14 @@ function renderHourly(w) {
   const cur = w.current;
   const start = nextHour(w);
   const items = [];
-  const item = (cls, label, icon, temp, p) => {
+  const item = (cls, label, wi, temp, p) => {
     const node = el("div", cls);
-    node.append(el("span", "t", label), el("span", "i", icon), el("span", "v", `${round(temp)}°`), el("span", "p", p >= 20 ? `${p}%` : ""));
+    node.append(el("span", "t", label), html("span", "i", wiSvg(wi)), el("span", "v", `${round(temp)}°`), el("span", "p", p >= 20 ? `${p}%` : ""));
     return node;
   };
-  items.push(item("hour now", "JETZT", wmo(cur.weather_code, cur.is_day === 1).icon, cur.temperature_2m, h.precipitation_probability[start]));
+  items.push(item("hour now", "JETZT", wmo(cur.weather_code, cur.is_day === 1).wi, cur.temperature_2m, h.precipitation_probability[start]));
   for (let i = start; i < Math.min(start + 23, h.time.length); i++) {
-    items.push(item("hour", `${h.time[i].slice(11, 13)}h`, wmo(h.weather_code[i], h.is_day[i] === 1).icon, h.temperature_2m[i], h.precipitation_probability[i]));
+    items.push(item("hour", `${h.time[i].slice(11, 13)}h`, wmo(h.weather_code[i], h.is_day[i] === 1).wi, h.temperature_2m[i], h.precipitation_probability[i]));
   }
   $("#hourly").replaceChildren(...items);
 }
@@ -920,7 +971,7 @@ function renderDaily(w) {
       bar.append(fill);
       const range = el("div", "range");
       range.append(el("span", "lo", `${round(lo)}°`), bar, el("span", "hi", `${round(hi)}°`));
-      row.append(el("span", "n", name), el("span", "i", info.icon), el("span", "p", p >= 20 ? `${p}%` : ""), range);
+      row.append(el("span", "n", name), html("span", "i", wiSvg(info.wi, info.text)), el("span", "p", p >= 20 ? `${p}%` : ""), range);
 
       const [hours, mins] = hoursMinutes(d.daylight_duration[i]);
       const detail = el("div", "day-detail");
@@ -960,7 +1011,7 @@ function moonPhase(date = new Date()) {
   ];
   const [, icon, name] = names.find(([limit]) => phase < limit);
   const toFull = (((0.5 - phase) % 1) + 1) % 1 * synodic;
-  return { icon, name, illum, toFull };
+  return { icon, name, illum, toFull, phase };
 }
 
 function tile(label, cls = "") {
@@ -1006,14 +1057,14 @@ function renderTiles(w, air) {
   const tiles = [];
 
   // Wind
-  const wind = tile("// WIND");
+  const wind = tile("WIND");
   wind.append(html("div", null, compassSvg(cur.wind_direction_10m)));
   wind.append(html("div", "tile-big", `${round(cur.wind_speed_10m)}<small> km/h</small>`));
   wind.append(el("div", "tile-sub", `Aus ${dirName(cur.wind_direction_10m)} · Böen ${round(cur.wind_gusts_10m)} km/h · ${beaufort(cur.wind_speed_10m)} Bft`));
   tiles.push(wind);
 
   // Luftfeuchte & Taupunkt
-  const hum = tile("// FEUCHTE");
+  const hum = tile("FEUCHTE");
   hum.append(html("div", "tile-big", `${cur.relative_humidity_2m}<small> %</small>`));
   const dew = nowValue(w, "dew_point_2m");
   const feel = dew >= 21 ? "drückend schwül" : dew >= 18 ? "schwül" : dew >= 16 ? "leicht schwül" : dew >= 10 ? "angenehm" : "trocken";
@@ -1025,7 +1076,7 @@ function renderTiles(w, air) {
   tiles.push(hum);
 
   // Luftdruck mit Tendenz
-  const press = tile("// LUFTDRUCK");
+  const press = tile("LUFTDRUCK");
   // Barometrische Tendenz wie am Barometer: Änderung der letzten 3 Stunden.
   // Kurz nach Mitternacht fehlen die Vorstunden, dann die nächsten 3 Stunden.
   // Für die Differenz durchgehend die Stundenreihe verwenden (gleiche Datenbasis)
@@ -1044,7 +1095,7 @@ function renderTiles(w, air) {
   // Sichtweite
   const visM = nowValue(w, "visibility");
   if (visM != null) {
-    const vis = tile("// SICHT");
+    const vis = tile("SICHT");
     const km = visM / 1000;
     const kmText = km >= 10 ? round(km) : km.toFixed(1);
     vis.append(html("div", "tile-big", `${km < 1 ? round(km * 1000) : kmText}<small> ${km < 1 ? "m" : "km"}</small>`));
@@ -1053,7 +1104,7 @@ function renderTiles(w, air) {
   }
 
   // UV
-  const uvT = tile("// UV-INDEX");
+  const uvT = tile("UV-INDEX");
   const uvLabel = (v) => (v < 3 ? "Niedrig" : v < 6 ? "Mäßig" : v < 8 ? "Hoch" : v < 11 ? "Sehr hoch" : "Extrem");
   const uvNow = Math.max(0, nowValue(w, "uv_index") ?? 0);
   const uvMax = d.uv_index_max[0] ?? 0;
@@ -1064,13 +1115,14 @@ function renderTiles(w, air) {
 
   // Mond
   const moon = moonPhase();
-  const moonT = tile("// MOND");
-  moonT.append(html("div", "tile-big", `${moon.icon} <small>${round(moon.illum * 100)} %</small>`));
+  const moonT = tile("MOND");
+  const moonImg = typeof GtaArt !== "undefined" ? GtaArt.moonPhase(moon.phase) : moon.icon;
+  moonT.append(html("div", "tile-big", `${moonImg} <small>${round(moon.illum * 100)} %</small>`));
   moonT.append(el("div", "tile-sub", `${moon.name}${moon.toFull > 0.5 ? ` · Vollmond in ${round(moon.toFull)} Tagen` : ""}`));
   tiles.push(moonT);
 
   // Sonne
-  const sun = tile("// SONNE", "wide");
+  const sun = tile("SONNE", "wide");
   sun.append(html("div", null, sunArcSvg(w)));
   const [dlH, dlM] = hoursMinutes(d.daylight_duration[0]);
   sun.append(html("div", "kv", `<span>Aufgang</span><b>${fmtTime(d.sunrise[0])}</b><span>Untergang</span><b>${fmtTime(d.sunset[0])}</b><span>Tageslänge</span><b>${dlH} h ${dlM} min</b>`));
@@ -1082,7 +1134,7 @@ function renderTiles(w, air) {
     const aqi = a.european_aqi ?? 0;
     const levels = [[20, "Gut", 1], [40, "Ziemlich gut", 1], [60, "Mäßig", 2], [80, "Schlecht", 3], [100, "Sehr schlecht", 4], [Infinity, "Extrem schlecht", 4]];
     const [, aqiText, aqiLvl] = levels.find(([l]) => aqi < l);
-    const aq = tile("// LUFTQUALITÄT", "wide");
+    const aq = tile("LUFTQUALITÄT", "wide");
     aq.append(html("div", "tile-big", `${round(aqi)} <small class="lvl-${aqiLvl}">${aqiText}</small>`));
     aq.append(html("div", "meter", `<i style="left:${clamp(aqi / 120, 0, 1) * 100}%"></i>`));
     aq.append(html("div", "kv", `<span>Feinstaub PM2.5</span><b>${round(a.pm2_5 ?? 0)} µg/m³</b><span>Feinstaub PM10</span><b>${round(a.pm10 ?? 0)} µg/m³</b><span>Ozon O₃</span><b>${round(a.ozone ?? 0)} µg/m³</b><span>Stickstoffdioxid NO₂</span><b>${round(a.nitrogen_dioxide ?? 0)} µg/m³</b>`));
@@ -1091,7 +1143,7 @@ function renderTiles(w, air) {
 
     const pollen = Object.entries(POLLEN).filter(([k]) => a[k] !== null && a[k] !== undefined);
     if (pollen.length) {
-      const pl = tile("// POLLENFLUG", "wide");
+      const pl = tile("POLLENFLUG", "wide");
       // Stufen in Pollen/m³ je Art (angelehnt an MeteoSchweiz: schwach, mässig, stark, sehr stark)
       const limits = {
         alder_pollen: [10, 70, 300], birch_pollen: [10, 70, 300], grass_pollen: [20, 50, 150],
@@ -1135,6 +1187,7 @@ function renderAll() {
   renderDaily(w);
   renderTiles(w, air);
   radar.center?.(place);
+  intro.ready();
 }
 
 // Neuer Ort ohne zwischengespeicherte Daten: nicht die Werte des vorigen Orts unter
@@ -1147,6 +1200,8 @@ function clearWeatherView() {
   $("#summary").textContent = "";
   ["#h-max", "#h-min", "#h-feel"].forEach((id) => ($(id).textContent = "--°"));
   $("#h-rain").textContent = "--%";
+  $("#hud-temp").textContent = "--°";
+  $("#gstats").hidden = true;
   $("#updated").textContent = "Lade …";
   $("#warn-banner").hidden = true;
   $("#warn-badge").hidden = true;
@@ -1192,6 +1247,7 @@ async function showPlace(place) {
     hideStatus();
   } catch {
     if (seq !== loadSeq) return;
+    intro.ready();
     showStatus(cached ? "Offline – zeige zuletzt geladene Daten." : "Wetterdaten konnten nicht geladen werden.");
     if (!cached) {
       $("#condition").textContent = "Keine Verbindung";
@@ -1388,9 +1444,9 @@ async function buildRadar() {
     L.control.zoom({ position: "topright", zoomInTitle: "Näher", zoomOutTitle: "Weiter weg" }).addTo(radar.map);
     // Karte: OpenStreetMap für die ganze Welt, darüber in der Schweiz und im Grenzgebiet
     // die amtliche Landeskarte von swisstopo (beide frei und ohne Schlüssel)
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12 }).addTo(radar.map);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12, className: "base-map" }).addTo(radar.map);
     const swiss = L.tileLayer("https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg", {
-      minZoom: 7, maxZoom: 12, bounds: [[45.3, 5.0], [48.4, 11.6]],
+      minZoom: 7, maxZoom: 12, bounds: [[45.3, 5.0], [48.4, 11.6]], className: "base-map",
     });
     // Umschalter: ruhige Landeskarte oder Strassenkarte mit mehr Ortsnamen
     const setBase = (osm) => {
@@ -1401,7 +1457,9 @@ async function buildRadar() {
     };
     setBase(store("radarOsm") === true);
     $("#radar-base").addEventListener("click", () => setBase(store("radarOsm") !== true));
-    radar.marker = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [14, 14] }) }).addTo(radar.map);
+    // Standort als Spielerpfeil (GTA-Look)
+    const arrow = '<div class="me-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 L20.5 21 L12 16.5 L3.5 21 Z"/></svg></div>';
+    radar.marker = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "", html: arrow, iconSize: [24, 24] }) }).addTo(radar.map);
     radar.center = (place) => {
       radar.map.setView([place.lat, place.lon], radar.map.getZoom());
       radar.marker.setLatLng([place.lat, place.lon]);
@@ -1851,8 +1909,13 @@ function setTab(tab) {
     else b.removeAttribute("aria-current");
   });
   TABS.forEach((t) => ($(`#view-${t}`).hidden = t !== tab));
+  WeatherFx.restyle?.();
   store("tab", tab);
   window.scrollTo(0, 0);
+  // Reiterleiste oben: den aktiven Reiter ins Bild schieben (schmale iPhones)
+  const strip = $(".topbar .tabbar");
+  const on = $(".topbar .tabbar .on");
+  if (strip && on) strip.scrollLeft = on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
   if (tab === "wetter") renderChart();
   if (tab === "radar") initRadar();
   else if (radar.timer) toggleRadarPlay(false);
@@ -1976,7 +2039,54 @@ async function loadAlerts() {
   $("#alerts-card").hidden = false;
 }
 
+// ---------- Ladebildschirm im GTA-Look ----------
+
+// Beim Öffnen der App kurz ein Bild wie beim Laden im Spiel, mit einem Tipp zur App.
+// Verschwindet, sobald das Wetter steht (frühestens nach 0,9 s, spätestens nach 3 s)
+// oder beim Antippen. Nicht, wenn die App im FCB-Bereich startet.
+const INTRO_TIPS = [
+  "Tippe auf einen Tag der 7-Tage-Vorhersage, dann siehst du Regen, Böen, Sonne und UV.",
+  "Der Vers des Tages führt direkt zum ganzen Psalm.",
+  "Im Radar startet ▶ die Regenanimation.",
+  "Unter „Warnungen“ kannst du Push-Nachrichten bei Unwetter abonnieren.",
+  "Der Standort-Knopf oben schaltet das Folgen deines Standorts wieder ein.",
+  "Beim GTA-Tipp kannst du jedes Thema einzeln antippen.",
+  "Je höher die Unwetterstufe, desto mehr Sterne – wie die Fahndungsstufe im Spiel.",
+];
+const intro = { node: null, started: 0, ready() {} };
+
+function showIntro() {
+  if (store("tab") === "fcb" || typeof GtaArt === "undefined") return;
+  const tip = INTRO_TIPS[Math.floor(Math.random() * INTRO_TIPS.length)];
+  const node = html("div", "intro", `<div class="intro-art">${GtaArt.svg("#ff3d8b", "heute", new Date(), "in")}</div>
+    <div class="intro-text"><div class="intro-title">Wetter <b>&amp;</b> Psalm</div><p class="intro-tip"><b>Tipp:</b> </p></div>
+    <div class="intro-load"><i></i>Lädt</div>`);
+  node.querySelector(".intro-tip").append(tip);
+  node.setAttribute("aria-hidden", "true");
+  document.body.append(node);
+  intro.node = node;
+  intro.started = Date.now();
+  let done = false;
+  const hide = () => {
+    if (done) return;
+    done = true;
+    node.classList.add("out");
+    setTimeout(() => node.remove(), 450);
+  };
+  node.addEventListener("click", hide);
+  intro.ready = () => setTimeout(hide, Math.max(0, 900 - (Date.now() - intro.started)));
+  setTimeout(hide, 3000);
+}
+
 // ---------- Start ----------
+
+// GTA-Look: Neon-Symbole (Sprite) und Hintergrund mit Retro-Sonne, Skyline und Palmen
+// (im FCB-Tab ausgeblendet). Vor dem ersten Zeichnen, damit alle Symbole gleich erscheinen.
+if (typeof GtaArt !== "undefined") {
+  document.body.insertAdjacentHTML("afterbegin", GtaArt.sprite());
+  $("#bg-scene").innerHTML = GtaArt.backdrop();
+}
+showIntro();
 
 $$(".tabbar button").forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
 $$("#chart-seg button").forEach((b) => {
@@ -2061,7 +2171,9 @@ fetch("version.json")
   .then((res) => res.json())
   .then((v) => {
     const date = new Date(v.date).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
-    $("#version").textContent = `${v.version ? `Version ${v.version.replace(/^v/, "")} · ` : ""}Stand ${date} · Neu: ${v.title}`;
+    // Interne Vermerke der Commit-Zeile nicht anzeigen: "[ohne Nachricht]", Nummer des Pull Requests "(#8)"
+    const title = String(v.title || "").replace(/\s*\[ohne Nachricht\]/gi, "").replace(/\s*\(#\d+\)\s*$/, "").trim();
+    $("#version").textContent = `${v.version ? `Version ${v.version.replace(/^v/, "")} · ` : ""}Stand ${date}${title ? ` · Neu: ${title}` : ""}`;
     $("#version").hidden = false;
   })
   .catch(() => {});

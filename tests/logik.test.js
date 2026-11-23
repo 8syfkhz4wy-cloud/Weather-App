@@ -8,6 +8,7 @@ const path = require("node:path");
 const FcbLive = require("../fcb-live.js");
 const swiss = FcbLive.zurichParts;
 const DaniChat = require("../dani-chat.js");
+const GtaArt = require("../gta-art.js");
 
 test("Teletext: Partie mit Resultat und Halbzeitstand", () => {
   const fx = FcbLive.parseFixture("FUSSBALL 22.11.26 17:45 Super League GC - Lugano 1:1 (0:0) Basel - YB 2:1 (1:0) Sion - Thun 0:0");
@@ -88,6 +89,47 @@ const swissDay = (add, hh, mm) => {
   const s = swiss(new Date());
   return FcbLive.zurichDate(s.y, s.mo, s.d + add, hh, mm);
 };
+
+test("GTA-Illustration: Sportwagen, Leuchtreklame je Thema, Tag und Nacht", () => {
+  const day = new Date(2026, 10, 23, 15, 0);
+  const night = new Date(2026, 10, 23, 23, 0);
+  const motifs = ["heute", "tipps", "cheats", "orte", "autos", "waffen", "geld"];
+  const svgs = motifs.map((m) => GtaArt.svg("#3ddcff", m, day));
+  for (const [i, s] of svgs.entries()) {
+    assert.match(s, /^<svg viewBox="0 0 640 300"/, motifs[i]);
+    assert.match(s, /class="ga-car"/, motifs[i]);
+    assert.equal((s.match(/class="ga-spin"/g) || []).length, 2, `${motifs[i]}: zwei Räder`);
+    assert.doesNotMatch(s, /NaN|undefined|Infinity/, motifs[i]);
+  }
+  assert.equal(new Set(svgs).size, motifs.length, "jedes Thema hat eine eigene Leuchtreklame");
+  assert.match(svgs[0], /class="ga-sun"/);
+  const n = GtaArt.svg("#3ddcff", "heute", night);
+  assert.doesNotMatch(n, /class="ga-sun"/);
+  assert.match(n, /url\(#gaMoonGlow\)/);
+  assert.doesNotMatch(n, /NaN|undefined/);
+  // Lack in der Farbe des Themas, unbekanntes Thema fällt auf den Stern zurück
+  assert.match(GtaArt.svg("#ff8a3d", "autos", day), /stop-color="#ff8a3d"/);
+  assert.equal(GtaArt.svg("#3ddcff", "gibtsnicht", day), svgs[0]);
+  assert.equal(GtaArt.shade("#808080", 0.5), "#c0c0c0");
+  // Zweites Bild mit eigenen IDs (Ladebildschirm), Animationsklassen bleiben
+  const intro = GtaArt.svg("#ff3d8b", "heute", day, "in");
+  assert.doesNotMatch(intro, /id="ga|url\(#ga/);
+  assert.match(intro, /id="inSky"/);
+  assert.match(intro, /class="ga-car"/);
+  // Symbole: Wetter, Warnungen und Themen im Sprite, Mondphasen gültig
+  const sprite = GtaArt.sprite();
+  for (const id of ["wi-sun", "wi-moon", "wi-cloudy", "wi-rain", "wi-snow", "wi-storm", "wi-hail", "wi-wind", "wi-ice", "wi-ok", "cat-heute", "cat-geld"]) {
+    assert.match(sprite, new RegExp(`<symbol id="${id}"`), id);
+  }
+  assert.doesNotMatch(sprite, /NaN|undefined/);
+  for (let p = 0; p < 1; p += 0.05) assert.doesNotMatch(GtaArt.moonPhase(p), /NaN/, `Phase ${p}`);
+  // Hintergrund der App: Sonne mit Skyline und zwei Palmengruppen
+  const bg = GtaArt.backdrop();
+  assert.equal((bg.match(/<svg class="bg-sun"/g) || []).length, 1);
+  assert.equal((bg.match(/<svg class="bg-palms (l|r)"/g) || []).length, 2);
+  assert.doesNotMatch(bg, /NaN|undefined/);
+  assert.equal(GtaArt.shade("#808080", -0.5), "#404040");
+});
 
 test("Dani: Spiel heute Abend heisst «HÜT», auch wenn es noch über 12 Stunden dauert", (t) => {
   if (swiss(new Date()).h >= 23) return t.skip("kurz vor Mitternacht nicht aussagekräftig");

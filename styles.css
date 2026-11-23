@@ -394,28 +394,32 @@ body[data-sky^="storm"] .hero-icon { animation: float 5s ease-in-out infinite, z
   .news *, .news-art * { animation: none !important; }
 }
 
-/* GTA 6: Tipp des Tages */
+/* GTA 6: Tipp des Tages – Neon-Karte mit eigener Illustration (gta-art.js) */
 .gta {
   --gta-accent: #ff3d8b;
   margin-bottom: 12px;
-  border: 1px solid rgba(255, 61, 139, 0.45);
-  border-radius: 16px;
+  border: 1.5px solid transparent;
+  border-radius: 18px;
   overflow: hidden;
-  background: #0b0716;
-  box-shadow: 0 0 0 1px rgba(61, 220, 255, 0.08), 0 10px 40px rgba(255, 61, 139, 0.18);
+  background:
+    linear-gradient(#0b0716, #0b0716) padding-box,
+    linear-gradient(135deg, #ff3d8b, #b14dff 45%, #3ddcff 80%, var(--gta-accent)) border-box;
+  box-shadow: 0 0 28px -8px var(--gta-accent), 0 14px 44px rgba(255, 61, 139, 0.2);
 }
-.gta-main { display: block; color: var(--text); text-decoration: none; }
+.gta-main { display: block; color: var(--text); text-decoration: none; -webkit-tap-highlight-color: transparent; }
 .gta-bar {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: linear-gradient(90deg, #ff3d8b, #b14dff 55%, #3ddcff);
+  background: linear-gradient(90deg, #ff3d8b, #b14dff, #3ddcff, #b14dff, #ff3d8b) 0 0 / 200% 100%;
+  animation: gtabar 10s linear infinite;
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
 }
+@keyframes gtabar { to { background-position: 200% 0; } }
 .gta-logo {
   padding: 1px 7px;
   border-radius: 4px;
@@ -426,26 +430,74 @@ body[data-sky^="storm"] .hero-icon { animation: float 5s ease-in-out infinite, z
   font-style: italic;
   font-weight: 900;
   letter-spacing: 0;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
 }
-.gta-kicker { flex: 1; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gta-age { color: rgba(255, 255, 255, 0.9); font-weight: 600; letter-spacing: 0.02em; }
-.gta-art { aspect-ratio: 16 / 7.5; background: #140a2e; }
-.gta-art svg { display: block; width: 100%; height: 100%; }
-.gta-art .gta-sun { animation: gtasun 6s ease-in-out infinite; }
-@keyframes gtasun { 0%, 100% { opacity: 0.9; } 50% { opacity: 1; filter: brightness(1.15); } }
-.gta-art .gta-road { animation: gtaroad 0.6s linear infinite; }
-@keyframes gtaroad { to { transform: translateX(-48px); } }
-.gta-art .gta-car { animation: gtacar 2.4s ease-in-out infinite; }
-@keyframes gtacar { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-10px, -1px); } }
-.gta-art .gta-wave { animation: gtawave 3s ease-in-out infinite; }
-@keyframes gtawave { 50% { opacity: 0.15; } }
-.gta-body { padding: 12px 14px; }
+.gta-kicker { flex: 1; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 6px rgba(40, 0, 60, 0.45); }
+.gta-age { color: rgba(255, 255, 255, 0.92); font-weight: 600; letter-spacing: 0.02em; }
+
+/* Illustration: Glanz, der ab und zu darüberzieht, und weicher Übergang zum Text */
+.gta-art { position: relative; aspect-ratio: 16 / 7.5; background: #140a2e; overflow: hidden; }
+.gta-art svg { display: block; width: 100%; height: 100%; animation: gtain 0.45s ease-out; }
+@keyframes gtain { from { opacity: 0; transform: scale(1.04); } }
+.gta-art::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 14px;
+  background: linear-gradient(transparent, #0b0716);
+  pointer-events: none;
+}
+.gta-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.13) 50%, transparent 62%);
+  transform: translateX(-110%);
+  animation: gtaglare 7s ease-in-out 1.2s infinite;
+  pointer-events: none;
+}
+@keyframes gtaglare { 0%, 72% { transform: translateX(-110%); } 100% { transform: translateX(110%); } }
+
+/* Bewegung in der Illustration */
+.gta-art .ga-star { animation: gastar 3.2s ease-in-out infinite; }
+@keyframes gastar { 50% { opacity: 0.15; } }
+.gta-art .ga-sun { animation: gasun 6s ease-in-out infinite; }
+@keyframes gasun { 50% { opacity: 0.86; } }
+.gta-art .ga-plane { animation: gaplane 40s linear infinite; }
+@keyframes gaplane { from { transform: translateX(-130px); } to { transform: translateX(660px); } }
+.gta-art .ga-blink, .gta-art .ga-bulb { animation: gablink 1.3s steps(1) infinite; }
+@keyframes gablink { 50% { opacity: 0.15; } }
+.gta-art .ga-flicker { animation: gaflicker 5s linear infinite; }
+@keyframes gaflicker { 0%, 40%, 44%, 47%, 100% { opacity: 1; } 42%, 45.5% { opacity: 0.3; } }
+.gta-art .ga-shimmer { animation: gashimmer 2.8s ease-in-out infinite; }
+@keyframes gashimmer { 50% { opacity: 0.2; transform: translateX(5px); } }
+.gta-art .ga-palm { animation: gapalm 4.5s ease-in-out infinite alternate; }
+@keyframes gapalm { from { transform: rotate(-1.8deg); } to { transform: rotate(2.2deg); } }
+.gta-art .ga-dash { animation: gadash 0.4s linear infinite; }
+.gta-art .ga-dash-far { animation: gadash 0.75s linear infinite; }
+@keyframes gadash { to { transform: translateX(-60px); } }
+.gta-art .ga-trail { animation: gatrail 1.7s linear infinite; }
+@keyframes gatrail { 0% { transform: translateX(0); opacity: 0; } 15% { opacity: 0.9; } 100% { transform: translateX(-640px); opacity: 0; } }
+.gta-art .ga-body { animation: gabody 0.38s ease-in-out infinite alternate; }
+@keyframes gabody { to { transform: translateY(-0.9px); } }
+.gta-art .ga-spin { transform-box: fill-box; transform-origin: center; animation: gaspin 0.42s linear infinite; }
+@keyframes gaspin { to { transform: rotate(360deg); } }
+.gta-art .ga-flame { animation: gaflame 0.16s steps(2) infinite; }
+@keyframes gaflame { 50% { opacity: 0.1; } }
+.gta-art .ga-speed { animation: gaspeed 0.6s linear infinite; }
+@keyframes gaspeed { 0% { transform: translateX(20px); opacity: 0; } 30% { opacity: 0.55; } 100% { transform: translateX(-50px); opacity: 0; } }
+.gta-art .ga-needle { animation: ganeedle 2.4s ease-in-out infinite alternate; }
+@keyframes ganeedle { from { transform: rotate(-70deg); } to { transform: rotate(25deg); } }
+
+.gta-body { padding: 14px 16px 12px; }
 .gta-topic {
   display: inline-block;
   margin-bottom: 8px;
-  padding: 3px 9px;
+  padding: 3px 10px;
   border: 1px solid currentColor;
   border-radius: 999px;
+  background: color-mix(in srgb, var(--gta-accent) 14%, transparent);
+  box-shadow: 0 0 14px -4px var(--gta-accent);
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 700;
@@ -453,47 +505,72 @@ body[data-sky^="storm"] .hero-icon { animation: float 5s ease-in-out infinite, z
   color: var(--gta-accent);
   text-transform: uppercase;
 }
-.gta-title { margin: 0 0 8px; font-size: 21px; font-weight: 800; line-height: 1.2; letter-spacing: -0.01em; }
+.gta-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 22px color-mix(in srgb, var(--gta-accent) 45%, transparent);
+}
 .gta-teaser { margin: 0 0 12px; font-size: 15px; line-height: 1.45; color: #d2c6e6; }
 .gta-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
-.gta-go { flex: none; font-size: 14px; font-weight: 700; color: #ff5fa2; }
+.gta-go {
+  flex: none;
+  padding: 8px 15px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff3d8b, #b14dff);
+  box-shadow: 0 4px 18px -4px rgba(255, 61, 139, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  transition: transform 0.12s;
+}
+.gta-main:active .gta-go { transform: scale(0.96); }
+
+/* Themen-Chips: jeder in seiner Farbe (--c, gesetzt in app.js) */
 .gta-cats {
   display: flex;
-  gap: 6px;
-  padding: 10px 14px;
+  gap: 7px;
+  padding: 10px 14px 12px;
   border-top: 1px solid rgba(255, 61, 139, 0.25);
   overflow-x: auto;
   scrollbar-width: none;
 }
 .gta-cats::-webkit-scrollbar { display: none; }
 .gta-cats button {
+  --c: #ff3d8b;
   flex: none;
   min-height: 36px;
-  padding: 6px 12px;
+  padding: 6px 13px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   color: #c9bfdc;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
 }
 .gta-cats button:active { transform: scale(0.96); }
 .gta-cats button.none { opacity: 0.45; }
-.gta-cats button.on { border-color: var(--gta-accent); color: #fff; background: color-mix(in srgb, var(--gta-accent) 24%, transparent); opacity: 1; }
+.gta-cats button.on {
+  border-color: var(--c);
+  color: #fff;
+  background: color-mix(in srgb, var(--c) 22%, transparent);
+  box-shadow: 0 0 16px -4px var(--c), inset 0 0 12px -6px var(--c);
+  opacity: 1;
+}
 .gta-main.empty { cursor: default; }
 .gta-main.empty .gta-go { display: none; }
-.gta-more { margin: 0; padding: 0 14px 6px; list-style: none; }
-.gta-more li + li { border-top: 1px solid rgba(255, 255, 255, 0.06); }
-.gta-more a { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 9px 0; color: var(--text); text-decoration: none; }
-.gta-more-cat { grid-row: span 2; align-self: center; width: 84px; font-size: 11px; font-weight: 700; color: #ff7ab8; }
+.gta-more { margin: 0; padding: 0 14px 10px; list-style: none; }
+.gta-more-cat { font-size: 11px; font-weight: 700; color: var(--c, #ff7ab8); }
 .gta-more-title { font-size: 14px; line-height: 1.3; }
 .gta-more-src { font-size: 11px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
-  .gta-art * { animation: none !important; }
+  .gta-art *, .gta-art::after, .gta-bar { animation: none !important; }
 }
 
 /* Nowcast */
@@ -1039,7 +1116,739 @@ body[data-tab="fcb"] { --accent: #ff3b4e; --accent-2: #2f6bff; }
   .gta-cats { flex-wrap: wrap; overflow: visible; -webkit-mask-image: none; mask-image: none; padding-right: 14px; }
 }
 
-/* Weitere GTA-Artikel: Thema als kleine Zeile über dem Titel, damit der Titel die volle Breite hat */
-.gta-more a { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; }
+/* Weitere GTA-Artikel: Thema als kleine Zeile über dem Titel, damit der Titel die volle Breite hat;
+   links eine Leuchtleiste in der Farbe des Themas (--c, gesetzt in app.js), rechts ein Pfeil */
+.gta-more li + li { margin-top: 6px; }
+.gta-more a {
+  --c: #ff3d8b;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 26px 10px 12px;
+  border-left: 3px solid var(--c);
+  border-radius: 4px 10px 10px 4px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 12%, transparent), rgba(255, 255, 255, 0.02) 70%);
+  color: var(--text);
+  text-decoration: none;
+}
+.gta-more a::after {
+  content: "›";
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--c);
+}
+.gta-more a:active { background: color-mix(in srgb, var(--c) 22%, transparent); }
 .gta-more-cat { align-self: flex-start; width: auto; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
 .gta-more-title { font-size: 15px; font-weight: 600; }
+
+/* =====================================================================
+   GTA-6-LOOK – alle Bereiche ausser FCB
+   Neon-Sonnenuntergang, Palmen, violette Glasflächen und kräftige kursive
+   Schrift. Jede Regel gilt nur ausserhalb des FCB-Tabs; dort bleibt das
+   rot-blaue Design unverändert. Eigene Gestaltung, keine Logos oder
+   Schriften aus dem Spiel.
+   ===================================================================== */
+:root {
+  --display: "Avenir Next Condensed", "AvenirNextCondensed-Heavy", Futura, "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --sunset: linear-gradient(90deg, #ff3d8b, #ff7a59 55%, #ffb347);
+}
+body:not([data-tab="fcb"]) {
+  --bg: #0a0418;
+  --panel: rgba(28, 9, 48, 0.6);
+  --panel-solid: #1b0a30;
+  --line: rgba(255, 92, 170, 0.16);
+  --line-strong: rgba(255, 92, 170, 0.34);
+  --text: #fff0fa;
+  --muted: #b7a1d4;
+  --good: #3dffb0;
+  --warn: #ffb347;
+  --danger: #ff3d6e;
+  --rain: #3ddcff;
+  --sunset: linear-gradient(90deg, #ff3d8b, #ff7a59 55%, #ffb347);
+  --display: "Avenir Next Condensed", "AvenirNextCondensed-Heavy", Futura, "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  /* durchgehend GTA-Schriften: Zahlen und Zeiten schmal und kräftig, Fliesstext klar */
+  --mono: "Avenir Next Condensed", "AvenirNextCondensed-DemiBold", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --sans: "Avenir Next", "AvenirNext-Medium", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+}
+/* Akzent je nach Wetterlage, in Neonfarben */
+body:not([data-tab="fcb"])[data-sky^="clear-day"]   { --accent: #ffb347; --accent-2: #ff3d8b; }
+body:not([data-tab="fcb"])[data-sky^="clear-night"] { --accent: #c77dff; --accent-2: #3ddcff; }
+body:not([data-tab="fcb"])[data-sky^="cloudy"]      { --accent: #ff5fa2; --accent-2: #3ddcff; }
+body:not([data-tab="fcb"])[data-sky^="rain"]        { --accent: #3ddcff; --accent-2: #ff3d8b; }
+body:not([data-tab="fcb"])[data-sky^="snow"]        { --accent: #9ff3ff; --accent-2: #ff8fc8; }
+body:not([data-tab="fcb"])[data-sky^="storm"]       { --accent: #c77dff; --accent-2: #ff3d8b; }
+body:not([data-tab="fcb"])[data-sky^="fog"]         { --accent: #e0a8ff; --accent-2: #ff8fc8; }
+
+/* Hintergrund: Abendhimmel, Retro-Sonne am Horizont, Neon-Gitterboden, Palmen */
+body:not([data-tab="fcb"]) .bg {
+  background:
+    radial-gradient(130% 55% at 50% 100%, rgba(255, 110, 90, 0.5), rgba(255, 61, 139, 0.22) 45%, transparent 72%),
+    linear-gradient(180deg, #06021a 0%, #13052e 38%, #2a0946 70%, #47104f 100%);
+}
+body:not([data-tab="fcb"]) .bg-glow { opacity: 0.65; }
+body:not([data-tab="fcb"]) .bg-grid {
+  z-index: -1;
+  inset: auto -60% 0;
+  height: 34vh;
+  background-image:
+    linear-gradient(rgba(255, 61, 139, 0.75) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 61, 139, 0.75) 2px, transparent 2px);
+  background-size: 56px 56px;
+  transform: perspective(260px) rotateX(60deg);
+  transform-origin: 50% 100%;
+  opacity: 0.3;
+  -webkit-mask-image: linear-gradient(0deg, #000 10%, transparent 90%);
+  mask-image: linear-gradient(0deg, #000 10%, transparent 90%);
+}
+.bg-scene { display: none; }
+body:not([data-tab="fcb"]) .bg-scene { display: block; position: absolute; inset: 0; pointer-events: none; }
+.bg-sun { position: absolute; left: 50%; bottom: 33vh; width: min(112vw, 640px); transform: translateX(-50%); }
+.bg-sundisc { transition: opacity 1.2s; }
+body[data-sky^="cloudy"] .bg-sundisc { opacity: 0.6; }
+body[data-sky^="rain"] .bg-sundisc, body[data-sky^="snow"] .bg-sundisc,
+body[data-sky^="fog"] .bg-sundisc, body[data-sky^="storm"] .bg-sundisc { opacity: 0.3; }
+body[data-sky$="night"] .bg-sundisc { opacity: 0; }
+.bg-palms { position: absolute; bottom: 0; height: min(56vh, 520px); }
+.bg-palms.l { left: -34px; }
+.bg-palms.r { right: -34px; height: min(50vh, 470px); transform: scaleX(-1); }
+.bg-scene .ga-palm { animation: gapalm 6s ease-in-out infinite alternate; }
+
+/* Kopfzeile: dunkles Glas mit Neonkante, Ortsname wie eine Ortseinblendung im Spiel */
+.topbar {
+  background: linear-gradient(180deg, rgba(10, 4, 24, 0.94), rgba(10, 4, 24, 0.6));
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, #ff3d8b, #b14dff 50%, #3ddcff) 1;
+}
+.loc-name {
+  padding-right: 6px;
+  font-family: var(--display);
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff 35%, #ffb8dc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 61, 139, 0.5));
+}
+.icon-btn {
+  border-color: rgba(255, 61, 139, 0.5);
+  background: rgba(255, 61, 139, 0.08);
+  color: #ffd6ea;
+  box-shadow: 0 0 12px -4px rgba(255, 61, 139, 0.9), inset 0 0 8px -4px rgba(255, 61, 139, 0.9);
+}
+.status {
+  border-color: rgba(255, 61, 139, 0.5);
+  background: rgba(26, 9, 46, 0.94);
+  box-shadow: 0 0 18px -6px #ff3d8b;
+}
+
+/* Flächen: violettes Glas mit Neon-Verlaufskante und Sonnenuntergangs-Strich */
+body:not([data-tab="fcb"]) .panel {
+  border-color: transparent;
+  background: linear-gradient(160deg, rgba(42, 12, 68, 0.66), rgba(16, 5, 32, 0.72));
+  box-shadow: 0 12px 32px -20px rgba(255, 61, 139, 0.7);
+}
+body:not([data-tab="fcb"]) .panel::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 61, 139, 0.8), rgba(177, 77, 255, 0.3) 45%, rgba(61, 220, 255, 0.6));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+body:not([data-tab="fcb"]) .panel::before {
+  width: 56px;
+  height: 3px;
+  background: var(--sunset);
+  box-shadow: 0 0 12px rgba(255, 61, 139, 0.9);
+}
+body:not([data-tab="fcb"]) .tag {
+  padding-right: 3px;
+  font-family: var(--display);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Wetter oben: grosse Temperatur im Sonnenuntergangs-Verlauf */
+body:not([data-tab="fcb"]) .hero { background: none; box-shadow: none; }
+body:not([data-tab="fcb"]) .hero::after, body:not([data-tab="fcb"]) .hero::before { display: none; }
+body:not([data-tab="fcb"]) .temp {
+  padding-right: 8px;
+  font-family: var(--display);
+  font-size: 88px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #fff 0%, #ffe27a 36%, #ff8a3d 66%, #ff3d8b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* dunkle Kante unten und Neonschein: hebt sich auch vor der Sonne ab */
+  filter: drop-shadow(0 3px 0 rgba(42, 9, 70, 0.95)) drop-shadow(0 0 18px rgba(255, 61, 139, 0.6));
+}
+body:not([data-tab="fcb"]) .condition {
+  font-family: var(--display);
+  font-size: 21px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+body:not([data-tab="fcb"]) .summary { color: #e6d6f5; }
+body:not([data-tab="fcb"]) .hero-stats { border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgba(255, 61, 139, 0.6), transparent) 1; }
+body:not([data-tab="fcb"]) .hero-stats span { font-family: var(--display); font-size: 12px; font-style: italic; font-weight: 800; letter-spacing: 0.08em; color: #ff8fc8; }
+body:not([data-tab="fcb"]) .hero-stats b { font-family: var(--display); font-size: 22px; font-style: italic; font-weight: 800; }
+
+body:not([data-tab="fcb"]) .warn-banner { font-family: var(--display); font-size: 18px; font-style: italic; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+body:not([data-tab="fcb"]) .warn-banner {
+  border-color: rgba(255, 179, 71, 0.7);
+  background: linear-gradient(90deg, rgba(255, 179, 71, 0.22), rgba(255, 61, 139, 0.12)), rgba(20, 6, 38, 0.8);
+  box-shadow: 0 0 22px -6px rgba(255, 179, 71, 0.7);
+}
+body:not([data-tab="fcb"]) .warn-banner.danger {
+  border-color: rgba(255, 61, 110, 0.8);
+  background: linear-gradient(90deg, rgba(255, 61, 110, 0.3), rgba(177, 77, 255, 0.14)), rgba(20, 6, 38, 0.8);
+  box-shadow: 0 0 24px -6px rgba(255, 61, 110, 0.8);
+}
+body:not([data-tab="fcb"]) .warn-banner small { font-family: var(--sans); font-size: 12px; font-style: normal; font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+body:not([data-tab="fcb"]) .verse-text { font-family: var(--sans); font-size: 18px; font-style: italic; font-weight: 600; color: #fff4fb; }
+body:not([data-tab="fcb"]) .verse-more,
+body:not([data-tab="fcb"]) .link-btn { font-family: var(--display); font-style: italic; font-weight: 800; letter-spacing: 0.03em; color: #ff5fa2; }
+body:not([data-tab="fcb"]) .verse-more { font-size: 15px; text-transform: uppercase; }
+
+/* Fussball-Banner passend in Sonnenuntergangsfarben */
+body:not([data-tab="fcb"]) .news {
+  border: 1.5px solid rgba(255, 61, 139, 0.55);
+  border-radius: 18px;
+  background: #0b0716;
+  box-shadow: 0 0 28px -8px rgba(255, 61, 139, 0.75), 0 14px 44px rgba(255, 61, 139, 0.16);
+}
+body:not([data-tab="fcb"]) .news-bar { background: linear-gradient(90deg, #ff2d6f, #ff5e62 50%, #ffb347); }
+body:not([data-tab="fcb"]) .news-live { color: #e0105a; }
+body:not([data-tab="fcb"]) .news-more { color: #ff5fa2; }
+body:not([data-tab="fcb"]) .news-ticker { border-top-color: rgba(255, 61, 139, 0.35); background: rgba(255, 61, 139, 0.1); }
+body:not([data-tab="fcb"]) .news-ticker b { color: #ff5fa2; }
+body:not([data-tab="fcb"]) .news-title,
+body:not([data-tab="fcb"]) .gta-title { font-family: var(--display); font-size: 25px; font-style: italic; font-weight: 800; letter-spacing: 0; }
+
+/* Schalter, Stundenleiste, 7 Tage, Kacheln */
+body:not([data-tab="fcb"]) .seg { border-color: rgba(255, 61, 139, 0.45); border-radius: 999px; background: rgba(10, 4, 24, 0.55); }
+body:not([data-tab="fcb"]) .seg button {
+  border-radius: 999px;
+  font-family: var(--display);
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+body:not([data-tab="fcb"]) .seg button.on { background: linear-gradient(90deg, #ff3d8b, #b14dff); color: #fff; box-shadow: 0 0 14px -2px rgba(255, 61, 139, 0.85); }
+body:not([data-tab="fcb"]) .hour { border-color: rgba(255, 61, 139, 0.2); background: rgba(255, 255, 255, 0.03); }
+body:not([data-tab="fcb"]) .hour.now {
+  border-color: #ff3d8b;
+  background: linear-gradient(180deg, rgba(255, 61, 139, 0.28), rgba(177, 77, 255, 0.1));
+  box-shadow: 0 0 16px -4px rgba(255, 61, 139, 0.85);
+}
+body:not([data-tab="fcb"]) .hour .t { color: #ff9fcf; }
+body:not([data-tab="fcb"]) .hour .v,
+body:not([data-tab="fcb"]) .range { font-family: var(--display); font-style: italic; font-weight: 800; }
+body:not([data-tab="fcb"]) .hour .v { font-size: 17px; }
+body:not([data-tab="fcb"]) .range { font-size: 16px; }
+body:not([data-tab="fcb"]) .day-row { grid-template-columns: 58px 30px 38px 1fr; }
+body:not([data-tab="fcb"]) .day .n { font-family: var(--display); font-size: 16px; font-style: italic; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+body:not([data-tab="fcb"]) .bar span { background: linear-gradient(90deg, #3ddcff, #b14dff, #ff3d8b, #ffb347); box-shadow: 0 0 10px rgba(255, 61, 139, 0.5); }
+body:not([data-tab="fcb"]) .day-detail div { border-color: rgba(255, 61, 139, 0.22); background: rgba(255, 61, 139, 0.05); }
+body:not([data-tab="fcb"]) .day-detail span { color: #ff8fc8; }
+body:not([data-tab="fcb"]) .tile-big {
+  font-family: var(--display);
+  font-size: 34px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-shadow: 0 0 16px rgba(255, 61, 139, 0.55);
+}
+body:not([data-tab="fcb"]) .tile-big small { text-shadow: none; }
+body:not([data-tab="fcb"]) .meter { box-shadow: 0 0 10px rgba(255, 61, 139, 0.35); }
+
+/* Knöpfe: Neon-Umriss, Hauptknopf als leuchtende Pille */
+body:not([data-tab="fcb"]) .btn {
+  border-color: rgba(255, 61, 139, 0.45);
+  background: rgba(26, 9, 46, 0.72);
+  font-family: var(--display);
+  font-size: 17px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+body:not([data-tab="fcb"]) .btn.accent {
+  border-color: transparent;
+  background: linear-gradient(90deg, #ff3d8b, #b14dff);
+  box-shadow: 0 6px 20px -6px rgba(255, 61, 139, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+/* Radar: dunkle Neon-Karte, Regen bleibt farbig */
+body:not([data-tab="fcb"]) .map { border-color: rgba(255, 61, 139, 0.35); background: #12062a; }
+body:not([data-tab="fcb"]) .base-map { filter: invert(1) hue-rotate(205deg) saturate(1.7) brightness(0.8) contrast(1.1); }
+body:not([data-tab="fcb"]) .leaflet-container { background: #12062a; }
+body:not([data-tab="fcb"]) .leaflet-bar a { color: #ffd6ea !important; background: rgba(26, 9, 46, 0.94) !important; border-color: rgba(255, 61, 139, 0.4) !important; }
+body:not([data-tab="fcb"]) .radar-ctl input { accent-color: #ff3d8b; }
+
+/* Psalm: Überschrift im Sonnenuntergangs-Verlauf, Text bleibt gut lesbar in Serifen */
+body:not([data-tab="fcb"]) .psalm-date { font-family: var(--display); font-size: 14px; font-style: italic; font-weight: 800; letter-spacing: 0.08em; color: #ff8fc8; }
+body:not([data-tab="fcb"]) .psalm-ref {
+  padding-right: 8px;
+  font-family: var(--display);
+  font-size: 38px;
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px rgba(255, 61, 139, 0.45));
+}
+body:not([data-tab="fcb"]) .psalm-ref small { font-family: var(--sans); font-style: normal; text-transform: none; color: #d9c4f0; }
+body:not([data-tab="fcb"]) .psalm-text { font-family: var(--sans); font-weight: 500; line-height: 1.55; color: #fff4fb; }
+body:not([data-tab="fcb"]) .psalm-text sup { font-family: var(--display); font-size: 12px; font-style: italic; font-weight: 800; }
+.loc-meta, body:not([data-tab="fcb"]) .tag-r { font-family: var(--display); font-style: italic; font-weight: 700; letter-spacing: 0.06em; }
+body:not([data-tab="fcb"]) .chart text { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 11px; }
+body:not([data-tab="fcb"]) .chart .val { font-size: 12px; font-weight: 800; }
+body:not([data-tab="fcb"]) .kv b, body:not([data-tab="fcb"]) .day-detail div { font-family: var(--display); font-style: italic; font-weight: 800; }
+body:not([data-tab="fcb"]) .source { font-family: var(--display); font-style: italic; letter-spacing: 0.03em; }
+body:not([data-tab="fcb"]) .psalm-text sup { color: #ff5fa2; }
+
+/* Warnungen */
+body:not([data-tab="fcb"]) .warn-list b { font-family: var(--display); font-size: 19px; font-style: italic; font-weight: 800; text-transform: uppercase; }
+body:not([data-tab="fcb"]) .warn-list .lv { font-family: var(--mono); font-style: normal; }
+body:not([data-tab="fcb"]) .alerts-list .name { font-family: var(--display); font-size: 19px; font-style: italic; font-weight: 800; }
+
+/* Ortssuche */
+.sheet { background: linear-gradient(180deg, #160530, #0a0418 55%); }
+.sheet-head input { border-color: rgba(255, 61, 139, 0.45); }
+.list { border-color: rgba(255, 61, 139, 0.25); }
+.list li { background: rgba(30, 10, 52, 0.9); }
+.list .name { font-family: var(--display); font-size: 20px; font-style: italic; font-weight: 800; }
+.list-title { font-family: var(--display); font-size: 14px; font-style: italic; font-weight: 800; color: #ff5fa2; }
+.gps-row { border-color: rgba(255, 61, 139, 0.45); background: linear-gradient(90deg, rgba(255, 61, 139, 0.18), rgba(177, 77, 255, 0.1)); }
+.gps-row svg { stroke: #ff5fa2; }
+.gps-row b { font-family: var(--display); font-size: 18px; font-style: italic; font-weight: 800; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-scene * { animation: none !important; }
+}
+
+
+/* ---------- Neon-Symbole (Sprite aus gta-art.js) ---------- */
+.wi { display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; overflow: visible; }
+.hero-icon .wi { width: 92px; height: 92px; }
+.hour .i { display: grid; place-items: center; height: 30px; }
+.hour .i .wi { width: 30px; height: 30px; }
+.day .i { display: grid; place-items: center; }
+.day .i .wi { width: 28px; height: 28px; }
+.nowcast-text { display: flex; align-items: center; gap: 10px; }
+.nc-ico .wi { width: 30px; height: 30px; }
+.warn-list .ico .wi { width: 38px; height: 38px; }
+.warn-banner .ico { display: grid; place-items: center; }
+.warn-banner .ico .wi { width: 32px; height: 32px; }
+.thresholds .wi { width: 22px; height: 22px; margin-right: 6px; vertical-align: -6px; }
+.moonphase { width: 40px; height: 40px; vertical-align: -9px; filter: drop-shadow(0 0 8px rgba(201, 182, 255, 0.65)); }
+.gta-ico .wi { width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; }
+.gta-cats .gta-ico { color: var(--c); }
+.gta-topic .gta-ico .wi { width: 14px; height: 14px; margin-right: 5px; vertical-align: -3px; }
+.gta-more-cat .gta-ico { color: var(--c); }
+.gta-more-cat .gta-ico .wi { width: 13px; height: 13px; margin-right: 5px; vertical-align: -2px; }
+
+/* ---------- Fahndungssterne für die Unwetterstufe ---------- */
+.stars {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: -1px -1px 0 #12042a, 1px -1px 0 #12042a, -1px 1px 0 #12042a, 1px 1px 0 #12042a, 0 0 8px rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+.stars i { font-style: normal; color: rgba(255, 255, 255, 0.2); text-shadow: -1px -1px 0 #12042a, 1px -1px 0 #12042a, -1px 1px 0 #12042a, 1px 1px 0 #12042a; }
+.warn-list .stars { display: block; margin: 3px 0 2px; }
+.warn-banner .stars { flex: none; font-size: 14px; letter-spacing: 1px; }
+
+/* ---------- Meldungen im Stil der Spiel-Benachrichtigungen ---------- */
+.status {
+  position: relative;
+  padding: 10px 14px 10px 18px;
+  border: 0;
+  border-left: 4px solid #ff3d8b;
+  border-radius: 6px;
+  background: rgba(10, 3, 22, 0.92);
+  font-family: var(--display);
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 700;
+  text-align: left;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.8), 0 0 18px -8px #ff3d8b;
+}
+
+/* ---------- Standort im Radar als Spielerpfeil ---------- */
+.me-dot { width: 24px; height: 24px; border: 0; outline: 0; border-radius: 0; background: none; box-shadow: none; }
+.me-dot svg { display: block; width: 100%; height: 100%; fill: #fff; stroke: #ff3d8b; stroke-width: 1.8; stroke-linejoin: round; filter: drop-shadow(0 0 6px #ff3d8b); }
+
+/* ---------- Ladebildschirm beim Start ---------- */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: #0a0418;
+  cursor: pointer;
+  transition: opacity 0.45s ease;
+}
+.intro.out { opacity: 0; pointer-events: none; }
+.intro-art { flex: 1; min-height: 0; overflow: hidden; }
+.intro-art svg { display: block; width: 100%; height: 100%; }
+.intro::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 58%;
+  background: linear-gradient(transparent, rgba(8, 2, 20, 0.92) 55%);
+  pointer-events: none;
+}
+.intro-text { position: absolute; z-index: 1; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 74px); padding: 0 24px; }
+.intro-title {
+  padding-right: 10px;
+  font-family: "Avenir Next Condensed", "AvenirNextCondensed-Heavy", Futura, "Arial Narrow", system-ui, sans-serif;
+  font-size: clamp(46px, 14vw, 84px);
+  font-style: italic;
+  font-weight: 800;
+  line-height: 0.92;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff 0%, #ffe27a 40%, #ff8a3d 70%, #ff3d8b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 0 rgba(42, 9, 70, 0.95)) drop-shadow(0 0 22px rgba(255, 61, 139, 0.6));
+}
+.intro-title b { display: block; font-size: 0.6em; }
+.intro-tip { max-width: 34em; margin: 14px 0 0; font-family: "Avenir Next", -apple-system, sans-serif; font-size: 15px; line-height: 1.45; color: #f3e4ff; text-shadow: 0 1px 6px #000; }
+.intro-tip b { color: #ff5fa2; text-transform: uppercase; font-style: italic; }
+.intro-load {
+  position: absolute;
+  z-index: 1;
+  right: 22px;
+  bottom: calc(env(safe-area-inset-bottom) + 24px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Avenir Next Condensed", Futura, "Arial Narrow", system-ui, sans-serif;
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.intro-load i { width: 22px; height: 22px; border: 3px solid rgba(255, 255, 255, 0.22); border-top-color: #ff3d8b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-load i { animation: none; }
+  .intro { transition: none; }
+}
+/* Im Hochformat würde vom Auto nur ein Rad hinter dem Titel hervorschauen */
+.intro-art .ga-car { display: none; }
+
+/* =====================================================================
+   GTA-6-LAYOUT
+   Rahmen (ganze App): Kopf wie das HUD im Spiel, Reiterleiste wie im Pausenmenü.
+   Inhalte (ausser FCB): Missionskarte, Statistik-Balken, Handy-Nachricht,
+   Kartenbildschirm, Briefing, Fahndung, Schnellreise.
+   ===================================================================== */
+
+/* ---------- HUD-Kopf ---------- */
+.topbar { flex-direction: column; align-items: stretch; gap: 8px; padding-bottom: 0; }
+.hud-row { display: flex; align-items: center; gap: 8px; }
+.hud-row .loc-name { font-size: 22px; }
+.hud { flex: none; display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
+.hud-temp {
+  padding-right: 3px;
+  font-family: var(--display);
+  font-size: 27px;
+  font-style: italic;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: -1.5px -1.5px 0 #12042a, 1.5px -1.5px 0 #12042a, -1.5px 1.5px 0 #12042a, 1.5px 1.5px 0 #12042a, 0 0 14px rgba(255, 61, 139, 0.7);
+}
+.hud-stars { margin-top: 4px; font-size: 13px; letter-spacing: 1px; }
+.hud-btns { flex: none; display: flex; gap: 4px; }
+.hud-btns .icon-btn { width: 31px; height: 31px; border-radius: 9px; }
+.hud-btns .icon-btn svg { width: 17px; height: 17px; }
+
+/* ---------- Reiterleiste wie im Pausenmenü ---------- */
+.topbar .tabbar {
+  position: static;
+  z-index: auto;
+  display: flex;
+  gap: 4px;
+  height: auto;
+  margin: 0;
+  padding: 0 0 9px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.topbar .tabbar::-webkit-scrollbar { display: none; }
+.topbar .tabbar button {
+  flex: 1 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 10px;
+  font-family: var(--display);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #d6c4ef;
+  background: rgba(255, 255, 255, 0.07);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  transition: background 0.2s, color 0.2s;
+}
+.topbar .tabbar button svg { display: none; }
+.topbar .tabbar button::before { display: none; }
+.topbar .tabbar button.on { color: #fff; background: linear-gradient(90deg, #ff3d8b, #b14dff); }
+/* Der FCB-Reiter leuchtet in den Vereinsfarben */
+.topbar .tabbar button.tab-fcb.on { background: linear-gradient(90deg, #e30613, #0a2d7a); }
+.topbar .badge { position: static; min-width: 17px; height: 17px; margin-left: 2px; line-height: 17px; font-style: normal; background: #ff3d8b; box-shadow: 0 0 10px #ff3d8b; }
+main { padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
+
+/* ---------- Ortssuche als Schnellreise ---------- */
+.sheet::before {
+  content: "SCHNELLREISE";
+  display: block;
+  margin: 2px 0 12px;
+  font-family: var(--display);
+  font-size: 34px;
+  font-style: italic;
+  font-weight: 800;
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sheet .link-btn { font-family: var(--display); font-style: italic; font-weight: 800; color: #ff5fa2; }
+.list li { position: relative; padding-right: 34px; }
+.list li:not(.empty)::after { content: "›"; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 24px; color: #ff5fa2; }
+.list li:has(.remove)::after { display: none; }
+
+/* ---------- Wetter: Missionskarte ---------- */
+body:not([data-tab="fcb"]) .hero { padding: 14px 8px 6px; }
+body:not([data-tab="fcb"]) .hero-main { flex-direction: column; gap: 2px; text-align: center; }
+body:not([data-tab="fcb"]) .hero-icon .wi { width: 104px; height: 104px; }
+body:not([data-tab="fcb"]) .temp { font-size: 104px; line-height: 0.9; }
+body:not([data-tab="fcb"]) .condition {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 16px;
+  font-size: 22px;
+  background: linear-gradient(90deg, transparent, rgba(255, 61, 139, 0.35) 20%, rgba(177, 77, 255, 0.35) 80%, transparent);
+}
+body:not([data-tab="fcb"]) .summary { margin: 8px auto 0; max-width: 30em; font-size: 14px; text-shadow: 0 1px 2px #12042a, 0 0 10px #12042a; }
+body:not([data-tab="fcb"]) .hero-stats { display: none; }
+
+/* ---------- Statistiken mit Segmentbalken ---------- */
+.gstats-list { display: grid; gap: 7px; }
+.gstat { display: grid; grid-template-columns: 74px 1fr 66px; align-items: center; gap: 10px; }
+.gl { font-family: var(--display); font-size: 14px; font-style: italic; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #ffd6ea; }
+.gbar { display: flex; gap: 3px; }
+.gbar i { flex: 1; height: 11px; background: rgba(255, 255, 255, 0.1); transform: skewX(-20deg); }
+.gbar i.on { background: linear-gradient(180deg, #ffb347, #ff3d8b); box-shadow: 0 0 6px rgba(255, 61, 139, 0.55); }
+.gv { font-family: var(--display); font-size: 15px; font-style: italic; font-weight: 800; text-align: right; white-space: nowrap; }
+
+/* ---------- Vers des Tages als Handy-Nachricht ---------- */
+.msg-avatar { display: none; }
+body:not([data-tab="fcb"]) .verse .panel-head { justify-content: flex-start; flex-wrap: nowrap; gap: 10px; }
+body:not([data-tab="fcb"]) .verse .tag-r { margin-left: auto; }
+body:not([data-tab="fcb"]) .msg-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff3d8b, #b14dff);
+  box-shadow: 0 0 14px -2px rgba(255, 61, 139, 0.8);
+}
+body:not([data-tab="fcb"]) .msg-avatar .wi { width: 24px; height: 24px; }
+body:not([data-tab="fcb"]) .verse-text {
+  margin: 0 0 10px 48px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px 18px 18px 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+body:not([data-tab="fcb"]) .verse-more { display: inline-block; margin-left: 48px; }
+
+/* ---------- Stundenleiste und 7 Tage ---------- */
+body:not([data-tab="fcb"]) .hour {
+  border: 0;
+  background: rgba(255, 255, 255, 0.07);
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+body:not([data-tab="fcb"]) .hour.now { background: linear-gradient(180deg, rgba(255, 61, 139, 0.5), rgba(177, 77, 255, 0.25)); box-shadow: none; }
+body:not([data-tab="fcb"]) .day-row { grid-template-columns: 70px 30px 38px 1fr; }
+body:not([data-tab="fcb"]) .day .n::before { content: "▸ "; color: #ff3d8b; }
+body:not([data-tab="fcb"]) .day:first-child .day-row { background: linear-gradient(90deg, rgba(255, 61, 139, 0.18), transparent 70%); }
+
+/* ---------- Knöpfe schräg wie im Spielmenü ---------- */
+body:not([data-tab="fcb"]) .btn { border: 0; border-radius: 0; background: rgba(255, 255, 255, 0.08); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+body:not([data-tab="fcb"]) .btn.accent { background: linear-gradient(90deg, #ff3d8b, #b14dff); box-shadow: none; }
+body:not([data-tab="fcb"]) .seg { border: 0; border-radius: 0; background: none; gap: 4px; padding: 0; }
+body:not([data-tab="fcb"]) .seg button { border-radius: 0; background: rgba(255, 255, 255, 0.08); clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
+body:not([data-tab="fcb"]) .seg button.on { box-shadow: none; }
+
+/* ---------- Radar als Kartenbildschirm ---------- */
+.map-legend { display: none; }
+body:not([data-tab="fcb"]) .radar-panel {
+  --map-h: max(360px, calc(100dvh - 190px - env(safe-area-inset-top)));
+  width: calc(100% + 32px);
+  margin: 0 -16px 8px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+body:not([data-tab="fcb"]) .radar-panel::before, body:not([data-tab="fcb"]) .radar-panel::after { display: none; }
+body:not([data-tab="fcb"]) .radar-panel .panel-head {
+  position: absolute;
+  z-index: 500;
+  top: 10px;
+  left: 12px;
+  right: 64px;
+  margin: 0;
+  padding: 6px 10px;
+  background: rgba(10, 3, 22, 0.82);
+  pointer-events: none;
+}
+body:not([data-tab="fcb"]) .radar-panel .tag-r { font-size: 13px; color: #fff; }
+body:not([data-tab="fcb"]) .map { height: var(--map-h); margin: 0; border: 0; }
+body:not([data-tab="fcb"]) .map-legend {
+  position: absolute;
+  z-index: 500;
+  top: 52px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  background: rgba(10, 3, 22, 0.82);
+  font-family: var(--display);
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 700;
+  pointer-events: none;
+}
+.map-legend b { font-weight: 800; letter-spacing: 0.08em; color: #ff5fa2; }
+.map-legend span { display: flex; align-items: center; gap: 7px; }
+.lg-me svg { display: block; width: 14px; height: 14px; fill: #fff; stroke: #ff3d8b; stroke-width: 2; }
+.lg-rain { display: inline-block; width: 44px; height: 8px; background: linear-gradient(90deg, #9be7ff, #3d8bff, #ffd34d, #ff3d6e); }
+body:not([data-tab="fcb"]) .radar-ctl {
+  position: absolute;
+  z-index: 500;
+  top: calc(var(--map-h) - 62px);
+  left: 12px;
+  right: 12px;
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(10, 3, 22, 0.85);
+}
+body:not([data-tab="fcb"]) #radar-msg { padding: 0 16px; }
+
+/* ---------- Psalm als Briefing ---------- */
+body:not([data-tab="fcb"]) #view-psalm { display: flex; flex-direction: column; }
+body:not([data-tab="fcb"]) #view-psalm .actions { order: -1; gap: 6px; margin-bottom: 8px; }
+body:not([data-tab="fcb"]) #view-psalm .actions .btn { padding: 9px 6px; font-size: 15px; }
+body:not([data-tab="fcb"]) .psalm-text p {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  margin: 0;
+  padding: 9px 0;
+  border-top: 1px solid rgba(255, 61, 139, 0.14);
+}
+body:not([data-tab="fcb"]) .psalm-text p:first-child { border-top: 0; }
+body:not([data-tab="fcb"]) .psalm-text sup { margin: 0; padding-top: 0.25em; text-align: right; vertical-align: baseline; font-size: 14px; line-height: 1; }
+
+/* ---------- Warnungen als Fahndung ---------- */
+.wanted { display: none; }
+body:not([data-tab="fcb"]) .wanted { display: block; padding: 10px 0 16px; text-align: center; }
+.wanted-stars { font-size: 42px; letter-spacing: 6px; }
+.wanted.on .wanted-stars { animation: wantedblink 1.4s steps(1) infinite; }
+@keyframes wantedblink { 50% { opacity: 0.45; } }
+.wanted-label {
+  margin-top: 6px;
+  font-family: var(--display);
+  font-size: 28px;
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(255, 61, 139, 0.6);
+}
+.wanted-sub { font-family: var(--display); font-size: 13px; font-style: italic; font-weight: 700; letter-spacing: 0.08em; color: #ff8fc8; text-transform: uppercase; }
+body:not([data-tab="fcb"]) .warn-list li {
+  margin-bottom: 8px;
+  padding: 12px;
+  border-top: 0;
+  border-left: 3px solid #ffb347;
+  background: rgba(255, 255, 255, 0.05);
+}
+body:not([data-tab="fcb"]) .warn-list li:last-child { margin-bottom: 0; }
+body:not([data-tab="fcb"]) .steps { counter-reset: ziel; padding-left: 0; list-style: none; }
+body:not([data-tab="fcb"]) .steps li { position: relative; padding-left: 34px; margin-bottom: 8px; }
+body:not([data-tab="fcb"]) .steps li::before {
+  counter-increment: ziel;
+  content: counter(ziel);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 22px;
+  font-family: var(--display);
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(90deg, #ff3d8b, #b14dff);
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wanted.on .wanted-stars { animation: none; }
+}

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Wetter &amp; Psalm</title>
   <meta name="description" content="Wettervorhersage mit Radar, Warnungen und einem Psalm für jeden Tag, dazu Fussball-News, FC Basel und GTA-6-Tipps">
-  <meta name="theme-color" content="#05080f">
+  <meta name="theme-color" content="#0a0418">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,22 +18,49 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-sky="clear-day" data-tab="wetter">
-  <div class="bg" aria-hidden="true"><div class="bg-glow"></div><canvas id="fx"></canvas><div class="bg-grid"></div></div>
+  <div class="bg" aria-hidden="true"><div class="bg-glow"></div><div class="bg-scene" id="bg-scene"></div><canvas id="fx"></canvas><div class="bg-grid"></div></div>
 
+  <!-- Kopf wie das HUD im Spiel: Ort links, Temperatur und Fahndungssterne rechts,
+       darunter die Reiterleiste wie im Pausenmenü -->
   <header class="topbar">
-    <div class="loc" id="loc" role="button" tabindex="0" aria-label="Ort wechseln">
-      <div id="place" class="loc-name">Wetter</div>
-      <div id="updated" class="loc-meta mono">Verbinde …</div>
+    <div class="hud-row">
+      <div class="loc" id="loc" role="button" tabindex="0" aria-label="Ort wechseln">
+        <div id="place" class="loc-name">Wetter</div>
+        <div id="updated" class="loc-meta mono">Verbinde …</div>
+      </div>
+      <div class="hud" id="hud">
+        <div id="hud-temp" class="hud-temp">--°</div>
+        <div id="hud-stars" class="stars hud-stars" role="img" aria-label="Unwetterstufe 0 von 5"><i>★★★★★</i></div>
+      </div>
+      <div class="hud-btns">
+        <button class="icon-btn" id="btn-refresh" aria-label="Aktualisieren">
+          <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-locate" aria-label="Aktuellen Standort verwenden">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-search" aria-label="Ort suchen">
+          <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg>
+        </button>
+      </div>
     </div>
-    <button class="icon-btn" id="btn-refresh" aria-label="Aktualisieren">
-      <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg>
-    </button>
-    <button class="icon-btn" id="btn-locate" aria-label="Aktuellen Standort verwenden">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-    </button>
-    <button class="icon-btn" id="btn-search" aria-label="Ort suchen">
-      <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg>
-    </button>
+    <nav class="tabbar" aria-label="Bereiche">
+      <button data-tab="wetter" class="on">
+        <svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"/></svg>Wetter
+      </button>
+      <button data-tab="radar">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/></svg>Radar
+      </button>
+      <button data-tab="psalm">
+        <svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5zM12 6v13"/></svg>Psalm
+      </button>
+      <button data-tab="fcb" class="tab-fcb">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/><path d="M12 3v4M16 10l4-1M15 15l2 4M9 15l-2 4M8 10 4 9"/></svg>FCB
+      </button>
+      <button data-tab="warn">
+        <svg viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v4M12 17v.5"/></svg>Warnungen<span id="warn-badge" class="badge" hidden></span>
+      </button>
+    </nav>
   </header>
 
   <p id="status" class="status" hidden></p>
@@ -58,10 +85,15 @@
         </div>
       </div>
 
+      <div class="panel gstats" id="gstats" hidden>
+        <div class="panel-head"><span class="tag">STATISTIKEN</span><span class="tag-r">jetzt · heute</span></div>
+        <div id="gstats-list" class="gstats-list"></div>
+      </div>
+
       <button id="warn-banner" class="warn-banner" hidden></button>
 
       <button class="panel verse" id="verse-card">
-        <div class="panel-head"><span class="tag">// VERS DES TAGES</span><span id="verse-ref" class="tag-r mono"></span></div>
+        <div class="panel-head"><span class="msg-avatar" aria-hidden="true"><svg class="wi" viewBox="0 0 48 48"><use href="#wi-book"/></svg></span><span class="tag">VERS DES TAGES</span><span id="verse-ref" class="tag-r mono"></span></div>
         <p id="verse-text" class="verse-text"></p>
         <span class="verse-more">Ganzen Psalm lesen ›</span>
       </button>
@@ -102,14 +134,14 @@
       </section>
 
       <div class="panel">
-        <div class="panel-head"><span class="tag">// NIEDERSCHLAG 2 STD</span><span id="nowcast-sum" class="tag-r mono"></span></div>
+        <div class="panel-head"><span class="tag">NIEDERSCHLAG 2 STD</span><span id="nowcast-sum" class="tag-r mono"></span></div>
         <p id="nowcast-text" class="nowcast-text"></p>
         <div id="nowcast" class="nowcast"></div>
       </div>
 
       <div class="panel">
         <div class="panel-head">
-          <span class="tag">// VERLAUF 24 STD</span>
+          <span class="tag">VERLAUF 24 STD</span>
           <div class="seg" id="chart-seg">
             <button data-m="temp" class="on">Temp</button>
             <button data-m="rain">Regen</button>
@@ -121,7 +153,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><span class="tag">// 7 TAGE</span><span class="tag-r">Tippen für Details</span></div>
+        <div class="panel-head"><span class="tag">7 TAGE</span><span class="tag-r">Tippen für Details</span></div>
         <ul id="daily" class="daily"></ul>
       </div>
 
@@ -134,8 +166,13 @@
     <!-- ===== Radar ===== -->
     <section class="view" id="view-radar" hidden>
       <div class="panel radar-panel">
-        <div class="panel-head"><span class="tag">// NIEDERSCHLAGSRADAR</span><span id="radar-time" class="tag-r mono">--:--</span></div>
+        <div class="panel-head"><span class="tag">NIEDERSCHLAGSRADAR</span><span id="radar-time" class="tag-r mono">--:--</span></div>
         <div id="map" class="map"></div>
+        <div class="map-legend" aria-hidden="true">
+          <b>LEGENDE</b>
+          <span><i class="lg-me"><svg viewBox="0 0 24 24"><path d="M12 2.5 L20.5 21 L12 16.5 L3.5 21 Z"/></svg></i>Du</span>
+          <span><i class="lg-rain"></i>Regen schwach – stark</span>
+        </div>
         <div class="radar-ctl">
           <button class="icon-btn" id="radar-play" aria-label="Animation abspielen">
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" class="fill"/></svg>
@@ -152,7 +189,7 @@
     <section class="view" id="view-psalm" hidden>
       <div class="panel psalm">
         <div class="panel-head">
-          <span class="tag">// PSALM DES TAGES</span>
+          <span class="tag">PSALM DES TAGES</span>
           <div class="seg">
             <button id="font-down" aria-label="Schrift kleiner">A−</button>
             <button id="font-up" aria-label="Schrift größer">A+</button>
@@ -282,13 +319,18 @@
 
     <!-- ===== Warnungen ===== -->
     <section class="view" id="view-warn" hidden>
+      <div class="wanted" id="wanted">
+        <div id="wanted-stars" class="stars wanted-stars"><i>★★★★★</i></div>
+        <div id="wanted-label" class="wanted-label">Keine Unwetter</div>
+        <div id="wanted-sub" class="wanted-sub">Unwetterstufe 0 von 5</div>
+      </div>
       <div class="panel">
-        <div class="panel-head"><span class="tag">// AKTIVE WARNUNGEN</span><span id="warn-place" class="tag-r"></span></div>
+        <div class="panel-head"><span class="tag">AKTIVE WARNUNGEN</span><span id="warn-place" class="tag-r"></span></div>
         <ul id="warn-list" class="warn-list"></ul>
       </div>
 
       <div class="panel" id="alerts-card" hidden>
-        <div class="panel-head"><span class="tag">// PUSH-NACHRICHTEN</span></div>
+        <div class="panel-head"><span class="tag">PUSH-NACHRICHTEN</span></div>
         <p class="body-text">Bei Gefahr kommt eine Nachricht aufs Handy – auch wenn die App geschlossen ist.</p>
         <ol class="steps">
           <li>Kostenlose App <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener"><b>ntfy</b></a> laden (kein Konto nötig), Mitteilungen erlauben.</li>
@@ -299,36 +341,19 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><span class="tag">// SCHWELLENWERTE</span></div>
+        <div class="panel-head"><span class="tag">SCHWELLENWERTE</span></div>
         <table class="thresholds mono">
-          <tr><td>💨 Wind / Sturm</td><td>Böen ≥ 60 / 75 / 120 km/h</td></tr>
-          <tr><td>⛈️ Gewitter</td><td>Vorhersage, Hagel höher</td></tr>
-          <tr><td>🥵 Hitze</td><td>≥ 30 °C / 35 °C</td></tr>
-          <tr><td>🥶 Kälte</td><td>≤ −10 °C / −15 °C</td></tr>
-          <tr><td>❄️ Schnee</td><td>≥ 3 cm in 24 h</td></tr>
-          <tr><td>🧊 Glätte</td><td>Niederschlag ≤ 1 °C</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-wind"/></svg> Wind / Sturm</td><td>Böen ≥ 60 / 75 / 120 km/h</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-storm"/></svg> Gewitter</td><td>Vorhersage, Hagel höher</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-heat"/></svg> Hitze</td><td>≥ 30 °C / 35 °C</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-cold"/></svg> Kälte</td><td>≤ −10 °C / −15 °C</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-flake"/></svg> Schnee</td><td>≥ 3 cm in 24 h</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-ice"/></svg> Glätte</td><td>Niederschlag ≤ 1 °C</td></tr>
         </table>
       </div>
     </section>
   </main>
 
-  <nav class="tabbar" aria-label="Bereiche">
-    <button data-tab="wetter" class="on">
-      <svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"/></svg>Wetter
-    </button>
-    <button data-tab="radar">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/></svg>Radar
-    </button>
-    <button data-tab="psalm">
-      <svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5zM12 6v13"/></svg>Psalm
-    </button>
-    <button data-tab="fcb" class="tab-fcb">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/><path d="M12 3v4M16 10l4-1M15 15l2 4M9 15l-2 4M8 10 4 9"/></svg>FCB
-    </button>
-    <button data-tab="warn">
-      <svg viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v4M12 17v.5"/></svg>Warnungen<span id="warn-badge" class="badge" hidden></span>
-    </button>
-  </nav>
 
   <dialog id="search-dialog" class="sheet">
     <form method="dialog" class="sheet-head">
@@ -347,6 +372,7 @@
   <script src="weather-fx.js"></script>
   <script src="fcb-live.js"></script>
   <script src="dani-chat.js"></script>
+  <script src="gta-art.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
