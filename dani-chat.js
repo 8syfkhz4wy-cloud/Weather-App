@@ -29,16 +29,27 @@ const DaniChat = (() => {
   const team = (t) => TEAMS[t] || t;
   const opponent = (fx) => team(fx.baselHome ? fx.away : fx.home);
 
+  // Dani ist Basler: Tage und Uhrzeiten immer in Schweizer Zeit, auch wenn das iPhone
+  // gerade in einer anderen Zeitzone ist
+  const swissFmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Zurich", hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric",
+  });
+  const swiss = (date) => {
+    const p = Object.fromEntries(swissFmt.formatToParts(date).map((x) => [x.type, +x.value]));
+    return { y: p.year, mo: p.month - 1, d: p.day, h: p.hour % 24, mi: p.minute, wd: new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay() };
+  };
+
   // Kalendertage bis zum Datum (0 = heute, 1 = morgen), unabhängig von der Uhrzeit
   const daysUntil = (date) => {
-    const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    return Math.round((midnight(date) - midnight(new Date())) / 86400000);
+    const midnight = (s) => Date.UTC(s.y, s.mo, s.d);
+    return Math.round((midnight(swiss(date)) - midnight(swiss(new Date()))) / 86400000);
   };
 
   function when(date) {
     const days = ["Sunntig", "Mäntig", "Zyschtig", "Mittwuch", "Dunnschtig", "Frytig", "Samschtig"];
-    const time = date.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
-    return `am ${days[date.getDay()]}, ${date.getDate()}.${date.getMonth() + 1}., um ${time}`;
+    const s = swiss(date);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `am ${days[s.wd]}, ${s.d}.${s.mo + 1}., um ${pad(s.h)}:${pad(s.mi)}`;
   }
 
   // ---------- Antworten aus den Daten der App ----------
@@ -169,9 +180,13 @@ const DaniChat = (() => {
     const fx = d && [d.fx, d.next].find((f) => f && f.kickoff && f.kickoff.getTime() > Date.now());
     const h = ctx.w && ctx.w.hourly;
     if (!fx || !h || !h.time) return null;
-    const k = fx.kickoff;
+    // Die Stundenwerte stehen in der Ortszeit des Wetterorts (Open-Meteo, timezone=auto)
+    const off = ctx.w.utc_offset_seconds;
+    const k = typeof off === "number" ? new Date(fx.kickoff.getTime() + off * 1000) : null;
     const pad = (n) => String(n).padStart(2, "0");
-    const key = `${k.getFullYear()}-${pad(k.getMonth() + 1)}-${pad(k.getDate())}T${pad(k.getHours())}:00`;
+    const key = k
+      ? `${k.getUTCFullYear()}-${pad(k.getUTCMonth() + 1)}-${pad(k.getUTCDate())}T${pad(k.getUTCHours())}:00`
+      : `${fx.kickoff.getFullYear()}-${pad(fx.kickoff.getMonth() + 1)}-${pad(fx.kickoff.getDate())}T${pad(fx.kickoff.getHours())}:00`;
     const i = h.time.indexOf(key);
     if (i < 0 || h.temperature_2m[i] == null) return null;
     return { fx, t: Math.round(h.temperature_2m[i]), code: h.weather_code[i], rain: (h.precipitation_probability || [])[i] };

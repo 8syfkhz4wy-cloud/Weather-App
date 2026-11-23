@@ -127,9 +127,11 @@ const FCB = {
 };
 
 const teletext = (text) => ({ subpages: [{ ep1Info: { contentText: text } }] });
+// Kopfzeile wie beim SRF-Teletext: aktuelle Zeit in Schweizer Zeit
 const ttStamp = () => {
-  const d = new Date();
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Zurich", hourCycle: "h23", year: "2-digit", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return `${p.day}.${p.month}.${p.year} ${p.hour}:${p.minute}`;
 };
 const TELETEXT = {
   202: () => `FUSSBALL ${ttStamp()} Super League GC - Lugano 1:1 (0:0) Basel - YB 2:1 (1:0) Sion - Thun 0:0 (0:0)`,
@@ -149,9 +151,11 @@ async function mockNetwork(page, opts = {}) {
   await page.route(/geocoding-api\.open-meteo\.com/, (r) =>
     r.fulfill({ json: { results: ctl.geocode || [{ name: "Zürich", admin1: "Zürich", country: "Schweiz", latitude: 47.3769, longitude: 8.5417 }] } }));
   await page.route(/api\.bigdatacloud\.net/, (r) => r.fulfill({ json: { city: "Allschwil", localityInfo: { administrative: [{ adminLevel: 8, name: "Allschwil" }] } } }));
+  // opts.teletext: einzelne Seiten ersetzen, z. B. { 202: () => "… Basel - YB SA 18.00 Uhr" }
+  const pages = { ...TELETEXT, ...(opts.teletext || {}) };
   await page.route(/api\.teletext\.ch\/channels\/SRF1\/pages\/(\d+)/, (r) => {
     const n = +r.request().url().match(/pages\/(\d+)/)[1];
-    return TELETEXT[n] ? r.fulfill({ json: teletext(TELETEXT[n]()) }) : r.fulfill({ status: 404, body: "" });
+    return pages[n] ? r.fulfill({ json: teletext(pages[n]()) }) : r.fulfill({ status: 404, body: "" });
   });
   // Karten und Radar: nicht nötig für die Tests, also ablehnen (die App muss damit umgehen)
   await page.route(/cdnjs\.cloudflare\.com|openstreetmap\.org|geo\.admin\.ch|dwd\.de|rainviewer\.com/, (r) => r.abort());
@@ -173,4 +177,4 @@ function watchErrors(page) {
   return errors;
 }
 
-module.exports = { startServer, weather, mockNetwork, watchErrors, ROOT, FCB };
+module.exports = { startServer, weather, mockNetwork, watchErrors, ttStamp, ROOT, FCB };

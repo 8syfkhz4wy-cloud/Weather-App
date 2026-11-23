@@ -7,7 +7,7 @@ const assert = require("node:assert/strict");
 const { spawnSync } = require("node:child_process");
 const path = require("node:path");
 const { chromium, devices } = require("playwright");
-const { startServer, weather, mockNetwork, watchErrors, ROOT } = require("./helpers.js");
+const { startServer, weather, mockNetwork, watchErrors, ttStamp, ROOT } = require("./helpers.js");
 
 let browser;
 let srv;
@@ -23,8 +23,8 @@ test.after(async () => {
 const BASEL = { latitude: 47.55, longitude: 7.55 };
 
 // Neue App-Instanz. storage: Einträge, die vor dem Start im Speicher stehen (wie bei einem früheren Besuch)
-async function openApp({ device = devices["iPhone 13"], viewport, storage, net, serviceWorkers = "block", wait = true } = {}) {
-  const ctx = await browser.newContext({ ...device, ...(viewport ? { viewport } : {}), geolocation: BASEL, permissions: ["geolocation"], serviceWorkers, locale: "de-CH" });
+async function openApp({ device = devices["iPhone 13"], viewport, storage, net, serviceWorkers = "block", wait = true, timezoneId = "Europe/Zurich" } = {}) {
+  const ctx = await browser.newContext({ ...device, ...(viewport ? { viewport } : {}), geolocation: BASEL, permissions: ["geolocation"], serviceWorkers, locale: "de-CH", timezoneId });
   if (storage) {
     await ctx.addInitScript((entries) => {
       if (sessionStorage.getItem("__init")) return; // nur beim ersten Laden, nicht nach Reload
@@ -217,6 +217,41 @@ test("FCB: News, Kader, Live-Ticker mit Toren und Tabelle, Chat mit Dani", async
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+// Angesetztes Spiel am nächsten Samstag um 18:00 Schweizer Zeit, angezeigt auf iPhones in
+// verschiedenen Zeitzonen. Erwartet: Ortszeit des Geräts, im Ausland mit Schweizer Zeit dahinter.
+const FcbLive = require("../fcb-live.js");
+function nextSaturdaySwiss() {
+  const s = FcbLive.zurichParts(new Date());
+  const wd = new Date(Date.UTC(s.y, s.mo, s.d)).getUTCDay();
+  return FcbLive.zurichDate(s.y, s.mo, s.d + ((6 - wd + 7) % 7), 18, 0);
+}
+for (const tz of ["Europe/Zurich", "America/New_York", "Asia/Tokyo"]) {
+  test(`FCB-Ticker: Anpfiff richtig auf einem iPhone mit Zeitzone ${tz}`, async (t) => {
+    const kickoff = nextSaturdaySwiss();
+    if (kickoff.getTime() < Date.now() + 3600e3) return t.skip("Samstagabend: Anpfiff schon vorbei oder zu nah");
+    const local = kickoff.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+    const expected = tz === "Europe/Zurich" ? /, 18:00 Uhr · noch/ : new RegExp(`, ${local} Uhr \\(18:00 Uhr Schweizer Zeit\\)`);
+    const net = { teletext: { 202: () => `FUSSBALL ${ttStamp()} Super League Basel - YB SA 18.00 Uhr GC - Thun SO 14.00 Uhr` } };
+    const { ctx, page, errors } = await openApp({ timezoneId: tz, net });
+    await page.click(".tabbar [data-tab=fcb]");
+    await page.click("#fcb-seg [data-s=ticker]");
+    await page.waitForFunction(() => /Uhr/.test(document.querySelector("#match-status").textContent));
+    const status = await text(page, "#match-status");
+    assert.match(status, expected, status);
+    if (/Europe/.test(tz)) assert.doesNotMatch(status, /Schweizer Zeit/);
+    // Dani nennt die Schweizer Zeit
+    await page.click("#fcb-seg [data-s=chat]");
+    await page.waitForFunction(() => document.querySelectorAll("#chat-log p:not(.typing)").length >= 2); // Begrüssung
+    const n = await page.locator("#chat-log p:not(.typing)").count();
+    await page.fill("#chat-input", "Nächstes Spiel?");
+    await page.press("#chat-input", "Enter");
+    await page.waitForFunction((k) => document.querySelectorAll("#chat-log p:not(.typing)").length >= k + 2, n);
+    assert.match(await page.locator("#chat-log p:not(.typing)").nth(n + 1).innerText(), /am Samschtig, .*um 18:00/);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  });
+}
 
 test("Radar-Tab: ohne Kartendienst eine verständliche Meldung statt eines Fehlers", async () => {
   const { ctx, page, errors } = await openApp();
