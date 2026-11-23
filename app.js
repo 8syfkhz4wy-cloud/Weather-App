@@ -1101,7 +1101,7 @@ function renderTiles(w, air) {
 
 function renderUpdated(t, live) {
   const time = new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  const gps = state.place?.gps ? " · STANDORT" : "";
+  const gps = state.place?.gps ? " · 📍" : ""; // kurz, passt auch auf kleine iPhones
   $("#updated").innerHTML = `${live ? '<span class="live">● LIVE</span>' : "○ OFFLINE"} · ${time}${gps}`;
 }
 
