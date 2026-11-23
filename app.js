@@ -1193,7 +1193,10 @@ async function showPlace(place) {
   } catch {
     if (seq !== loadSeq) return;
     showStatus(cached ? "Offline – zeige zuletzt geladene Daten." : "Wetterdaten konnten nicht geladen werden.");
-    if (!cached) $("#condition").textContent = "Keine Verbindung";
+    if (!cached) {
+      $("#condition").textContent = "Keine Verbindung";
+      $("#updated").textContent = "○ OFFLINE";
+    }
   } finally {
     if (seq === loadSeq) {
       state.loading = null;
@@ -2003,6 +2006,7 @@ $("#use-gps").addEventListener("click", () => {
 });
 $("#btn-refresh").addEventListener("click", () => {
   if (state.place) showPlace(state.place);
+  if (followsGps()) locate(true); // beim Folgen auch den Standort neu bestimmen
   loadFeeds();
 });
 $("#btn-search").addEventListener("click", openSearch);
@@ -2063,23 +2067,29 @@ if (lastPlace) {
 // Erst nach dem Ort, damit z. B. das Radar gleich am richtigen Ort öffnet
 setTab(store("tab") || "wetter");
 
+// Neuer Tag (auch wenn die App über Mitternacht offen bleibt): Psalm und Vers des Tages wechseln
+let lastDay = new Date().toDateString();
+function checkNewDay() {
+  if (new Date().toDateString() === lastDay) return;
+  lastDay = new Date().toDateString();
+  psalm.offset = 0;
+  renderPsalm();
+  renderVerse();
+}
+
 // Solange die App offen ist, alle 15 Minuten neue Daten laden
 setInterval(() => {
-  if (document.visibilityState === "visible" && state.place) refresh();
+  if (document.visibilityState !== "visible") return;
+  checkNewDay();
+  if (state.place) refresh();
 }, 15 * 60 * 1000);
 
 // Beim Zurückkehren in die App: Daten und Tagespsalm aktualisieren
-let lastDay = new Date().toDateString();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   liveTick();
   if (Date.now() - feedsAt > 30 * 60 * 1000) loadFeeds();
-  if (new Date().toDateString() !== lastDay) {
-    lastDay = new Date().toDateString();
-    psalm.offset = 0;
-    renderPsalm();
-    renderVerse();
-  }
+  checkNewDay();
   // Nur neu laden, wenn die Daten älter als 5 Minuten sind (schont Akku und Datenvolumen)
   if (state.place && Date.now() - (state.fetchedAt || 0) > 5 * 60 * 1000) refresh();
 });
