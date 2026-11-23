@@ -74,7 +74,9 @@ SKIP = re.compile(r"\bdeal\b|angebot|rabatt|gewinnspiel|giveaway|\bquiz\b|bilder
 
 
 def fetch(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (wetter-psalm-gta6)"})
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36",
+        "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8"})
     with urllib.request.urlopen(req, timeout=20) as res:
         return res.read()
 
@@ -99,6 +101,19 @@ def published_of(item):
                 continue
         return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     return None
+
+
+# Ratgeber-Artikel (Anleitung, Fundorte, Bestenliste) statt blosser Meldungen über das Spiel
+GUIDE = re.compile(r"how to|where to (find|get)|locations?\b|guide|\btips?\b|tricks?\b|\bbest\b|walkthrough|"
+                   r"cheats?\b|codes?\b|unlock|explained|every\b|all\b.*\b(locations|cars|weapons|codes)|"
+                   r"tipps?\b|ratgeber|lösung|fundorte?|so (bekommt|findet|geht|klappt|verdient|holt)|"
+                   r"\bwo (ihr|finde|man|gibt)|freischalten|ihr könnt|bekommt ihr|findet ihr|alle\b|die besten|"
+                   r"anfänger|beginner|einsteiger|should know|solltet|schnell(es)? geld|make money|money (guide|glitch|fast)",
+                   re.I)
+# Meldungen über Entwicklung, Verkauf und Streit sind keine Tipps
+NEWS_ONLY = re.compile(r"\b(says|said|reveals?|confirms?|interview|lawsuit|klage|shitstorm|sales|verkauf|"
+                       r"verkauft|umsatz|aktie|share price|leak|gerücht|rumou?r|delay|verschieb|trailer|"
+                       r"review|test:|wertung|cut from|gestrichen|developers?|entwickler|ki-)", re.I)
 
 
 def categorize(title, teaser):
@@ -135,9 +150,12 @@ def parse_feed(data, name, weight, lang, now):
         if not GTA6.search(f"{title} {teaser}") or SKIP.search(title):
             continue
         cat, strength = categorize(title, teaser)
+        guide = bool(GUIDE.search(title)) and not NEWS_ONLY.search(title)
+        if cat and not guide:
+            strength *= 0.35  # Schwerpunkt-Wort nur nebenbei (z. B. "money" in einem Interview)
         out.append({
             "title": title, "teaser": teaser, "url": link, "source": source, "lang": lang,
-            "weight": weight, "rank": rank, "published": published, "cat": cat, "strength": strength,
+            "weight": weight, "rank": rank, "published": published, "cat": cat, "strength": strength, "guide": guide,
         })
     return out
 
@@ -214,18 +232,19 @@ def main(out_file, prev_file=None):
     top = None
     if same_day and prev_url:
         # Den ganzen Tag denselben Tipp zeigen, solange der Artikel noch im Feed ist
-        top = next((it for it in items if it["url"] == prev_url), None)
+        top = next((it for it in items if it["url"] == prev_url and it["guide"]), None)
     if top is None:
         # Gestrigen Tipp nicht wiederholen
         pool = [it for it in items if same_day or it["url"] != prev_url] or items
-        focused = [it for it in pool if it["cat"] == focus]
-        any_cat = [it for it in pool if it["cat"]]
-        top = (focused or any_cat or pool)[0]
+        # Vorrang: Ratgeber zum heutigen Schwerpunkt, dann zu einem anderen, erst dann Meldungen
+        top = next((it for it in pool if it["cat"] == focus and it["guide"]), None) \
+            or next((it for it in pool if it["cat"] and it["guide"]), None) \
+            or next((it for it in pool if it["cat"]), None) or pool[0]
 
     # Je Schwerpunkt der beste weitere Artikel, für Laufband und Liste
     more = []
     for key in ROTATION:
-        best = next((it for it in items if it["cat"] == key and it is not top), None)
+        best = next((it for it in items if it["cat"] == key and it["guide"] and it is not top), None)
         if best:
             more.append(entry(best))
 
