@@ -1345,9 +1345,9 @@ async function buildRadar() {
     L.control.zoom({ position: "topright", zoomInTitle: "Näher", zoomOutTitle: "Weiter weg" }).addTo(radar.map);
     // Karte: OpenStreetMap für die ganze Welt, darüber in der Schweiz und im Grenzgebiet
     // die amtliche Landeskarte von swisstopo (beide frei und ohne Schlüssel)
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12 }).addTo(radar.map);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12, className: "base-map" }).addTo(radar.map);
     const swiss = L.tileLayer("https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-grau/default/current/3857/{z}/{x}/{y}.jpeg", {
-      minZoom: 7, maxZoom: 12, bounds: [[45.3, 5.0], [48.4, 11.6]],
+      minZoom: 7, maxZoom: 12, bounds: [[45.3, 5.0], [48.4, 11.6]], className: "base-map",
     });
     // Umschalter: ruhige Landeskarte oder Strassenkarte mit mehr Ortsnamen
     const setBase = (osm) => {
@@ -1934,6 +1934,9 @@ async function loadAlerts() {
 }
 
 // ---------- Start ----------
+
+// Hintergrund im GTA-Look: Retro-Sonne, Skyline und Palmen (im FCB-Tab ausgeblendet)
+if (typeof GtaArt !== "undefined") $("#bg-scene").innerHTML = GtaArt.backdrop();
 
 $$(".tabbar button").forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
 $$("#chart-seg button").forEach((b) => {

@@ -1145,3 +1145,322 @@ body[data-tab="fcb"] { --accent: #ff3b4e; --accent-2: #2f6bff; }
 .gta-more a:active { background: color-mix(in srgb, var(--c) 22%, transparent); }
 .gta-more-cat { align-self: flex-start; width: auto; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
 .gta-more-title { font-size: 15px; font-weight: 600; }
+
+/* =====================================================================
+   GTA-6-LOOK – alle Bereiche ausser FCB
+   Neon-Sonnenuntergang, Palmen, violette Glasflächen und kräftige kursive
+   Schrift. Jede Regel gilt nur ausserhalb des FCB-Tabs; dort bleibt das
+   rot-blaue Design unverändert. Eigene Gestaltung, keine Logos oder
+   Schriften aus dem Spiel.
+   ===================================================================== */
+body:not([data-tab="fcb"]) {
+  --bg: #0a0418;
+  --panel: rgba(28, 9, 48, 0.6);
+  --panel-solid: #1b0a30;
+  --line: rgba(255, 92, 170, 0.16);
+  --line-strong: rgba(255, 92, 170, 0.34);
+  --text: #fff0fa;
+  --muted: #b7a1d4;
+  --good: #3dffb0;
+  --warn: #ffb347;
+  --danger: #ff3d6e;
+  --rain: #3ddcff;
+  --sunset: linear-gradient(90deg, #ff3d8b, #ff7a59 55%, #ffb347);
+  --display: "Avenir Next Condensed", "AvenirNextCondensed-Heavy", Futura, "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+}
+/* Akzent je nach Wetterlage, in Neonfarben */
+body:not([data-tab="fcb"])[data-sky^="clear-day"]   { --accent: #ffb347; --accent-2: #ff3d8b; }
+body:not([data-tab="fcb"])[data-sky^="clear-night"] { --accent: #c77dff; --accent-2: #3ddcff; }
+body:not([data-tab="fcb"])[data-sky^="cloudy"]      { --accent: #ff5fa2; --accent-2: #3ddcff; }
+body:not([data-tab="fcb"])[data-sky^="rain"]        { --accent: #3ddcff; --accent-2: #ff3d8b; }
+body:not([data-tab="fcb"])[data-sky^="snow"]        { --accent: #9ff3ff; --accent-2: #ff8fc8; }
+body:not([data-tab="fcb"])[data-sky^="storm"]       { --accent: #c77dff; --accent-2: #ff3d8b; }
+body:not([data-tab="fcb"])[data-sky^="fog"]         { --accent: #e0a8ff; --accent-2: #ff8fc8; }
+
+/* Hintergrund: Abendhimmel, Retro-Sonne am Horizont, Neon-Gitterboden, Palmen */
+body:not([data-tab="fcb"]) .bg {
+  background:
+    radial-gradient(130% 55% at 50% 100%, rgba(255, 110, 90, 0.5), rgba(255, 61, 139, 0.22) 45%, transparent 72%),
+    linear-gradient(180deg, #06021a 0%, #13052e 38%, #2a0946 70%, #47104f 100%);
+}
+body:not([data-tab="fcb"]) .bg-glow { opacity: 0.65; }
+body:not([data-tab="fcb"]) .bg-grid {
+  z-index: -1;
+  inset: auto -60% 0;
+  height: 34vh;
+  background-image:
+    linear-gradient(rgba(255, 61, 139, 0.75) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 61, 139, 0.75) 2px, transparent 2px);
+  background-size: 56px 56px;
+  transform: perspective(260px) rotateX(60deg);
+  transform-origin: 50% 100%;
+  opacity: 0.3;
+  -webkit-mask-image: linear-gradient(0deg, #000 10%, transparent 90%);
+  mask-image: linear-gradient(0deg, #000 10%, transparent 90%);
+}
+.bg-scene { display: none; }
+body:not([data-tab="fcb"]) .bg-scene { display: block; position: absolute; inset: 0; pointer-events: none; }
+.bg-sun { position: absolute; left: 50%; bottom: 33vh; width: min(112vw, 640px); transform: translateX(-50%); }
+.bg-sundisc { transition: opacity 1.2s; }
+body[data-sky^="cloudy"] .bg-sundisc { opacity: 0.6; }
+body[data-sky^="rain"] .bg-sundisc, body[data-sky^="snow"] .bg-sundisc,
+body[data-sky^="fog"] .bg-sundisc, body[data-sky^="storm"] .bg-sundisc { opacity: 0.3; }
+body[data-sky$="night"] .bg-sundisc { opacity: 0; }
+.bg-palms { position: absolute; bottom: 0; height: min(56vh, 520px); }
+.bg-palms.l { left: -34px; }
+.bg-palms.r { right: -34px; height: min(50vh, 470px); transform: scaleX(-1); }
+.bg-scene .ga-palm { animation: gapalm 6s ease-in-out infinite alternate; }
+
+/* Kopfzeile: dunkles Glas mit Neonkante, Ortsname wie eine Ortseinblendung im Spiel */
+body:not([data-tab="fcb"]) .topbar {
+  background: linear-gradient(180deg, rgba(10, 4, 24, 0.94), rgba(10, 4, 24, 0.6));
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, #ff3d8b, #b14dff 50%, #3ddcff) 1;
+}
+body:not([data-tab="fcb"]) .loc-name {
+  padding-right: 6px;
+  font-family: var(--display);
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff 35%, #ffb8dc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 61, 139, 0.5));
+}
+body:not([data-tab="fcb"]) .icon-btn {
+  border-color: rgba(255, 61, 139, 0.5);
+  background: rgba(255, 61, 139, 0.08);
+  color: #ffd6ea;
+  box-shadow: 0 0 12px -4px rgba(255, 61, 139, 0.9), inset 0 0 8px -4px rgba(255, 61, 139, 0.9);
+}
+body:not([data-tab="fcb"]) .status {
+  border-color: rgba(255, 61, 139, 0.5);
+  background: rgba(26, 9, 46, 0.94);
+  box-shadow: 0 0 18px -6px #ff3d8b;
+}
+
+/* Flächen: violettes Glas mit Neon-Verlaufskante und Sonnenuntergangs-Strich */
+body:not([data-tab="fcb"]) .panel {
+  border-color: transparent;
+  background: linear-gradient(160deg, rgba(42, 12, 68, 0.66), rgba(16, 5, 32, 0.72));
+  box-shadow: 0 12px 32px -20px rgba(255, 61, 139, 0.7);
+}
+body:not([data-tab="fcb"]) .panel::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 61, 139, 0.8), rgba(177, 77, 255, 0.3) 45%, rgba(61, 220, 255, 0.6));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+body:not([data-tab="fcb"]) .panel::before {
+  width: 56px;
+  height: 3px;
+  background: var(--sunset);
+  box-shadow: 0 0 12px rgba(255, 61, 139, 0.9);
+}
+body:not([data-tab="fcb"]) .tag {
+  padding-right: 3px;
+  font-family: var(--display);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Wetter oben: grosse Temperatur im Sonnenuntergangs-Verlauf */
+body:not([data-tab="fcb"]) .hero { background: none; box-shadow: none; }
+body:not([data-tab="fcb"]) .hero::after, body:not([data-tab="fcb"]) .hero::before { display: none; }
+body:not([data-tab="fcb"]) .temp {
+  padding-right: 8px;
+  font-family: var(--display);
+  font-size: 88px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #fff 0%, #ffe27a 36%, #ff8a3d 66%, #ff3d8b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* dunkle Kante unten und Neonschein: hebt sich auch vor der Sonne ab */
+  filter: drop-shadow(0 3px 0 rgba(42, 9, 70, 0.95)) drop-shadow(0 0 18px rgba(255, 61, 139, 0.6));
+}
+body:not([data-tab="fcb"]) .condition {
+  font-family: var(--display);
+  font-size: 21px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+body:not([data-tab="fcb"]) .summary { color: #e6d6f5; }
+body:not([data-tab="fcb"]) .hero-stats { border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgba(255, 61, 139, 0.6), transparent) 1; }
+body:not([data-tab="fcb"]) .hero-stats span { font-family: var(--display); font-size: 12px; font-style: italic; font-weight: 800; letter-spacing: 0.08em; color: #ff8fc8; }
+body:not([data-tab="fcb"]) .hero-stats b { font-family: var(--display); font-size: 22px; font-style: italic; font-weight: 800; }
+
+body:not([data-tab="fcb"]) .warn-banner { font-family: var(--display); font-size: 18px; font-style: italic; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+body:not([data-tab="fcb"]) .warn-banner {
+  border-color: rgba(255, 179, 71, 0.7);
+  background: linear-gradient(90deg, rgba(255, 179, 71, 0.22), rgba(255, 61, 139, 0.12)), rgba(20, 6, 38, 0.8);
+  box-shadow: 0 0 22px -6px rgba(255, 179, 71, 0.7);
+}
+body:not([data-tab="fcb"]) .warn-banner.danger {
+  border-color: rgba(255, 61, 110, 0.8);
+  background: linear-gradient(90deg, rgba(255, 61, 110, 0.3), rgba(177, 77, 255, 0.14)), rgba(20, 6, 38, 0.8);
+  box-shadow: 0 0 24px -6px rgba(255, 61, 110, 0.8);
+}
+body:not([data-tab="fcb"]) .warn-banner small { font-family: var(--sans); font-size: 12px; font-style: normal; font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+body:not([data-tab="fcb"]) .verse-text { color: #fff4fb; }
+body:not([data-tab="fcb"]) .verse-more,
+body:not([data-tab="fcb"]) .link-btn { font-family: var(--display); font-style: italic; font-weight: 800; letter-spacing: 0.03em; color: #ff5fa2; }
+body:not([data-tab="fcb"]) .verse-more { font-size: 15px; text-transform: uppercase; }
+
+/* Fussball-Banner passend in Sonnenuntergangsfarben */
+body:not([data-tab="fcb"]) .news {
+  border: 1.5px solid rgba(255, 61, 139, 0.55);
+  border-radius: 18px;
+  background: #0b0716;
+  box-shadow: 0 0 28px -8px rgba(255, 61, 139, 0.75), 0 14px 44px rgba(255, 61, 139, 0.16);
+}
+body:not([data-tab="fcb"]) .news-bar { background: linear-gradient(90deg, #ff2d6f, #ff5e62 50%, #ffb347); }
+body:not([data-tab="fcb"]) .news-live { color: #e0105a; }
+body:not([data-tab="fcb"]) .news-more { color: #ff5fa2; }
+body:not([data-tab="fcb"]) .news-ticker { border-top-color: rgba(255, 61, 139, 0.35); background: rgba(255, 61, 139, 0.1); }
+body:not([data-tab="fcb"]) .news-ticker b { color: #ff5fa2; }
+body:not([data-tab="fcb"]) .news-title,
+body:not([data-tab="fcb"]) .gta-title { font-family: var(--display); font-size: 25px; font-style: italic; font-weight: 800; letter-spacing: 0; }
+
+/* Schalter, Stundenleiste, 7 Tage, Kacheln */
+body:not([data-tab="fcb"]) .seg { border-color: rgba(255, 61, 139, 0.45); border-radius: 999px; background: rgba(10, 4, 24, 0.55); }
+body:not([data-tab="fcb"]) .seg button {
+  border-radius: 999px;
+  font-family: var(--display);
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+body:not([data-tab="fcb"]) .seg button.on { background: linear-gradient(90deg, #ff3d8b, #b14dff); color: #fff; box-shadow: 0 0 14px -2px rgba(255, 61, 139, 0.85); }
+body:not([data-tab="fcb"]) .hour { border-color: rgba(255, 61, 139, 0.2); background: rgba(255, 255, 255, 0.03); }
+body:not([data-tab="fcb"]) .hour.now {
+  border-color: #ff3d8b;
+  background: linear-gradient(180deg, rgba(255, 61, 139, 0.28), rgba(177, 77, 255, 0.1));
+  box-shadow: 0 0 16px -4px rgba(255, 61, 139, 0.85);
+}
+body:not([data-tab="fcb"]) .hour .t { color: #ff9fcf; }
+body:not([data-tab="fcb"]) .hour .v,
+body:not([data-tab="fcb"]) .range { font-family: var(--display); font-style: italic; font-weight: 800; }
+body:not([data-tab="fcb"]) .hour .v { font-size: 17px; }
+body:not([data-tab="fcb"]) .range { font-size: 16px; }
+body:not([data-tab="fcb"]) .day-row { grid-template-columns: 58px 30px 38px 1fr; }
+body:not([data-tab="fcb"]) .day .n { font-family: var(--display); font-size: 16px; font-style: italic; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+body:not([data-tab="fcb"]) .bar span { background: linear-gradient(90deg, #3ddcff, #b14dff, #ff3d8b, #ffb347); box-shadow: 0 0 10px rgba(255, 61, 139, 0.5); }
+body:not([data-tab="fcb"]) .day-detail div { border-color: rgba(255, 61, 139, 0.22); background: rgba(255, 61, 139, 0.05); }
+body:not([data-tab="fcb"]) .day-detail span { color: #ff8fc8; }
+body:not([data-tab="fcb"]) .tile-big {
+  font-family: var(--display);
+  font-size: 34px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-shadow: 0 0 16px rgba(255, 61, 139, 0.55);
+}
+body:not([data-tab="fcb"]) .tile-big small { text-shadow: none; }
+body:not([data-tab="fcb"]) .meter { box-shadow: 0 0 10px rgba(255, 61, 139, 0.35); }
+
+/* Knöpfe: Neon-Umriss, Hauptknopf als leuchtende Pille */
+body:not([data-tab="fcb"]) .btn {
+  border-color: rgba(255, 61, 139, 0.45);
+  background: rgba(26, 9, 46, 0.72);
+  font-family: var(--display);
+  font-size: 17px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+body:not([data-tab="fcb"]) .btn.accent {
+  border-color: transparent;
+  background: linear-gradient(90deg, #ff3d8b, #b14dff);
+  box-shadow: 0 6px 20px -6px rgba(255, 61, 139, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+/* Radar: dunkle Neon-Karte, Regen bleibt farbig */
+body:not([data-tab="fcb"]) .map { border-color: rgba(255, 61, 139, 0.35); background: #12062a; }
+body:not([data-tab="fcb"]) .base-map { filter: invert(1) hue-rotate(205deg) saturate(1.7) brightness(0.8) contrast(1.1); }
+body:not([data-tab="fcb"]) .leaflet-container { background: #12062a; }
+body:not([data-tab="fcb"]) .leaflet-bar a { color: #ffd6ea !important; background: rgba(26, 9, 46, 0.94) !important; border-color: rgba(255, 61, 139, 0.4) !important; }
+body:not([data-tab="fcb"]) .radar-ctl input { accent-color: #ff3d8b; }
+
+/* Psalm: Überschrift im Sonnenuntergangs-Verlauf, Text bleibt gut lesbar in Serifen */
+body:not([data-tab="fcb"]) .psalm-date { font-family: var(--display); font-size: 14px; font-style: italic; font-weight: 800; letter-spacing: 0.08em; color: #ff8fc8; }
+body:not([data-tab="fcb"]) .psalm-ref {
+  padding-right: 8px;
+  font-family: var(--display);
+  font-size: 38px;
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px rgba(255, 61, 139, 0.45));
+}
+body:not([data-tab="fcb"]) .psalm-ref small { font-family: var(--sans); font-style: normal; text-transform: none; color: #d9c4f0; }
+body:not([data-tab="fcb"]) .psalm-text { color: #fff4fb; }
+body:not([data-tab="fcb"]) .psalm-text sup { color: #ff5fa2; }
+
+/* Warnungen */
+body:not([data-tab="fcb"]) .warn-list b { font-family: var(--display); font-size: 19px; font-style: italic; font-weight: 800; text-transform: uppercase; }
+body:not([data-tab="fcb"]) .warn-list .lv { font-family: var(--mono); font-style: normal; }
+body:not([data-tab="fcb"]) .alerts-list .name { font-family: var(--display); font-size: 19px; font-style: italic; font-weight: 800; }
+
+/* Tab-Leiste: Neonkante, aktiver Bereich leuchtet pink */
+body:not([data-tab="fcb"]) .tabbar {
+  background: linear-gradient(180deg, rgba(22, 7, 40, 0.92), rgba(8, 3, 18, 0.97));
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(90deg, #ff3d8b, #b14dff 50%, #3ddcff) 1;
+}
+body:not([data-tab="fcb"]) .tabbar button {
+  font-family: var(--display);
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #a993c9;
+}
+body:not([data-tab="fcb"]) .tabbar button.on { color: #ff5fa2; }
+body:not([data-tab="fcb"]) .tabbar button.on::before { width: 38px; height: 3px; background: var(--sunset); box-shadow: 0 0 12px #ff3d8b; }
+body:not([data-tab="fcb"]) .tabbar button.on svg { filter: drop-shadow(0 0 8px #ff3d8b); }
+body:not([data-tab="fcb"]) .badge { background: #ff3d8b; box-shadow: 0 0 10px #ff3d8b; font-family: var(--sans); font-style: normal; }
+
+/* Ortssuche */
+body:not([data-tab="fcb"]) .sheet { background: linear-gradient(180deg, #160530, #0a0418 55%); }
+body:not([data-tab="fcb"]) .sheet-head input { border-color: rgba(255, 61, 139, 0.45); }
+body:not([data-tab="fcb"]) .list { border-color: rgba(255, 61, 139, 0.25); }
+body:not([data-tab="fcb"]) .list li { background: rgba(30, 10, 52, 0.9); }
+body:not([data-tab="fcb"]) .list .name { font-family: var(--display); font-size: 20px; font-style: italic; font-weight: 800; }
+body:not([data-tab="fcb"]) .list-title { font-family: var(--display); font-size: 14px; font-style: italic; font-weight: 800; color: #ff5fa2; }
+body:not([data-tab="fcb"]) .gps-row { border-color: rgba(255, 61, 139, 0.45); background: linear-gradient(90deg, rgba(255, 61, 139, 0.18), rgba(177, 77, 255, 0.1)); }
+body:not([data-tab="fcb"]) .gps-row svg { stroke: #ff5fa2; }
+body:not([data-tab="fcb"]) .gps-row b { font-family: var(--display); font-size: 18px; font-style: italic; font-weight: 800; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-scene * { animation: none !important; }
+}

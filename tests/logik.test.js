@@ -111,6 +111,11 @@ test("GTA-Illustration: Sportwagen, Leuchtreklame je Thema, Tag und Nacht", () =
   assert.match(GtaArt.svg("#ff8a3d", "autos", day), /stop-color="#ff8a3d"/);
   assert.equal(GtaArt.svg("#3ddcff", "gibtsnicht", day), svgs[0]);
   assert.equal(GtaArt.shade("#808080", 0.5), "#c0c0c0");
+  // Hintergrund der App: Sonne mit Skyline und zwei Palmengruppen
+  const bg = GtaArt.backdrop();
+  assert.equal((bg.match(/<svg class="bg-sun"/g) || []).length, 1);
+  assert.equal((bg.match(/<svg class="bg-palms (l|r)"/g) || []).length, 2);
+  assert.doesNotMatch(bg, /NaN|undefined/);
   assert.equal(GtaArt.shade("#808080", -0.5), "#404040");
 });
 

@@ -2,7 +2,10 @@
 
 Eine Wetter-App für das iPhone mit einem Psalm für jeden Tag.
 
-Dunkles Cockpit-Design mit Leuchtakzenten, die sich der Wetterlage anpassen.
+Design im Stil von GTA 6: Abendhimmel mit Retro-Sonne, Skyline, Palmen und Neon-Gitterboden,
+violette Glasflächen mit Neonkanten und kräftige kursive Schrift; die Leuchtfarben passen sich
+der Wetterlage an. Eigene Gestaltung ohne Logos oder Schriften aus dem Spiel. Der FCB-Bereich
+behält sein rot-blaues Design.
 Im Hintergrund läuft eine Animation des aktuellen Wetters (Regen, Schnee, Gewitter
 mit Blitzen, ziehende Wolken, Nebel, Sonnenstrahlen, Sterne und Windlinien), deren
 Stärke sich nach Niederschlag, Wind und Bewölkung richtet. Bei aktivierter Einstellung
@@ -24,7 +27,9 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   Bundesliga- und Super-League-Themen weniger, Liveticker und
   unterklassige Ligen werden aussortiert). Nur Männerfussball. Antippen öffnet den
   Artikel der Quelle.
-- **GTA 6 – Tipp des Tages:** Banner auf der Startseite mit einem Artikel zu GTA 6, jeden Tag
+- **GTA 6 – Tipp des Tages:** Banner auf der Startseite mit eigener Illustration (`gta-art.js`):
+  Sportwagen in der Farbe des Themas vor einer Neon-Küstenstadt, Leuchtreklame je Thema, abends
+  und nachts mit Mond. Dazu ein Artikel zu GTA 6, jeden Tag
   mit anderem Schwerpunkt (Tipps & Tricks, Cheats, versteckte Orte, Autos, Waffen, Geld),
   dazu je Schwerpunkt ein weiterer Artikel. Über die Themen-Chips (Heute, Tipps, Cheats, Orte,
   Autos, Waffen, Geld) lässt sich jedes Thema einzeln antippen, mit bis zu fünf Artikeln. `scripts/gta6_news.py` sammelt die Artikel aus

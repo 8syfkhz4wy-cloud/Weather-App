@@ -260,6 +260,32 @@ for (const tz of ["Europe/Zurich", "America/New_York", "Asia/Tokyo"]) {
   });
 }
 
+test("GTA-Look in allen Bereichen ausser FCB, dort bleibt das rot-blaue Design", async () => {
+  const { ctx, page, errors } = await openApp();
+  const look = () => page.evaluate(() => ({
+    ortsname: getComputedStyle(document.querySelector("#place")).fontStyle,
+    szene: getComputedStyle(document.querySelector("#bg-scene")).display,
+    palmen: document.querySelectorAll("#bg-scene .bg-palms").length,
+    sonne: document.querySelectorAll("#bg-scene .bg-sun").length,
+  }));
+  for (const tab of ["wetter", "radar", "psalm", "warn"]) {
+    await page.click(`.tabbar [data-tab=${tab}]`);
+    assert.deepEqual(await look(), { ortsname: "italic", szene: "block", palmen: 2, sonne: 1 }, tab);
+  }
+  await page.click(".tabbar [data-tab=fcb]");
+  assert.deepEqual(await look(), { ortsname: "normal", szene: "none", palmen: 2, sonne: 1 });
+  const fcb = await page.evaluate(() => ({
+    akzent: getComputedStyle(document.body).getPropertyValue("--accent").trim(),
+    flaeche: getComputedStyle(document.body).getPropertyValue("--panel").trim(),
+  }));
+  assert.deepEqual(fcb, { akzent: "#ff3b4e", flaeche: "rgba(13, 20, 34, 0.66)" });
+  // zurück: wieder GTA
+  await page.click(".tabbar [data-tab=wetter]");
+  assert.equal((await look()).szene, "block");
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 test("Radar-Tab: ohne Kartendienst eine verständliche Meldung statt eines Fehlers", async () => {
   const { ctx, page, errors } = await openApp();
   await page.click(".tabbar [data-tab=radar]");

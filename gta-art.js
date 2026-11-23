@@ -343,7 +343,36 @@ const GtaArt = (() => {
   </g></svg>`;
   }
 
-  return { svg, shade };
+  // ---------- Hintergrund der App (GTA-Look, ausser FCB) ----------
+
+  // Retro-Sonne am Horizont mit flacher Skyline davor und Palmen an beiden Rändern.
+  // Wo und wie hell das erscheint (Wetter, Tageszeit, FCB-Tab ohne), regelt styles.css.
+  function backdrop() {
+    const bars = [0, 1, 2, 3, 4, 5, 6].map((k) => `<rect x="40" y="${f(90 + k * 9.5)}" width="320" height="${f(1.6 + k * 1.3)}" fill="#000"/>`).join("");
+    let city = "";
+    let x = 0;
+    for (let i = 0; x < 400; i++) {
+      const w = 10 + Math.round(rnd(i + 500) * 22);
+      const h = 6 + Math.round(rnd(i + 600) * (Math.abs(x + w / 2 - 200) < 95 ? 16 : 42));
+      city += `<rect x="${x}" y="${160 - h}" width="${w}" height="${h}"/>`;
+      x += w + 1;
+    }
+    const sun = `<svg class="bg-sun" viewBox="0 0 400 160" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="bgSun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#ff9f4a"/><stop offset="1" stop-color="#ff3d8b"/></linearGradient>
+        <radialGradient id="bgSunGlow"><stop offset="0" stop-color="#ff7a59" stop-opacity=".5"/><stop offset="1" stop-color="#ff3d8b" stop-opacity="0"/></radialGradient>
+        <mask id="bgSunMask"><rect width="400" height="160" fill="#fff"/>${bars}</mask>
+      </defs>
+      <g class="bg-sundisc"><circle cx="200" cy="160" r="200" fill="url(#bgSunGlow)"/>
+        <circle cx="200" cy="160" r="128" fill="url(#bgSun)" mask="url(#bgSunMask)"/></g>
+      <g fill="#150628">${city}</g></svg>`;
+    const palms = (side, content) => `<svg class="bg-palms ${side}" viewBox="0 0 220 420" preserveAspectRatio="xMinYMax meet">${content}</svg>`;
+    return sun
+      + palms("l", palm(70, 420, 330, 2, 34, 0) + palm(160, 420, 220, 1.35, -10, 1.4))
+      + palms("r", palm(80, 420, 300, 1.85, 28, 0.8));
+  }
+
+  return { svg, backdrop, shade };
 })();
 
 if (typeof module !== "undefined") module.exports = GtaArt;
