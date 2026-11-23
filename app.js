@@ -321,6 +321,103 @@ async function loadNews() {
   card.hidden = false;
 }
 
+// ---------- GTA 6: Tipp des Tages ----------
+
+const GTA_CATS = [
+  ["tipps", "💡", "Tipps", "#ffd34d"],
+  ["cheats", "🎮", "Cheats", "#3ddcff"],
+  ["orte", "🗺️", "Orte", "#3ddc97"],
+  ["autos", "🏎️", "Autos", "#ff8a3d"],
+  ["waffen", "🔫", "Waffen", "#ff4d6a"],
+  ["geld", "💰", "Geld", "#7dff8a"],
+];
+
+// Eigene Illustration: Küstenstadt im Neon-Sonnenuntergang mit Palmen und Sportwagen
+function gtaArtSvg(accent) {
+  const sky = Array.from({ length: 34 }, (_, i) => {
+    const w = 10 + ((i * 7) % 9);
+    const h = 28 + ((i * 53) % 70);
+    const x = 140 + i * 11;
+    return `<rect x="${x}" y="${200 - h}" width="${w}" height="${h}" fill="#1b0f33"/>` +
+      (i % 3 === 0 ? `<rect x="${x + 3}" y="${206 - h}" width="2" height="2" fill="${accent}" opacity="0.8"/>` : "");
+  }).join("");
+  const palm = (x, s, flip) => `<g transform="translate(${x} 240) scale(${flip ? -s : s} ${s})" fill="#0a0518">
+    <path d="M0 0 C 4 -40 6 -80 2 -120 L 7 -120 C 11 -80 10 -40 6 0 Z"/>
+    <path d="M4 -120 C -20 -130 -45 -120 -60 -100 C -38 -112 -20 -114 4 -116 Z"/>
+    <path d="M4 -120 C 25 -134 52 -128 66 -108 C 44 -118 26 -118 4 -116 Z"/>
+    <path d="M4 -120 C -10 -142 -32 -150 -50 -146 C -30 -140 -14 -132 4 -118 Z"/>
+    <path d="M4 -120 C 18 -146 40 -154 58 -148 C 38 -142 22 -134 4 -118 Z"/>
+    <path d="M4 -120 C 0 -142 8 -158 18 -164 C 10 -150 8 -136 6 -118 Z"/></g>`;
+  return `<svg viewBox="0 0 640 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#140a2e"/><stop offset="0.55" stop-color="#7a1f6e"/><stop offset="1" stop-color="#ff7a59"/></linearGradient>
+    <linearGradient id="gsun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe26b"/><stop offset="1" stop-color="#ff3d8b"/></linearGradient>
+    <linearGradient id="gsea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0f4a"/><stop offset="1" stop-color="#05030f"/></linearGradient>
+    <clipPath id="gclip"><rect width="640" height="300"/></clipPath>
+  </defs>
+  <g clip-path="url(#gclip)">
+    <rect width="640" height="300" fill="url(#gsky)"/>
+    <g class="gta-sun"><circle cx="330" cy="175" r="92" fill="url(#gsun)"/>
+      ${[0, 1, 2, 3, 4, 5].map((k) => `<rect x="230" y="${150 + k * 11}" width="200" height="${2 + k}" fill="#7a1f6e"/>`).join("")}</g>
+    ${sky}
+    <rect y="200" width="640" height="100" fill="url(#gsea)"/>
+    ${[0, 1, 2, 3, 4, 5, 6].map((k) => `<rect class="gta-wave" x="${250 - k * 14}" y="${208 + k * 12}" width="${160 + k * 28}" height="2" fill="#ff7ab8" opacity="${0.5 - k * 0.06}"/>`).join("")}
+    <!-- Strasse mit Sportwagen -->
+    <rect y="246" width="640" height="54" fill="#0b0716"/>
+    <g stroke="${accent}" stroke-width="3" stroke-dasharray="26 22" class="gta-road"><line x1="-50" y1="276" x2="700" y2="276"/></g>
+    <g class="gta-car">
+      <path d="M380 266 L 396 248 Q 420 238 452 238 L 484 240 Q 506 244 522 256 L 548 260 Q 560 262 560 270 L 560 274 L 380 274 Z" fill="#12082a" stroke="${accent}" stroke-width="2"/>
+      <path d="M404 250 Q 424 242 450 242 L 478 244 L 492 256 L 400 258 Z" fill="${accent}" opacity="0.35"/>
+      <circle cx="414" cy="274" r="10" fill="#05030f" stroke="#ff7ab8" stroke-width="2"/>
+      <circle cx="526" cy="274" r="10" fill="#05030f" stroke="#ff7ab8" stroke-width="2"/>
+      <rect x="552" y="262" width="8" height="4" rx="1" fill="#fff6c8"/>
+      <path d="M560 264 L 640 254 L 640 278 Z" fill="#fff6c8" opacity="0.12"/>
+    </g>
+    ${palm(70, 1, false)}${palm(130, 0.78, true)}${palm(610, 0.95, true)}
+    <rect width="640" height="300" fill="none" stroke="${accent}" stroke-opacity="0.4" stroke-width="2"/>
+  </g></svg>`;
+}
+
+async function loadGta() {
+  const res = await fetch("gta6.json", { cache: "no-cache" });
+  if (!res.ok) return;
+  const d = await res.json();
+  const t = d.top;
+  if (!t || !t.title) return;
+  const cat = GTA_CATS.find((c) => c[0] === t.category);
+  const accent = cat ? cat[3] : "#ff3d8b";
+  const card = $("#gta-card");
+  card.style.setProperty("--gta-accent", accent);
+  $("#gta-link").href = t.url;
+  $("#gta-art").innerHTML = gtaArtSvg(accent);
+  $("#gta-topic").textContent = `${t.emoji || "🌴"} ${t.label || "News"}`;
+  $("#gta-title").textContent = t.title;
+  $("#gta-teaser").textContent = t.teaser || "";
+  $("#gta-teaser").hidden = !t.teaser;
+  $("#gta-source").textContent = `Quelle: ${t.source}`;
+  $("#gta-age").textContent = t.published ? timeAgo(t.published) : "";
+  // Die Schwerpunkte im Wechsel, der heutige hervorgehoben
+  const cats = $("#gta-cats");
+  cats.replaceChildren(...GTA_CATS.map(([key, emoji, name]) => el("span", key === t.category ? "on" : null, `${emoji} ${name}`)));
+  card.hidden = false;
+  const on = cats.querySelector(".on");
+  if (on) cats.scrollLeft = on.offsetLeft - cats.offsetLeft - 14;
+  const more = d.more || [];
+  $("#gta-more").replaceChildren(
+    ...more.map((m) => {
+      const a = el("a");
+      a.href = m.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.append(el("span", "gta-more-cat", `${m.emoji} ${m.label}`), el("span", "gta-more-title", m.title), el("span", "gta-more-src mono", m.source));
+      const li = el("li");
+      li.append(a);
+      return li;
+    })
+  );
+  $("#gta-more").hidden = !more.length;
+}
+
 // ---------- Status ----------
 
 let statusTimer;
@@ -1773,6 +1870,7 @@ loadPsalms().catch(() => {
 });
 loadAlerts().catch(() => {});
 loadNews().catch(() => {});
+loadGta().catch(() => {});
 loadFcb().catch(() => ($("#fcb-empty").hidden = false));
 liveTick(); // Spielstand auch ausserhalb des FCB-Tabs im Blick behalten
 $$("#fcb-seg button").forEach((b) => b.addEventListener("click", () => setFcbSection(b.dataset.s)));

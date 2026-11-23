@@ -24,6 +24,12 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   Bundesliga- und Super-League-Themen weniger, Liveticker und
   unterklassige Ligen werden aussortiert). Nur Männerfussball. Antippen öffnet den
   Artikel der Quelle.
+- **GTA 6 – Tipp des Tages:** Banner auf der Startseite mit einem Artikel zu GTA 6, jeden Tag
+  mit anderem Schwerpunkt (Tipps & Tricks, Cheats, versteckte Orte, Autos, Waffen, Geld),
+  dazu je Schwerpunkt ein weiterer Artikel. `scripts/gta6_news.py` sammelt die Artikel aus
+  GameStar, GamePro, PC Games, Mein-MMO, IGN, GamesRadar+, PC Gamer, TheGamer, Game Rant und
+  Google News. Der Tipp bleibt den ganzen Tag gleich und wiederholt sich am nächsten Tag
+  nicht; Deals, Vorbestellungen und Livestreams werden aussortiert.
 - **FCB:** FC-Basel-Bereich (Männer) mit News (direkte Feeds von SRF, Blick, watson,
   20 Minuten), Kader aus Wikipedia und Live-Ticker: Spielstand, Tore (auch des Gegners) und
   Platzverweise direkt aus dem SRF-Teletext (`fcb-live.js`), während eines Spiels alle

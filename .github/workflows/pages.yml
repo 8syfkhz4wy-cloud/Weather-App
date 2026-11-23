@@ -38,6 +38,13 @@ jobs:
         run: |
           python3 scripts/fussball_news.py _site/news.json || \
             curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/news.json -o _site/news.json || true
+      # GTA 6: Tipp des Tages (täglich anderer Schwerpunkt, über den Tag gleich);
+      # der zuletzt veröffentlichte Stand dient als Gedächtnis und als Ersatz bei Fehlern
+      - name: GTA-6-Tipp holen
+        run: |
+          curl -fsS https://8syfkhz4wy-cloud.github.io/Weather-App/gta6.json -o /tmp/gta6-prev.json || true
+          python3 scripts/gta6_news.py _site/gta6.json /tmp/gta6-prev.json || \
+            cp /tmp/gta6-prev.json _site/gta6.json || true
       # FC-Basel-Bereich (Kader, News, fiktiver Kurven-Experte); bei Fehler bleibt der letzte Stand
       - name: FC-Basel-Daten holen
         run: |
