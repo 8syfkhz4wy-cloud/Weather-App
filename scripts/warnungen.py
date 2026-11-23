@@ -13,6 +13,7 @@ schlimmer (z. B. Sturm -> Orkan), kommt eine neue Nachricht.
 """
 import json
 import sys
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
@@ -33,8 +34,16 @@ def fetch_forecast(place):
         "current": "temperature_2m",
         "hourly": "temperature_2m,weather_code,wind_gusts_10m,snowfall,rain,showers",
     })
-    with urllib.request.urlopen(f"{FORECAST_URL}?{params}", timeout=30) as res:
-        return json.load(res)
+    # Bis zu 3 Versuche: Open-Meteo antwortet von GitHub aus gelegentlich nicht (Zeitüberschreitung)
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(f"{FORECAST_URL}?{params}", timeout=30) as res:
+                return json.load(res)
+        except Exception as err:
+            if attempt == 2:
+                raise
+            print(f"{place['name']}: Versuch {attempt + 1} fehlgeschlagen ({err}), neuer Versuch …")
+            time.sleep(10 * (attempt + 1))
 
 
 def classify(value, levels):
