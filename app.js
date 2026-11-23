@@ -53,6 +53,9 @@ function html(tag, cls, markup) {
   return node;
 }
 
+// Links aus fremden Feeds nur als http(s) übernehmen (kein "javascript:" o. Ä.)
+const safeUrl = (u) => (/^https?:\/\//i.test(u || "") ? u : "#");
+
 const round = (n) => Math.round(n);
 const fmtTime = (iso) => iso.slice(11, 16);
 const parseLocal = (iso) => new Date(iso.length === 10 ? `${iso}T00:00` : iso);
@@ -304,14 +307,14 @@ async function loadNews() {
   if (!n.title) return;
   const accent = NEWS_ACCENTS[n.topic] || "#ffd34d";
   const card = $("#news-card");
-  card.href = n.url;
+  card.href = safeUrl(n.url);
   card.style.setProperty("--news-accent", accent);
   $("#news-art").innerHTML = newsArtSvg(accent);
   $("#news-topic").textContent = `${n.emoji || "⚽"} ${n.topic || "Top-Meldung"}`;
   $("#news-title").textContent = n.title;
   $("#news-teaser").textContent = n.teaser || "";
   $("#news-teaser").hidden = !n.teaser;
-  $("#news-source").textContent = `Quelle: ${n.source}`;
+  $("#news-source").textContent = n.source ? `Quelle: ${n.source}` : "";
   $("#news-age").textContent = n.published ? timeAgo(n.published) : "";
   const track = $("#news-ticker-track");
   track.replaceChildren();
@@ -383,7 +386,7 @@ const gta = { data: null, sel: "heute" };
 
 function gtaLink(m) {
   const a = el("a");
-  a.href = m.url;
+  a.href = safeUrl(m.url);
   a.target = "_blank";
   a.rel = "noopener";
   a.append(el("span", "gta-more-cat", `${m.emoji} ${m.label}`), el("span", "gta-more-title", m.title), el("span", "gta-more-src mono", m.source));
@@ -406,13 +409,13 @@ function renderGta() {
 
   const link = $("#gta-link");
   if (t) {
-    link.href = t.url;
+    link.href = safeUrl(t.url);
     link.classList.remove("empty");
     $("#gta-topic").textContent = `${t.emoji || "🌴"} ${t.label || "News"}`;
     $("#gta-title").textContent = t.title;
     $("#gta-teaser").textContent = t.teaser || "";
     $("#gta-teaser").hidden = !t.teaser;
-    $("#gta-source").textContent = `Quelle: ${t.source}`;
+    $("#gta-source").textContent = t.source ? `Quelle: ${t.source}` : "";
     $("#gta-age").textContent = timeAgo(t.published);
   } else {
     link.removeAttribute("href");
@@ -528,9 +531,13 @@ async function fetchWeather(place) {
       "precipitation_sum", "sunrise", "sunset", "uv_index_max", "wind_gusts_10m_max", "daylight_duration",
     ].join(","),
   });
-  const res = await fetchT(`${FORECAST_URL}?${params}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  // Bei kurzer Überlastung (429) oder Serverfehler einmal kurz warten und neu versuchen
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetchT(`${FORECAST_URL}?${params}`);
+    if (res.ok) return res.json();
+    if (attempt >= 1 || (res.status !== 429 && res.status < 500)) throw new Error(`HTTP ${res.status}`);
+    await new Promise((r) => setTimeout(r, 2000));
+  }
 }
 
 async function fetchAir(place) {
@@ -1159,12 +1166,13 @@ async function showPlace(place) {
 async function reverseGeocode(lat, lon) {
   try {
     const res = await fetchT(`${REVERSE_URL}?latitude=${lat}&longitude=${lon}&localityLanguage=de`, 6000);
+    if (!res.ok) return null;
     const r = await res.json();
     // Die Gemeinde (Verwaltungsebene 8) ist genauer als die nächste Stadt
     const admin = ((r.localityInfo && r.localityInfo.administrative) || []).find((a) => a.adminLevel === 8);
-    return (admin && admin.name) || r.city || r.locality || r.principalSubdivision || "Mein Standort";
+    return (admin && admin.name) || r.city || r.locality || r.principalSubdivision || null;
   } catch {
-    return "Mein Standort";
+    return null;
   }
 }
 
@@ -1193,7 +1201,9 @@ function locate(silent = false) {
         if (!silent) hideStatus();
         return;
       }
-      const name = moved ? await reverseGeocode(lat, lon) : cur.name;
+      // Ortsname nicht ermittelbar: bei kleiner Verschiebung (< ca. 3 km) den bisherigen behalten
+      const near = cur && Math.abs(cur.lat - lat) < 0.03 && Math.abs(cur.lon - lon) < 0.03;
+      const name = (moved ? await reverseGeocode(lat, lon) : cur.name) || (near ? cur.name : "Mein Standort");
       showPlace({ name, region: "Aktueller Standort", lat, lon, gps: true });
     },
     (err) => {
@@ -1584,7 +1594,7 @@ function renderFcb(d) {
       ? news.map((n) => {
           const li = el("li");
           const a = el("a");
-          a.href = n.url;
+          a.href = safeUrl(n.url);
           a.target = "_blank";
           a.rel = "noopener";
           a.append(el("b", null, n.title), el("small", null, [n.source || "Quelle", timeAgo(n.published)].filter(Boolean).join(" · ")));
@@ -1599,7 +1609,7 @@ function renderFcb(d) {
   if (squad) {
     $("#fcb-sub").textContent = `Männer · Super League${squad.season ? ` · ${squad.season}` : ""}`;
     $("#fcb-kader-meta").textContent = squad.stand ? `Stand ${squad.stand}` : "";
-    $("#fcb-kader-src").href = squad.url;
+    $("#fcb-kader-src").href = safeUrl(squad.url);
     const parts = [];
     for (const g of squad.groups) {
       parts.push(el("div", "kader-group", `${g.group} (${g.players.length})`));
@@ -1626,7 +1636,7 @@ function renderFcb(d) {
       ? ticker.map((t) => {
           const li = el("li");
           const a = el("a");
-          a.href = t.url;
+          a.href = safeUrl(t.url);
           a.target = "_blank";
           a.rel = "noopener";
           const text = el("div");
@@ -1646,7 +1656,7 @@ function renderFcb(d) {
       ...items.map((n) => {
         const li = el("li");
         const link = el("a");
-        link.href = n.url;
+        link.href = safeUrl(n.url);
         link.target = "_blank";
         link.rel = "noopener";
         link.append(el("b", null, n.title), el("small", null, [n.source || "Quelle", timeAgo(n.published)].filter(Boolean).join(" · ")));
@@ -1976,18 +1986,23 @@ setInterval(() => {
   if (document.visibilityState === "visible" && state.place) refresh();
 }, 15 * 60 * 1000);
 
-// Beim Zurückkehren in die App: Daten und Tagespsalm aktualisieren
+// Neuer Tag: Tagespsalm und Vers des Tages wechseln (auch wenn die App über Mitternacht offen bleibt)
 let lastDay = new Date().toDateString();
+function checkNewDay() {
+  if (new Date().toDateString() === lastDay) return;
+  lastDay = new Date().toDateString();
+  psalm.offset = 0;
+  renderPsalm();
+  renderVerse();
+}
+setInterval(checkNewDay, 60 * 1000);
+
+// Beim Zurückkehren in die App: Daten und Tagespsalm aktualisieren
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   liveTick();
   if (Date.now() - feedsAt > 30 * 60 * 1000) loadFeeds();
-  if (new Date().toDateString() !== lastDay) {
-    lastDay = new Date().toDateString();
-    psalm.offset = 0;
-    renderPsalm();
-    renderVerse();
-  }
+  checkNewDay();
   // Nur neu laden, wenn die Daten älter als 5 Minuten sind (schont Akku und Datenvolumen)
   if (state.place && Date.now() - (state.fetchedAt || 0) > 5 * 60 * 1000) refresh();
 });

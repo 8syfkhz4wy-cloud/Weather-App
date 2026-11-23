@@ -168,7 +168,7 @@ def feed_items(url, source):
                 title = title[: -len(src) - 3]
         if " – " in title and source == "SRF":
             title = title.split(" – ", 1)[1]
-        if title and link:
+        if title and link.startswith(("https://", "http://")):
             items.append({"title": title, "desc": desc[:220], "url": link, "source": src, "published": published})
     _feed_cache[url] = items
     return items
@@ -233,10 +233,11 @@ def load_kurve():
                 continue
             title = clean(it.findtext("title"))
             text = clean(it.findtext("description"))
-            if VIOLENCE.search(title + " " + text):
+            link = (it.findtext("link") or "").strip()
+            if not title or not link.startswith(("https://", "http://")) or VIOLENCE.search(title + " " + text):
                 continue
             items.append({"title": title.title() if title.isupper() else title, "text": text[:220],
-                          "url": (it.findtext("link") or "").strip(), "source": "muttenzerkurve.ch",
+                          "url": link, "source": "muttenzerkurve.ch",
                           "published": published.isoformat()})
     except Exception as err:
         print(f"Kurven-Website nicht erreichbar: {err}")
@@ -358,22 +359,23 @@ REACTIONS = [
         "Ych ha grad mi Bier umgschüttet vor Ärger! Wieso immer mir, gopferdammi?! Chumm schnäll zrugg, Brueder!",
         "D Lazarett-Lischte isch lenger als d Schlange vor em Fasnachtsbändeli-Stand! Schissdräck!",
     ]),
-    (r"sieg|gewinnt|gewonnen|siegt|schlägt|triumph|dreier|dreht", "gut", [
+    (r"sieg|gewinnt|gewonnen|siegt|schlägt(?!\s+alarm)|triumph|dreier|dreht", "gut", [
         "DRÜÜ PÜNKT!!! Ych ha brüelt wie e Gstörte und e wildfrömde Typ abgschmützlet! HUERE GEIL!",
         "SO WÄMMERS HA, GOPFERDAMMI! Das isch Basel – Härz, Bluet und Tor! Ych bi fix und fertig vor Glügg!",
         "Mir sinn wieder wär, ihr Lappi! Ych tanz grad uf em Chuchitisch – d Nochbere chönne mi mol!",
     ]),
-    (r"niederlage|verliert|verloren|pleite|blamage|unterliegt|kassiert", "schlecht", [
+    (r"niederlage|verliert|verloren|pleite|blamage|unterliegt|kassiert|im loch|krise|debakel|klatsche|desaster|"
+      r"fehlstart|abstiegskampf|klinisch tot|alarm|ratlos|brennt der baum", "schlecht", [
         "Was isch DAS für e Schofseggel-Spiel gsi?! Ych ha dr Grind uf d Tischplatte ghaue! Aber mir stöhn hinter dene Jungs – grad jetzt, verreckt nomol!",
         "Ych chönnt grad d Wand uffelaufe, so e Chäs! Aber am Samschtig sinn mir wieder do – lüter als je!",
         "Verlore?! VERLORE?! Ych bruuch e Schnaps und e Rueh. Und denn wird wieder gsunge, gopferdammi!",
     ]),
-    (r"remis|unentschieden|punkt|torlos|1:1|2:2|3:3|0:0|begnügen", "schlecht", [
+    (r"remis|unentschieden|\bpunkt\b|punktgewinn|punkteteilung|torlos|1:1|2:2|3:3|0:0|begnügen", "schlecht", [
         "E Pünktli?! E PÜNKTLI?! Das isch wie Bier ohni Schuum, gopfertelli! Mir wänn Dreier, kai lauwarme Seich!",
         "Unentschiede … ych bi so hässig, dass ych hüt nyt meh iss – usser e Wurscht. Oder zwai.",
         "Gopferdammi, so knapp! Ych ha mir d Hoor usgrisse – und ych ha sowiso scho kaini meh!",
     ]),
-    (r"schiri|schiedsrichter|var|elfmeter|penalty|rot\b|platzverweis|eigentor", "schlecht", [
+    (r"schiri|schiedsrichter|\bvar\b|elfmeter|penalty|\brot\b|gelb-rot|platzverweis|eigentor", "schlecht", [
         "Dr Schiri?! Dä het sy Brülle dehai im Nachttischli vergässe! Ych explodier grad im Sässel!",
         "VAR, Pfiff, Chabis – alles e huere Seich! Mi Bluetdruck isch uf zwaihundert, ohni Witz!",
         "Ych ha so lut brüelt, dass dr ganzi Sektor gmeint het, ych syg dr Stadionspeaker!",
@@ -382,7 +384,7 @@ REACTIONS = [
         "Trainer-Theater?! Lönd die Jungs doch aifach schutte und hörred uf mit däm Gschnorr, gopferdammi!",
         "Wär dr FCB trainiert, mues s Härz am rächte Fläck ha – susch git s Rambazamba i dr Kurve!",
     ]),
-    (r"transfer|wechsel|verpflicht|vertrag|verlänger|leihe|ablöse", "gut", [
+    (r"transfer|(?<!ge)wechsel|verpflicht|vertrag|verlänger|leihe|ablöse", "gut", [
         "Transfer?! Wenn dä nit rotblau blüetet, söll er grad dehai blybe! Und wenn doch: WILLKOMME, BRUEDER!",
         "Ych ha scho s Trikot im Grind bschriftet! Wenn das e Luftnummere isch, drey ych dure, verreckt!",
     ]),

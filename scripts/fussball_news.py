@@ -70,6 +70,11 @@ FOOTBALL = re.compile(
     re.I,
 )
 # Liveticker, Audiostreams, Bildergalerien und Unterhaltung aussortieren
+# Standardtexte mancher Feeds, die zu jedem Artikel gleich sind – kein echter Teaser
+BOILERPLATE = re.compile(r"^(hier finden sie|alle (news|infos|neuigkeiten)|die wichtigsten (news|neuigkeiten)|"
+                         r"lesen sie (hier|mehr)|mehr (dazu|infos) (hier|im artikel))|"
+                         r"wichtigsten neuigkeiten aus dem", re.I)
+
 SKIP = re.compile(r"\blive\b|liveticker|audiostream|jetzt live|ticker|instaschau|bilder|quiz|podcast|"
                   r"im stream|so sehen sie|tv-übertragung|aufstellung|gossip|predictions|as it happened|"
                   r"highlights|how to watch|team news|player ratings|newsletter", re.I)
@@ -159,6 +164,8 @@ def load_items():
         for rank, it in enumerate(root.findall(".//item")[:40]):
             title = clean(it.findtext("title"))
             desc = clean(it.findtext("description"))
+            if BOILERPLATE.search(desc):
+                desc = ""
             link = (it.findtext("link") or "").strip()
             try:
                 published = parsedate_to_datetime(it.findtext("pubDate"))
@@ -166,7 +173,7 @@ def load_items():
                     published = published.replace(tzinfo=timezone.utc)
             except Exception:
                 continue
-            if not title or not link or now - published > MAX_AGE:
+            if not title or not link.startswith(("https://", "http://")) or now - published > MAX_AGE:
                 continue
             full = f"{title} {desc}"
             if SKIP.search(title) or LOWER_LEAGUES.search(full):
