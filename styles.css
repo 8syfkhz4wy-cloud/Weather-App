@@ -1005,3 +1005,41 @@ body[data-tab="fcb"] { --accent: #ff3b4e; --accent-2: #2f6bff; }
 .list .meta { font-size: 13px; color: var(--muted); }
 .list .remove { border: 0; background: none; color: var(--danger); font-size: 14px; font-weight: 600; cursor: pointer; }
 .list .empty { color: var(--muted); cursor: default; }
+
+/* ---------- Layout-Feinschliff ---------- */
+
+/* Kopfzeile, Hinweis und Tab-Leiste auf breiten Bildschirmen an der Inhaltsspalte (600 px) ausrichten */
+.topbar {
+  padding-left: max(16px, calc((100% - 568px) / 2));
+  padding-right: max(16px, calc((100% - 568px) / 2));
+}
+.status { margin: 10px max(16px, calc((100% - 568px) / 2)) 0; }
+.tabbar {
+  padding-left: max(0px, calc((100% - 600px) / 2));
+  padding-right: max(0px, calc((100% - 600px) / 2));
+}
+
+/* Ortszeile ("LIVE · 12:26 · STANDORT") immer einzeilig */
+.loc-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Kopfzeilen der Banner auf kleinen iPhones: weniger Sperrung, damit der Text ganz sichtbar bleibt */
+@media (max-width: 380px) {
+  .news-bar, .gta-bar { gap: 7px; padding: 8px 10px; letter-spacing: 0.04em; }
+  .news-live { padding: 2px 6px; }
+  .gta-logo { padding: 1px 5px; }
+}
+
+/* GTA-Themen: auf dem Handy seitlich wischbar mit Hinweis am Rand, ab Tablet-Breite umbrechend */
+.gta-cats {
+  -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
+  mask-image: linear-gradient(90deg, #000 85%, transparent);
+  padding-right: 28px;
+}
+@media (min-width: 560px) {
+  .gta-cats { flex-wrap: wrap; overflow: visible; -webkit-mask-image: none; mask-image: none; padding-right: 14px; }
+}
+
+/* Weitere GTA-Artikel: Thema als kleine Zeile über dem Titel, damit der Titel die volle Breite hat */
+.gta-more a { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; }
+.gta-more-cat { align-self: flex-start; width: auto; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+.gta-more-title { font-size: 15px; font-weight: 600; }
