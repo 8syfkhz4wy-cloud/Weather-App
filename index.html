@@ -61,7 +61,7 @@
       <button id="warn-banner" class="warn-banner" hidden></button>
 
       <button class="panel verse" id="verse-card">
-        <div class="panel-head"><span class="tag">// VERS DES TAGES</span><span id="verse-ref" class="tag-r mono"></span></div>
+        <div class="panel-head"><span class="tag">VERS DES TAGES</span><span id="verse-ref" class="tag-r mono"></span></div>
         <p id="verse-text" class="verse-text"></p>
         <span class="verse-more">Ganzen Psalm lesen ›</span>
       </button>
@@ -102,14 +102,14 @@
       </section>
 
       <div class="panel">
-        <div class="panel-head"><span class="tag">// NIEDERSCHLAG 2 STD</span><span id="nowcast-sum" class="tag-r mono"></span></div>
+        <div class="panel-head"><span class="tag">NIEDERSCHLAG 2 STD</span><span id="nowcast-sum" class="tag-r mono"></span></div>
         <p id="nowcast-text" class="nowcast-text"></p>
         <div id="nowcast" class="nowcast"></div>
       </div>
 
       <div class="panel">
         <div class="panel-head">
-          <span class="tag">// VERLAUF 24 STD</span>
+          <span class="tag">VERLAUF 24 STD</span>
           <div class="seg" id="chart-seg">
             <button data-m="temp" class="on">Temp</button>
             <button data-m="rain">Regen</button>
@@ -121,7 +121,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><span class="tag">// 7 TAGE</span><span class="tag-r">Tippen für Details</span></div>
+        <div class="panel-head"><span class="tag">7 TAGE</span><span class="tag-r">Tippen für Details</span></div>
         <ul id="daily" class="daily"></ul>
       </div>
 
@@ -134,7 +134,7 @@
     <!-- ===== Radar ===== -->
     <section class="view" id="view-radar" hidden>
       <div class="panel radar-panel">
-        <div class="panel-head"><span class="tag">// NIEDERSCHLAGSRADAR</span><span id="radar-time" class="tag-r mono">--:--</span></div>
+        <div class="panel-head"><span class="tag">NIEDERSCHLAGSRADAR</span><span id="radar-time" class="tag-r mono">--:--</span></div>
         <div id="map" class="map"></div>
         <div class="radar-ctl">
           <button class="icon-btn" id="radar-play" aria-label="Animation abspielen">
@@ -152,7 +152,7 @@
     <section class="view" id="view-psalm" hidden>
       <div class="panel psalm">
         <div class="panel-head">
-          <span class="tag">// PSALM DES TAGES</span>
+          <span class="tag">PSALM DES TAGES</span>
           <div class="seg">
             <button id="font-down" aria-label="Schrift kleiner">A−</button>
             <button id="font-up" aria-label="Schrift größer">A+</button>
@@ -283,12 +283,12 @@
     <!-- ===== Warnungen ===== -->
     <section class="view" id="view-warn" hidden>
       <div class="panel">
-        <div class="panel-head"><span class="tag">// AKTIVE WARNUNGEN</span><span id="warn-place" class="tag-r"></span></div>
+        <div class="panel-head"><span class="tag">AKTIVE WARNUNGEN</span><span id="warn-place" class="tag-r"></span></div>
         <ul id="warn-list" class="warn-list"></ul>
       </div>
 
       <div class="panel" id="alerts-card" hidden>
-        <div class="panel-head"><span class="tag">// PUSH-NACHRICHTEN</span></div>
+        <div class="panel-head"><span class="tag">PUSH-NACHRICHTEN</span></div>
         <p class="body-text">Bei Gefahr kommt eine Nachricht aufs Handy – auch wenn die App geschlossen ist.</p>
         <ol class="steps">
           <li>Kostenlose App <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener"><b>ntfy</b></a> laden (kein Konto nötig), Mitteilungen erlauben.</li>
@@ -299,14 +299,14 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><span class="tag">// SCHWELLENWERTE</span></div>
+        <div class="panel-head"><span class="tag">SCHWELLENWERTE</span></div>
         <table class="thresholds mono">
-          <tr><td>💨 Wind / Sturm</td><td>Böen ≥ 60 / 75 / 120 km/h</td></tr>
-          <tr><td>⛈️ Gewitter</td><td>Vorhersage, Hagel höher</td></tr>
-          <tr><td>🥵 Hitze</td><td>≥ 30 °C / 35 °C</td></tr>
-          <tr><td>🥶 Kälte</td><td>≤ −10 °C / −15 °C</td></tr>
-          <tr><td>❄️ Schnee</td><td>≥ 3 cm in 24 h</td></tr>
-          <tr><td>🧊 Glätte</td><td>Niederschlag ≤ 1 °C</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-wind"/></svg> Wind / Sturm</td><td>Böen ≥ 60 / 75 / 120 km/h</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-storm"/></svg> Gewitter</td><td>Vorhersage, Hagel höher</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-heat"/></svg> Hitze</td><td>≥ 30 °C / 35 °C</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-cold"/></svg> Kälte</td><td>≤ −10 °C / −15 °C</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-flake"/></svg> Schnee</td><td>≥ 3 cm in 24 h</td></tr>
+          <tr><td><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-ice"/></svg> Glätte</td><td>Niederschlag ≤ 1 °C</td></tr>
         </table>
       </div>
     </section>

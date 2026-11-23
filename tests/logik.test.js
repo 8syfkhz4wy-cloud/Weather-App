@@ -111,6 +111,18 @@ test("GTA-Illustration: Sportwagen, Leuchtreklame je Thema, Tag und Nacht", () =
   assert.match(GtaArt.svg("#ff8a3d", "autos", day), /stop-color="#ff8a3d"/);
   assert.equal(GtaArt.svg("#3ddcff", "gibtsnicht", day), svgs[0]);
   assert.equal(GtaArt.shade("#808080", 0.5), "#c0c0c0");
+  // Zweites Bild mit eigenen IDs (Ladebildschirm), Animationsklassen bleiben
+  const intro = GtaArt.svg("#ff3d8b", "heute", day, "in");
+  assert.doesNotMatch(intro, /id="ga|url\(#ga/);
+  assert.match(intro, /id="inSky"/);
+  assert.match(intro, /class="ga-car"/);
+  // Symbole: Wetter, Warnungen und Themen im Sprite, Mondphasen gültig
+  const sprite = GtaArt.sprite();
+  for (const id of ["wi-sun", "wi-moon", "wi-cloudy", "wi-rain", "wi-snow", "wi-storm", "wi-hail", "wi-wind", "wi-ice", "wi-ok", "cat-heute", "cat-geld"]) {
+    assert.match(sprite, new RegExp(`<symbol id="${id}"`), id);
+  }
+  assert.doesNotMatch(sprite, /NaN|undefined/);
+  for (let p = 0; p < 1; p += 0.05) assert.doesNotMatch(GtaArt.moonPhase(p), /NaN/, `Phase ${p}`);
   // Hintergrund der App: Sonne mit Skyline und zwei Palmengruppen
   const bg = GtaArt.backdrop();
   assert.equal((bg.match(/<svg class="bg-sun"/g) || []).length, 1);

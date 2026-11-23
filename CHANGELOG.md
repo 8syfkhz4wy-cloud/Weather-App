@@ -2,7 +2,11 @@
 
 ## v2.2.0
 
-- **Die ganze App im GTA-6-Look:** Abendhimmel mit Retro-Sonne, Skyline und Palmen, Neon-Gitterboden, violette Glasflächen mit Neonkanten, kräftige kursive Schrift und eine dunkle Neon-Karte im Radar – der FCB-Bereich bleibt rot-blau
+- **Die ganze App im GTA-6-Look:** Abendhimmel mit Retro-Sonne, Skyline und Palmen, Neon-Gitterboden, violette Glasflächen mit Neonkanten, durchgehend kräftige kursive Schrift und eine dunkle Neon-Karte im Radar – der FCB-Bereich bleibt rot-blau
+- **Ladebildschirm wie im Spiel:** beim Öffnen kurz ein Bild mit Tipp zur App, antippen zum Überspringen
+- **Neon-Wettersymbole** statt Emojis – oben, in der Stundenleiste, bei den 7 Tagen und bei den Warnungen; der Mond zeigt seine echte Phase
+- **Fahndungssterne:** je gefährlicher das Wetter, desto mehr Sterne (★★☆☆☆ bis ★★★★★)
+- **Spielerpfeil** für deinen Standort im Radar, Meldungen im Stil der Spiel-Benachrichtigungen, Wetteranimation in Neonfarben
 - **GTA-Banner im neuen Look:** neue Illustration mit echtem Sportwagen – drehende Felgen, Bremssättel, LED-Scheinwerfer mit Lichtkegel, Rücklicht mit Lichtspur und Neon-Unterbodenbeleuchtung
 - **Neon-Stadt:** Retro-Sonne hinter der Skyline mit beleuchteten Fenstern, Palmen im Wind, Hotel-Leuchtschild, Flugzeug mit Werbebanner und Lichtspuren auf der Uferstrasse
 - **Leuchtreklame je Thema:** Stern, Glühbirne, Controller, Kartennadel, Tacho, Fadenkreuz oder Dollar mit blinkenden Glühbirnen – und das Auto fährt in der Farbe des Themas

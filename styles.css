@@ -1167,6 +1167,9 @@ body:not([data-tab="fcb"]) {
   --rain: #3ddcff;
   --sunset: linear-gradient(90deg, #ff3d8b, #ff7a59 55%, #ffb347);
   --display: "Avenir Next Condensed", "AvenirNextCondensed-Heavy", Futura, "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  /* durchgehend GTA-Schriften: Zahlen und Zeiten schmal und kräftig, Fliesstext klar */
+  --mono: "Avenir Next Condensed", "AvenirNextCondensed-DemiBold", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --sans: "Avenir Next", "AvenirNext-Medium", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 /* Akzent je nach Wetterlage, in Neonfarben */
 body:not([data-tab="fcb"])[data-sky^="clear-day"]   { --accent: #ffb347; --accent-2: #ff3d8b; }
@@ -1322,7 +1325,7 @@ body:not([data-tab="fcb"]) .warn-banner.danger {
 }
 body:not([data-tab="fcb"]) .warn-banner small { font-family: var(--sans); font-size: 12px; font-style: normal; font-weight: 400; letter-spacing: 0; text-transform: none; }
 
-body:not([data-tab="fcb"]) .verse-text { color: #fff4fb; }
+body:not([data-tab="fcb"]) .verse-text { font-family: var(--sans); font-size: 18px; font-style: italic; font-weight: 600; color: #fff4fb; }
 body:not([data-tab="fcb"]) .verse-more,
 body:not([data-tab="fcb"]) .link-btn { font-family: var(--display); font-style: italic; font-weight: 800; letter-spacing: 0.03em; color: #ff5fa2; }
 body:not([data-tab="fcb"]) .verse-more { font-size: 15px; text-transform: uppercase; }
@@ -1422,7 +1425,13 @@ body:not([data-tab="fcb"]) .psalm-ref {
   filter: drop-shadow(0 0 14px rgba(255, 61, 139, 0.45));
 }
 body:not([data-tab="fcb"]) .psalm-ref small { font-family: var(--sans); font-style: normal; text-transform: none; color: #d9c4f0; }
-body:not([data-tab="fcb"]) .psalm-text { color: #fff4fb; }
+body:not([data-tab="fcb"]) .psalm-text { font-family: var(--sans); font-weight: 500; line-height: 1.55; color: #fff4fb; }
+body:not([data-tab="fcb"]) .psalm-text sup { font-family: var(--display); font-size: 12px; font-style: italic; font-weight: 800; }
+body:not([data-tab="fcb"]) .loc-meta, body:not([data-tab="fcb"]) .tag-r { font-family: var(--display); font-style: italic; font-weight: 700; letter-spacing: 0.06em; }
+body:not([data-tab="fcb"]) .chart text { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 11px; }
+body:not([data-tab="fcb"]) .chart .val { font-size: 12px; font-weight: 800; }
+body:not([data-tab="fcb"]) .kv b, body:not([data-tab="fcb"]) .day-detail div { font-family: var(--display); font-style: italic; font-weight: 800; }
+body:not([data-tab="fcb"]) .source { font-family: var(--display); font-style: italic; letter-spacing: 0.03em; }
 body:not([data-tab="fcb"]) .psalm-text sup { color: #ff5fa2; }
 
 /* Warnungen */
@@ -1464,3 +1473,122 @@ body:not([data-tab="fcb"]) .gps-row b { font-family: var(--display); font-size: 
 @media (prefers-reduced-motion: reduce) {
   .bg-scene * { animation: none !important; }
 }
+
+
+/* ---------- Neon-Symbole (Sprite aus gta-art.js) ---------- */
+.wi { display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; overflow: visible; }
+.hero-icon .wi { width: 92px; height: 92px; }
+.hour .i { display: grid; place-items: center; height: 30px; }
+.hour .i .wi { width: 30px; height: 30px; }
+.day .i { display: grid; place-items: center; }
+.day .i .wi { width: 28px; height: 28px; }
+.nowcast-text { display: flex; align-items: center; gap: 10px; }
+.nc-ico .wi { width: 30px; height: 30px; }
+.warn-list .ico .wi { width: 38px; height: 38px; }
+.warn-banner .ico { display: grid; place-items: center; }
+.warn-banner .ico .wi { width: 32px; height: 32px; }
+.thresholds .wi { width: 22px; height: 22px; margin-right: 6px; vertical-align: -6px; }
+.moonphase { width: 40px; height: 40px; vertical-align: -9px; filter: drop-shadow(0 0 8px rgba(201, 182, 255, 0.65)); }
+.gta-ico .wi { width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; }
+.gta-cats .gta-ico { color: var(--c); }
+.gta-topic .gta-ico .wi { width: 14px; height: 14px; margin-right: 5px; vertical-align: -3px; }
+.gta-more-cat .gta-ico { color: var(--c); }
+.gta-more-cat .gta-ico .wi { width: 13px; height: 13px; margin-right: 5px; vertical-align: -2px; }
+
+/* ---------- Fahndungssterne für die Unwetterstufe ---------- */
+.stars {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: -1px -1px 0 #12042a, 1px -1px 0 #12042a, -1px 1px 0 #12042a, 1px 1px 0 #12042a, 0 0 8px rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+.stars i { font-style: normal; color: rgba(255, 255, 255, 0.2); text-shadow: -1px -1px 0 #12042a, 1px -1px 0 #12042a, -1px 1px 0 #12042a, 1px 1px 0 #12042a; }
+.warn-list .stars { display: block; margin: 3px 0 2px; }
+.warn-banner .stars { flex: none; font-size: 14px; letter-spacing: 1px; }
+
+/* ---------- Meldungen im Stil der Spiel-Benachrichtigungen ---------- */
+body:not([data-tab="fcb"]) .status {
+  position: relative;
+  padding: 10px 14px 10px 18px;
+  border: 0;
+  border-left: 4px solid #ff3d8b;
+  border-radius: 6px;
+  background: rgba(10, 3, 22, 0.92);
+  font-family: var(--display);
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 700;
+  text-align: left;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.8), 0 0 18px -8px #ff3d8b;
+}
+
+/* ---------- Standort im Radar als Spielerpfeil ---------- */
+.me-dot { width: 24px; height: 24px; border: 0; outline: 0; border-radius: 0; background: none; box-shadow: none; }
+.me-dot svg { display: block; width: 100%; height: 100%; fill: #fff; stroke: #ff3d8b; stroke-width: 1.8; stroke-linejoin: round; filter: drop-shadow(0 0 6px #ff3d8b); }
+
+/* ---------- Ladebildschirm beim Start ---------- */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: #0a0418;
+  cursor: pointer;
+  transition: opacity 0.45s ease;
+}
+.intro.out { opacity: 0; pointer-events: none; }
+.intro-art { flex: 1; min-height: 0; overflow: hidden; }
+.intro-art svg { display: block; width: 100%; height: 100%; }
+.intro::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 58%;
+  background: linear-gradient(transparent, rgba(8, 2, 20, 0.92) 55%);
+  pointer-events: none;
+}
+.intro-text { position: absolute; z-index: 1; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 74px); padding: 0 24px; }
+.intro-title {
+  padding-right: 10px;
+  font-family: "Avenir Next Condensed", "AvenirNextCondensed-Heavy", Futura, "Arial Narrow", system-ui, sans-serif;
+  font-size: clamp(46px, 14vw, 84px);
+  font-style: italic;
+  font-weight: 800;
+  line-height: 0.92;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff 0%, #ffe27a 40%, #ff8a3d 70%, #ff3d8b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 0 rgba(42, 9, 70, 0.95)) drop-shadow(0 0 22px rgba(255, 61, 139, 0.6));
+}
+.intro-title b { display: block; font-size: 0.6em; }
+.intro-tip { max-width: 34em; margin: 14px 0 0; font-family: "Avenir Next", -apple-system, sans-serif; font-size: 15px; line-height: 1.45; color: #f3e4ff; text-shadow: 0 1px 6px #000; }
+.intro-tip b { color: #ff5fa2; text-transform: uppercase; font-style: italic; }
+.intro-load {
+  position: absolute;
+  z-index: 1;
+  right: 22px;
+  bottom: calc(env(safe-area-inset-bottom) + 24px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Avenir Next Condensed", Futura, "Arial Narrow", system-ui, sans-serif;
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.intro-load i { width: 22px; height: 22px; border: 3px solid rgba(255, 255, 255, 0.22); border-top-color: #ff3d8b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-load i { animation: none; }
+  .intro { transition: none; }
+}
+/* Im Hochformat würde vom Auto nur ein Rad hinter dem Titel hervorschauen */
+.intro-art .ga-car { display: none; }

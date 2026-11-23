@@ -24,6 +24,21 @@ const WeatherFx = (() => {
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
+  // Farben: im GTA-Look (alle Bereiche ausser FCB) Neon-Violett und Pink, im FCB-Bereich wie bisher
+  const NEON = {
+    sun: ["rgba(255,150,110,0.5)", "rgba(255,90,140,0.18)", "rgba(255,61,139,0)", "rgba(255,140,170,0.07)"],
+    moon: ["rgba(210,180,255,0.38)", "rgba(170,120,255,0)"],
+    cloudDark: "rgba(160,95,200,0.18)", cloudLight: "rgba(255,190,232,0.15)", cloudEdge: "rgba(160,95,200,0)",
+    rain: "rgba(120,232,255,1)", snow: "#fff2fb", wind: "rgba(255,170,222,1)", flash: "230,190,255", bolt: "#ff3d8b",
+  };
+  const CLASSIC = {
+    sun: ["rgba(255,214,110,0.55)", "rgba(255,180,60,0.18)", "rgba(255,160,40,0)", "rgba(255,200,90,0.07)"],
+    moon: ["rgba(190,205,255,0.35)", "rgba(150,170,255,0)"],
+    cloudDark: "rgba(120,140,170,0.16)", cloudLight: "rgba(220,235,255,0.14)", cloudEdge: "rgba(120,140,170,0)",
+    rain: "rgba(140,200,255,1)", snow: "#f2f8ff", wind: "rgba(200,230,255,1)", flash: "200,210,255", bolt: "#c77dff",
+  };
+  const pal = () => (document.body.dataset.tab === "fcb" ? CLASSIC : NEON);
+
   // Stärke des Niederschlags aus dem WMO-Code (0–1)
   function intensity(code) {
     if ([51, 56, 61, 71, 77, 80, 85].includes(code)) return 0.35;
@@ -109,16 +124,17 @@ const WeatherFx = (() => {
       const x = W * 0.82;
       const y = H * 0.1;
       const pulse = 1 + Math.sin(t * 1.2) * 0.06;
+      const p = pal().sun;
       const g = ctx.createRadialGradient(x, y, 0, x, y, 220 * pulse);
-      g.addColorStop(0, "rgba(255,214,110,0.55)");
-      g.addColorStop(0.25, "rgba(255,180,60,0.18)");
-      g.addColorStop(1, "rgba(255,160,40,0)");
+      g.addColorStop(0, p[0]);
+      g.addColorStop(0.25, p[1]);
+      g.addColorStop(1, p[2]);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(t * 0.05);
-      ctx.strokeStyle = "rgba(255,200,90,0.07)";
+      ctx.strokeStyle = p[3];
       ctx.lineWidth = 18;
       for (let i = 0; i < 12; i++) {
         ctx.rotate(Math.PI / 6);
@@ -132,8 +148,8 @@ const WeatherFx = (() => {
       const x = W * 0.8;
       const y = H * 0.1;
       const g = ctx.createRadialGradient(x, y, 0, x, y, 160);
-      g.addColorStop(0, "rgba(190,205,255,0.35)");
-      g.addColorStop(1, "rgba(150,170,255,0)");
+      g.addColorStop(0, pal().moon[0]);
+      g.addColorStop(1, pal().moon[1]);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
     }
@@ -151,13 +167,14 @@ const WeatherFx = (() => {
   function drawClouds(dt) {
     const dark = kind(cfg.code) !== "dry" || !cfg.isDay;
     const speed = 6 + cfg.wind * 0.6;
+    const p = pal();
     for (const c of clouds) {
       c.x += speed * c.s * dt;
       if (c.x - 200 * c.s > W) c.x = -200 * c.s;
       for (const [bx, by, r] of c.blobs) {
         const g = ctx.createRadialGradient(c.x + bx, c.y + by, 0, c.x + bx, c.y + by, r);
-        g.addColorStop(0, dark ? "rgba(120,140,170,0.16)" : "rgba(220,235,255,0.14)");
-        g.addColorStop(1, "rgba(120,140,170,0)");
+        g.addColorStop(0, dark ? p.cloudDark : p.cloudLight);
+        g.addColorStop(1, p.cloudEdge);
         ctx.fillStyle = g;
         ctx.beginPath();
         ctx.arc(c.x + bx, c.y + by, r, 0, 6.283);
@@ -185,7 +202,7 @@ const WeatherFx = (() => {
     const slant = Math.max(-0.6, Math.min(0.6, (cfg.wind / 100) * cfg.windSign));
 
     if (k === "rain" || k === "storm") {
-      ctx.strokeStyle = "rgba(140,200,255,1)";
+      ctx.strokeStyle = pal().rain;
       ctx.lineWidth = 1.2;
       ctx.lineCap = "round";
       for (const p of parts) {
@@ -202,7 +219,7 @@ const WeatherFx = (() => {
         ctx.stroke();
       }
     } else if (k === "snow") {
-      ctx.fillStyle = "#f2f8ff";
+      ctx.fillStyle = pal().snow;
       for (const p of parts) {
         p.y += p.v * dt;
         p.ph += dt * 1.5;
@@ -217,7 +234,7 @@ const WeatherFx = (() => {
         ctx.fill();
       }
     } else if (parts.length) {
-      ctx.strokeStyle = "rgba(200,230,255,1)";
+      ctx.strokeStyle = pal().wind;
       ctx.lineWidth = 1;
       for (const p of parts) {
         p.x += p.v * dt * cfg.windSign;
@@ -250,7 +267,7 @@ const WeatherFx = (() => {
       nextBolt = now + rand(3500, 9000);
     }
     if (flash > 0) {
-      ctx.fillStyle = `rgba(200,210,255,${flash * 0.35})`;
+      ctx.fillStyle = `rgba(${pal().flash},${flash * 0.35})`;
       ctx.fillRect(0, 0, W, H);
       flash = Math.max(0, flash - dt * 3);
     }
@@ -258,7 +275,7 @@ const WeatherFx = (() => {
       ctx.save();
       ctx.strokeStyle = `rgba(230,220,255,${bolt.life * 4})`;
       ctx.lineWidth = 2.5;
-      ctx.shadowColor = "#c77dff";
+      ctx.shadowColor = pal().bolt;
       ctx.shadowBlur = 18;
       ctx.beginPath();
       bolt.pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
@@ -304,6 +321,8 @@ const WeatherFx = (() => {
   resize();
 
   return {
+    // Farben neu anwenden (Wechsel zwischen GTA-Look und FCB-Bereich); bei ruhigem Standbild neu zeichnen
+    restyle: () => start(),
     // code: WMO-Code, isDay, wind: km/h, windDir: Grad (woher), cloud: Bewölkung in %
     set({ code, isDay, wind, windDir, cloud }) {
       // Wind aus Westen weht nach Osten, also nach rechts

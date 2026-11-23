@@ -307,8 +307,14 @@ const GtaArt = (() => {
 
   // ---------- Bild zusammensetzen ----------
 
-  // accent: Farbe des Themas, motif: heute | tipps | cheats | orte | autos | waffen | geld
-  function svg(accent, motif, now = new Date()) {
+  // accent: Farbe des Themas, motif: heute | tipps | cheats | orte | autos | waffen | geld;
+  // prefix: Namensraum der IDs, wenn zwei Bilder gleichzeitig im Dokument stehen (Ladebildschirm)
+  function svg(accent, motif, now = new Date(), prefix = "ga") {
+    const out = draw(accent, motif, now);
+    return prefix === "ga" ? out : out.replace(/(id="|url\(#)ga/g, `$1${prefix}`);
+  }
+
+  function draw(accent, motif, now) {
     const hour = now.getHours();
     const night = hour >= 20 || hour < 6;
     const sky = night
@@ -372,7 +378,77 @@ const GtaArt = (() => {
       + palms("r", palm(80, 420, 300, 1.85, 28, 0.8));
   }
 
-  return { svg, backdrop, shade };
+  // ---------- Neon-Symbole (Wetter, Warnungen, GTA-Themen) ----------
+
+  // Einmal ins Dokument eingesetzt; die App zeigt sie mit <svg class="wi"><use href="#wi-…"/></svg>
+  const CLOUD = (t = "") => `<path${t ? ` transform="${t}"` : ""} d="M14 36h21a8 8 0 0 0 1.2-15.9A11 11 0 0 0 15.3 18.4 9 9 0 0 0 14 36z" fill="url(#wiCloudG)" stroke="#fff0fa" stroke-width="2.4" stroke-linejoin="round"/>`;
+  const SUN = (cx, cy, r) => {
+    const rays = Array.from({ length: 8 }, (_, k) => `M${at(cx, cy, r + 3.5, k * 45).join(" ")} L${at(cx, cy, r + 7.5, k * 45).join(" ")}`).join(" ");
+    return `<path d="${rays}" stroke="#ffb347" stroke-width="2.6" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#wiSunG)"/>`;
+  };
+  const MOON = (t = "") => `<path${t ? ` transform="${t}"` : ""} d="M30 8a16 16 0 1 0 10.5 24.5A13 13 0 0 1 30 8z" fill="url(#wiMoonG)"/>`;
+  const DROPS = (n, len, x0 = 16) => Array.from({ length: n }, (_, k) => `M${x0 + k * (24 / n) + 2} 39 l-${f(len * 0.4)} ${len}`).join(" ");
+  const RAIN = (n, len) => `<path d="${DROPS(n, len)}" stroke="#3ddcff" stroke-width="2.6" stroke-linecap="round"/>`;
+  const FLAKE = (x, y, r) => `M${x - r} ${y} h${2 * r} M${f(x - r / 2)} ${f(y - r * 0.87)} l${r} ${f(r * 1.73)} M${f(x + r / 2)} ${f(y - r * 0.87)} l-${r} ${f(r * 1.73)}`;
+  const SNOW = `<path d="${FLAKE(16, 42, 3)} ${FLAKE(24, 45, 3)} ${FLAKE(32, 42, 3)}" stroke="#eaf9ff" stroke-width="1.8" stroke-linecap="round"/>`;
+  const BOLT = `<path d="M27 26 L19.5 38.5 H25 L22 47 L31.5 33.5 H26 L30 26 Z" fill="url(#wiBoltG)" stroke="#ff9f1c" stroke-width="1.2" stroke-linejoin="round"/>`;
+  // Grosse Schneeflocke: sechs Arme mit je einer Zacke
+  const BIG_FLAKE = [90, 30, -30, -90, -150, 150].map((d) => {
+    const [ex, ey] = at(24, 24, 16, d);
+    const [bx, by] = at(24, 24, 10, d);
+    return `M24 24 L${ex} ${ey} M${bx} ${by} L${at(bx, by, 5, d + 45).join(" ")} M${bx} ${by} L${at(bx, by, 5, d - 45).join(" ")}`;
+  }).join(" ");
+  const SYMBOLS = {
+    "wi-sun": SUN(24, 24, 9),
+    "wi-moon": `${MOON()}<path d="M40 10 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" fill="#fff"/>`,
+    "wi-partly-day": `${SUN(17, 16, 7)}${CLOUD("translate(5 6) scale(0.86)")}`,
+    "wi-partly-night": `${MOON("translate(-6 -3) scale(0.75)")}${CLOUD("translate(5 6) scale(0.86)")}`,
+    "wi-cloudy": `${CLOUD("translate(-2 -4) scale(0.62)")}${CLOUD("translate(0 3)")}`,
+    "wi-fog": `<path d="M8 16 H38 M12 24 H41 M7 32 H35 M14 40 H34" stroke="#e0c8ff" stroke-width="3" stroke-linecap="round"/>`,
+    "wi-drizzle": `${CLOUD()}<path d="${DROPS(3, 3.5)}" stroke="#3ddcff" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2 2.5"/>`,
+    "wi-rain": `${CLOUD()}${RAIN(3, 6)}`,
+    "wi-heavy-rain": `${CLOUD()}${RAIN(4, 8)}`,
+    "wi-freezing": `${CLOUD()}<path d="${DROPS(2, 6)}" stroke="#3ddcff" stroke-width="2.6" stroke-linecap="round"/><path d="${FLAKE(33, 43, 3.2)}" stroke="#bff7ff" stroke-width="1.8" stroke-linecap="round"/>`,
+    "wi-snow": `${CLOUD()}${SNOW}`,
+    "wi-storm": `${CLOUD()}${BOLT}`,
+    "wi-hail": `${CLOUD()}${BOLT}<circle cx="15" cy="42" r="2.2" fill="#eaf9ff"/><circle cx="35" cy="41" r="2.2" fill="#eaf9ff"/>`,
+    "wi-umbrella": `<path d="M8 24 A16 16 0 0 1 40 24 Q36 21 32 24 Q28 21 24 24 Q20 21 16 24 Q12 21 8 24 Z" fill="url(#wiSunG)" stroke="#ffd9f0" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M24 24 V37 a3.5 3.5 0 0 1 -7 0" fill="none" stroke="#ffd9f0" stroke-width="2.6" stroke-linecap="round"/>`,
+    "wi-wind": `<path d="M6 18 H29 a5 5 0 1 0 -5 -5 M6 26 H37 a5 5 0 1 1 -5 5 M6 34 H22" fill="none" stroke="#9ff3ff" stroke-width="3" stroke-linecap="round"/>`,
+    "wi-heat": `<path d="M20 9 a4 4 0 0 1 8 0 V28.5 a8 8 0 1 1 -8 0 Z" fill="#1c0b33" stroke="#ffd9f0" stroke-width="2.2"/><circle cx="24" cy="35" r="5" fill="#ff3d6e"/><rect x="22.5" y="14" width="3" height="20" rx="1.5" fill="#ff3d6e"/>
+      <path d="M33 10 l4 -3 M35 17 h5 M33 24 l4 3" stroke="#ffb347" stroke-width="2.4" stroke-linecap="round"/>`,
+    "wi-cold": `<path d="M16 9 a4 4 0 0 1 8 0 V28.5 a8 8 0 1 1 -8 0 Z" fill="#1c0b33" stroke="#ffd9f0" stroke-width="2.2"/><circle cx="20" cy="35" r="5" fill="#3ddcff"/><rect x="18.5" y="22" width="3" height="12" rx="1.5" fill="#3ddcff"/>
+      <path d="${FLAKE(36, 14, 6)}" stroke="#bff7ff" stroke-width="2" stroke-linecap="round"/>`,
+    "wi-flake": `<path d="${BIG_FLAKE}" stroke="#eaf9ff" stroke-width="2.6" stroke-linecap="round"/>`,
+    "wi-ice": `<path d="M24 5 L40 14.5 V33.5 L24 43 L8 33.5 V14.5 Z" fill="rgba(61,220,255,0.18)" stroke="#9ff3ff" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M24 5 V24 M8 14.5 L24 24 L40 14.5 M24 24 V43" stroke="#9ff3ff" stroke-width="1.6" opacity="0.7"/><path d="M14 30 l4 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`,
+    "wi-ok": `<circle cx="24" cy="24" r="16" fill="rgba(61,255,176,0.14)" stroke="#3dffb0" stroke-width="2.6"/><path d="M16.5 24.5 l5 5 10 -11" fill="none" stroke="#3dffb0" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  };
+
+  function sprite() {
+    const cats = Object.keys(ICONS).map((k) =>
+      `<symbol id="cat-${k}" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${ICONS[k](24, 24)}</g></symbol>`).join("");
+    const wis = Object.entries(SYMBOLS).map(([id, body]) => `<symbol id="${id}" viewBox="0 0 48 48">${body}</symbol>`).join("");
+    return `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+      <linearGradient id="wiSunG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset=".55" stop-color="#ff8a3d"/><stop offset="1" stop-color="#ff3d8b"/></linearGradient>
+      <linearGradient id="wiCloudG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c79af5"/><stop offset="1" stop-color="#5b2696"/></linearGradient>
+      <linearGradient id="wiMoonG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbf6ff"/><stop offset="1" stop-color="#c3aaff"/></linearGradient>
+      <linearGradient id="wiBoltG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset="1" stop-color="#ffb347"/></linearGradient>
+    </defs>${wis}${cats}</svg>`;
+  }
+
+  // Mond in seiner echten Phase (0 = Neumond, 0.5 = Vollmond)
+  function moonPhase(phase) {
+    const r = 15;
+    const waxing = phase < 0.5;
+    const rx = f(Math.abs(Math.cos(2 * Math.PI * phase)) * r);
+    const outer = waxing ? 1 : 0;
+    const term = waxing ? (phase < 0.25 ? 0 : 1) : (phase > 0.75 ? 1 : 0);
+    const lit = `M24 ${24 - r} A${r} ${r} 0 0 ${outer} 24 ${24 + r} A${rx} ${r} 0 0 ${term} 24 ${24 - r} Z`;
+    return `<svg class="wi moonphase" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="${r}" fill="#24123f" stroke="#5b3d8a" stroke-width="1.2"/><path d="${lit}" fill="url(#wiMoonG)"/></svg>`;
+  }
+
+  return { svg, backdrop, sprite, moonPhase, shade };
 })();
 
 if (typeof module !== "undefined") module.exports = GtaArt;
