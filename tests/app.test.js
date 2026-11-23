@@ -1,0 +1,269 @@
+"use strict";
+
+// Browser-Tests: die App auf einem simulierten iPhone (und anderen Bildschirmgrössen),
+// alle externen Dienste nachgebaut. Start: npm test
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { spawnSync } = require("node:child_process");
+const path = require("node:path");
+const { chromium, devices } = require("playwright");
+const { startServer, weather, mockNetwork, watchErrors, ROOT } = require("./helpers.js");
+
+let browser;
+let srv;
+test.before(async () => {
+  srv = await startServer();
+  browser = await chromium.launch();
+});
+test.after(async () => {
+  await browser?.close();
+  srv?.server.close();
+});
+
+const BASEL = { latitude: 47.55, longitude: 7.55 };
+
+// Neue App-Instanz. storage: Einträge, die vor dem Start im Speicher stehen (wie bei einem früheren Besuch)
+async function openApp({ device = devices["iPhone 13"], viewport, storage, net, serviceWorkers = "block", wait = true } = {}) {
+  const ctx = await browser.newContext({ ...device, ...(viewport ? { viewport } : {}), geolocation: BASEL, permissions: ["geolocation"], serviceWorkers, locale: "de-CH" });
+  if (storage) {
+    await ctx.addInitScript((entries) => {
+      if (sessionStorage.getItem("__init")) return; // nur beim ersten Laden, nicht nach Reload
+      sessionStorage.setItem("__init", "1");
+      for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, JSON.stringify(v));
+    }, storage);
+  }
+  const page = await ctx.newPage();
+  const errors = watchErrors(page);
+  const ctl = await mockNetwork(page, net);
+  await page.goto(srv.url);
+  if (wait) await page.waitForFunction(() => document.querySelector("#temp").textContent !== "--°" && document.querySelectorAll("#daily li").length === 7);
+  return { ctx, page, errors, ctl };
+}
+
+const text = async (page, sel) => (await page.locator(sel).first().textContent()).trim();
+
+test("Startseite: Wetter, Kacheln, News und GTA-Tipp ohne Fehler", async () => {
+  const { ctx, page, errors } = await openApp();
+  assert.equal(await text(page, "#place"), "Allschwil");
+  assert.match(await text(page, "#updated"), /LIVE/);
+  assert.match(await text(page, "#temp"), /^-?\d+°$/);
+  assert.ok((await text(page, "#summary")).length > 5);
+  assert.equal(await page.locator("#hourly .hour").count(), 24);
+  assert.equal(await page.locator("#nowcast .b").count(), 8);
+  // Kacheln: Wind, Feuchte, Luftdruck, Sicht, UV, Mond, Sonne, Luftqualität, Pollen
+  assert.equal(await page.locator("#tiles > .panel").count(), 9);
+  const sun = await page.locator("#tiles .kv").first().innerText();
+  assert.match(sun, /9 h 0 min/);
+  assert.doesNotMatch(sun, /60 min/);
+  assert.equal(await page.locator("#news-card").isVisible(), true);
+  assert.equal(await page.locator("#gta-card").isVisible(), true);
+  assert.match(await text(page, "#version"), /Version 9\.9\.9/);
+  assert.match(await text(page, "#verse-ref"), /^PS \d+,\d+$/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Diagramm, 7-Tage-Details und GTA-Themen reagieren auf Tippen", async () => {
+  const { ctx, page, errors } = await openApp();
+  for (const m of ["rain", "wind", "temp"]) {
+    await page.click(`#chart-seg [data-m=${m}]`);
+    assert.ok(await page.locator("#chart svg polyline, #chart svg rect").count() > 0, m);
+  }
+  const row = page.locator("#daily .day-row").nth(1);
+  await row.click();
+  assert.equal(await row.getAttribute("aria-expanded"), "true");
+  assert.equal(await page.locator("#daily .day-detail").nth(1).isVisible(), true);
+  await page.click('#gta-cats [data-k="tipps"]');
+  assert.match(await text(page, "#gta-kicker"), /TIPPS/);
+  assert.equal(await page.locator("#gta-more li").count(), 1);
+  await page.click('#gta-cats [data-k="orte"]'); // Thema ohne Artikel
+  assert.match(await text(page, "#gta-title"), /keine Artikel/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Warnungen: gleich wie das Push-Skript (scripts/warnungen.py)", async () => {
+  const data = weather({ storm: true, hail: true, gust: 95, snow: 1 });
+  const { ctx, page, errors } = await openApp({ net: { weather: { storm: true, hail: true, gust: 95, snow: 1 } } });
+  await page.route(/api\.open-meteo\.com\/v1\/forecast/, (r) => r.fulfill({ json: data }));
+  await page.click("#btn-refresh");
+  await page.waitForFunction(() => !document.querySelector("#warn-banner").hidden);
+  const appLabels = await page.$$eval("#warn-list li b", (bs) => bs.map((b) => b.firstChild.textContent.trim()));
+  assert.equal(await text(page, "#warn-badge"), String(appLabels.length));
+  assert.match(await page.locator("#warn-banner").getAttribute("class"), /danger/);
+
+  const py = spawnSync("python3", ["-I", "-c", `
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location("w", sys.argv[1]); w = importlib.util.module_from_spec(spec); spec.loader.exec_module(w)
+print(json.dumps([x["label"] for x in w.find_warnings(json.load(sys.stdin))]))`, path.join(ROOT, "scripts/warnungen.py")], { input: JSON.stringify(data), encoding: "utf8" });
+  assert.equal(py.status, 0, py.stderr);
+  const pyLabels = JSON.parse(py.stdout);
+  assert.deepEqual([...appLabels].sort(), [...pyLabels].sort());
+  assert.ok(appLabels.includes("Gewitter mit Hagel") && appLabels.includes("Schwere Sturmböen") && appLabels.includes("Starker Schneefall"), appLabels.join());
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Ortssuche: Enter sucht bzw. wählt den ersten Treffer, Dialog bleibt bis dahin offen", async () => {
+  const { ctx, page, errors } = await openApp();
+  await page.click("#btn-search");
+  await page.fill("#search-input", "Zürich");
+  await page.press("#search-input", "Enter");
+  await page.waitForSelector("#search-results li");
+  assert.equal(await page.evaluate(() => document.querySelector("#search-dialog").open), true);
+  await page.press("#search-input", "Enter");
+  await page.waitForFunction(() => document.querySelector("#place").textContent === "Zürich");
+  assert.equal(await page.evaluate(() => document.querySelector("#search-dialog").open), false);
+  // gewählter Ort wird gespeichert und das Folgen des Standorts beendet
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("followGps"))), false);
+  await page.click("#btn-search");
+  assert.match(await text(page, "#saved-list"), /Zürich/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Ortswechsel ohne Netz zeigt nicht die Daten des vorigen Orts", async () => {
+  const { ctx, page, ctl } = await openApp({ net: { geocode: [{ name: "Oslo", country: "Norwegen", latitude: 59.91, longitude: 10.75 }] } });
+  ctl.failForecast = true;
+  await page.click("#btn-search");
+  await page.fill("#search-input", "Oslo");
+  await page.waitForSelector("#search-results li");
+  await page.click("#search-results li");
+  await page.waitForFunction(() => document.querySelector("#condition").textContent === "Keine Verbindung");
+  assert.equal(await text(page, "#place"), "Oslo");
+  assert.equal(await text(page, "#temp"), "--°");
+  assert.equal(await page.locator("#daily li").count(), 0);
+  assert.match(await text(page, "#updated"), /OFFLINE/);
+  await ctx.close();
+});
+
+test("Start mit gespeichertem Standort: nur ein Wetterabruf, gespeicherter Tab bleibt", async () => {
+  const storage = { place: { name: "Allschwil", region: "Aktueller Standort", lat: 47.55, lon: 7.55, gps: true }, tab: "psalm" };
+  const { ctx, page, ctl, errors } = await openApp({ storage });
+  await page.waitForTimeout(1500); // Standortbestimmung im Hintergrund abwarten
+  assert.equal(ctl.forecastCalls, 1);
+  assert.equal(await page.evaluate(() => document.body.dataset.tab), "psalm");
+  assert.equal(await page.locator("#view-psalm").isVisible(), true);
+  // Aktualisieren lädt neu, ebenfalls nur einmal
+  await page.click("#btn-refresh");
+  await page.waitForTimeout(1500);
+  assert.equal(ctl.forecastCalls, 2);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Unbekannter gespeicherter Tab führt zur Wetterseite", async () => {
+  const { ctx, page, errors } = await openApp({ storage: { tab: "gibtsnicht" } });
+  assert.equal(await page.evaluate(() => document.body.dataset.tab), "wetter");
+  assert.equal(await page.locator("#view-wetter").isVisible(), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Psalm: Blättern, Heute, Schriftgrösse und Vers des Tages", async () => {
+  const { ctx, page, errors } = await openApp();
+  await page.click("#verse-card");
+  assert.equal(await page.evaluate(() => document.body.dataset.tab), "psalm");
+  assert.match(await text(page, "#psalm-date"), /^Heute · /);
+  const today = await text(page, "#psalm-ref");
+  const [n, total] = (await text(page, "#psalm-num")).split("/").map(Number);
+  assert.equal(total, 171);
+  assert.ok((await page.locator("#psalm-text p").count()) > 0);
+  assert.equal(await page.locator("#psalm-today").isVisible(), false);
+  await page.click("#psalm-next");
+  assert.match(await text(page, "#psalm-date"), /^Morgen · /);
+  assert.equal(Number((await text(page, "#psalm-num")).split("/")[0]), (n % 171) + 1);
+  await page.click("#psalm-prev");
+  await page.click("#psalm-prev");
+  assert.match(await text(page, "#psalm-date"), /^Gestern · /);
+  await page.click("#psalm-today");
+  assert.equal(await text(page, "#psalm-ref"), today);
+  const size = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--psalm-size").trim());
+  await page.click("#font-up");
+  assert.equal(await size(), "20px");
+  for (let i = 0; i < 10; i++) await page.click("#font-up");
+  assert.equal(await size(), "28px"); // Obergrenze
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("FCB: News, Kader, Live-Ticker mit Toren und Tabelle, Chat mit Dani", async () => {
+  const { ctx, page, errors } = await openApp();
+  await page.click(".tabbar [data-tab=fcb]");
+  assert.equal(await page.locator("#fcb-news-list li").count(), 2);
+  await page.click("#fcb-seg [data-s=kader]");
+  assert.match(await text(page, "#fcb-kader-list"), /Albian Ajeti/);
+  await page.click("#fcb-seg [data-s=ticker]");
+  await page.waitForFunction(() => document.querySelector("#sb-score").textContent === "2:1");
+  assert.equal(await text(page, "#sb-home"), "FC Basel");
+  assert.equal(await text(page, "#sb-away"), "Young Boys");
+  assert.equal(await page.locator("#match-events li").count(), 4); // 3 Tore, 1 Platzverweis
+  await page.waitForFunction(() => document.querySelectorAll("#sl-table tr").length === 10);
+  assert.equal(await page.locator("#sl-table tr.fcb").count(), 1);
+  await page.click("#fcb-seg [data-s=kurve]");
+  assert.equal(await page.locator("#kurve-feed li").count(), 1);
+  assert.equal(await page.locator("#rumor-feed li").count(), 1);
+  await page.click("#fcb-seg [data-s=chat]");
+  await page.waitForFunction(() => document.querySelectorAll("#chat-log p:not(.typing)").length >= 2); // Begrüssung
+  const before = await page.locator("#chat-log p:not(.typing)").count();
+  await page.fill("#chat-input", "Tabelle");
+  await page.press("#chat-input", "Enter");
+  await page.waitForFunction((n) => document.querySelectorAll("#chat-log p:not(.typing)").length >= n + 2, before);
+  assert.match(await page.locator("#chat-log p:not(.typing)").last().innerText(), /Platz 1/);
+  assert.equal(await page.inputValue("#chat-input"), "");
+  // Chat bleibt nach dem Neuladen erhalten
+  await page.reload();
+  await page.waitForSelector("#chat-log p.me");
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Radar-Tab: ohne Kartendienst eine verständliche Meldung statt eines Fehlers", async () => {
+  const { ctx, page, errors } = await openApp();
+  await page.click(".tabbar [data-tab=radar]");
+  await page.waitForFunction(() => /nicht geladen/.test(document.querySelector("#radar-msg").textContent));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+// Layout: auf keinem Gerät darf sich die Seite seitlich verschieben lassen
+const SCREENS = [
+  ["iPhone SE (1. Gen.)", { device: devices["iPhone SE"] }],
+  ["iPhone 13", { device: devices["iPhone 13"] }],
+  ["iPhone 15 Pro Max", { device: devices["iPhone 15 Pro Max"] || devices["iPhone 14 Pro Max"] }],
+  ["iPad", { device: devices["iPad (gen 7)"] }],
+  ["Desktop", { device: {}, viewport: { width: 1366, height: 900 } }],
+];
+for (const [name, opts] of SCREENS) {
+  test(`Layout ${name}: kein seitliches Scrollen in allen Bereichen`, async () => {
+    const { ctx, page, errors } = await openApp(opts);
+    for (const tab of ["wetter", "radar", "psalm", "fcb", "warn"]) {
+      await page.click(`.tabbar [data-tab=${tab}]`);
+      const sections = tab === "fcb" ? ["news", "kader", "ticker", "kurve", "chat"] : [null];
+      for (const s of sections) {
+        if (s) await page.click(`#fcb-seg [data-s=${s}]`);
+        await page.waitForTimeout(150);
+        const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        assert.ok(over <= 1, `${tab}${s ? `/${s}` : ""}: ${over}px zu breit`);
+      }
+    }
+    assert.equal(await page.locator(".tabbar").isVisible(), true);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  });
+}
+
+test("Offline: die App startet aus dem Zwischenspeicher des Service Workers", async () => {
+  const { ctx, page } = await openApp({ serviceWorkers: "allow", wait: false });
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  // warten, bis der Service Worker die Seite steuert und die Dateien gespeichert hat
+  await page.reload();
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  await page.waitForFunction(async () => (await caches.keys()).length > 0 && (await (await caches.open((await caches.keys())[0])).keys()).length >= 10);
+  await ctx.setOffline(true);
+  await page.reload();
+  await page.click(".tabbar [data-tab=psalm]");
+  await page.waitForFunction(() => document.querySelectorAll("#psalm-text p").length > 0);
+  assert.equal(await page.locator(".tabbar").isVisible(), true);
+  await ctx.close();
+});

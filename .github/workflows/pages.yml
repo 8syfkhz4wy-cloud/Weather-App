@@ -18,7 +18,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Neue App-Versionen gehen nur live, wenn alle Tests bestehen. Die regelmässigen Läufe
+  # für News und FCB-Daten (Zeitplan, Anstoss durch die Warnungen) ändern die App nicht
+  # und laufen ohne Tests, damit die News nie an einem Test hängen bleiben.
+  tests:
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/tests.yml
+    permissions:
+      contents: read
+
   deploy:
+    needs: tests
+    if: ${{ !cancelled() && needs.tests.result != 'failure' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages

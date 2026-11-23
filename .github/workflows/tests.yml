@@ -1,0 +1,33 @@
+name: Tests
+
+# Prüft die App bei jedem Pull Request und vor jeder Veröffentlichung (pages.yml ruft
+# diesen Ablauf auf): Logik, Datendateien, die App im Browser auf iPhone, iPad und
+# Desktop sowie die Push-Skripte. Alle externen Dienste sind nachgebaut, die Tests
+# brauchen also weder Wetter- noch Teletext-Server.
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Browser installieren
+        run: npx playwright install --with-deps chromium
+      - name: Syntax aller Skripte
+        run: |
+          for f in *.js tests/*.js; do node --check "$f"; done
+          python3 -m py_compile scripts/*.py
+      - name: Tests
+        run: npm test
