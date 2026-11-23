@@ -254,6 +254,10 @@ def main(out_file, prev_file=None):
         "focusLabel": CAT_BY_KEY[focus][1],
         "top": entry(top),
         "more": more[:5],
+        # Je Schwerpunkt bis zu 5 Artikel zum Antippen in der App (Ratgeber zuerst)
+        "cats": {key: [entry(it) for it in sorted((it for it in items if it["cat"] == key),
+                                                   key=lambda it: not it["guide"])[:5]]
+                 for key in ROTATION},
         "updated": now.isoformat(timespec="minutes"),
     }
     with open(out_file, "w", encoding="utf-8") as f:

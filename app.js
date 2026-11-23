@@ -379,44 +379,94 @@ function gtaArtSvg(accent) {
   </g></svg>`;
 }
 
+const gta = { data: null, sel: "heute" };
+
+function gtaLink(m) {
+  const a = el("a");
+  a.href = m.url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.append(el("span", "gta-more-cat", `${m.emoji} ${m.label}`), el("span", "gta-more-title", m.title), el("span", "gta-more-src mono", m.source));
+  const li = el("li");
+  li.append(a);
+  return li;
+}
+
+// Angezeigter Schwerpunkt: "heute" = Tipp des Tages, sonst die Artikel der gewählten Kategorie
+function renderGta() {
+  const d = gta.data;
+  const cats = d.cats || {};
+  const list = gta.sel === "heute" ? null : cats[gta.sel] || [];
+  const t = list ? list[0] : d.top;
+  const cat = GTA_CATS.find((c) => c[0] === (list ? gta.sel : t.category));
+  const accent = cat ? cat[3] : "#ff3d8b";
+  $("#gta-card").style.setProperty("--gta-accent", accent);
+  $("#gta-art").innerHTML = gtaArtSvg(accent);
+  $("#gta-kicker").textContent = list ? `GTA 6 · ${cat[2].toUpperCase()}` : "GTA 6 · TIPP DES TAGES";
+
+  const link = $("#gta-link");
+  if (t) {
+    link.href = t.url;
+    link.classList.remove("empty");
+    $("#gta-topic").textContent = `${t.emoji || "🌴"} ${t.label || "News"}`;
+    $("#gta-title").textContent = t.title;
+    $("#gta-teaser").textContent = t.teaser || "";
+    $("#gta-teaser").hidden = !t.teaser;
+    $("#gta-source").textContent = `Quelle: ${t.source}`;
+    $("#gta-age").textContent = timeAgo(t.published);
+  } else {
+    link.removeAttribute("href");
+    link.classList.add("empty");
+    $("#gta-topic").textContent = `${cat[1]} ${cat[2]}`;
+    $("#gta-title").textContent = "Gerade keine Artikel zu diesem Thema";
+    $("#gta-teaser").textContent = "Schau später wieder vorbei – die Artikel werden alle paar Stunden neu gesammelt.";
+    $("#gta-teaser").hidden = false;
+    $("#gta-source").textContent = "";
+    $("#gta-age").textContent = "";
+  }
+
+  // Darunter: weitere Artikel der Kategorie bzw. beim Tagestipp je Schwerpunkt der beste
+  const more = list ? list.slice(1) : d.more || [];
+  $("#gta-more").replaceChildren(...more.map(gtaLink));
+  $("#gta-more").hidden = !more.length;
+
+  $$("#gta-cats button").forEach((b) => {
+    const on = b.dataset.k === gta.sel;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on);
+  });
+}
+
+function selectGta(key) {
+  gta.sel = key;
+  renderGta();
+  const on = $("#gta-cats .on");
+  const box = $("#gta-cats");
+  if (on) box.scrollTo({ left: on.offsetLeft - box.offsetLeft - 14, behavior: "smooth" });
+}
+
 async function loadGta() {
   const res = await fetch("gta6.json", { cache: "no-cache" });
   if (!res.ok) return;
   const d = await res.json();
-  const t = d.top;
-  if (!t || !t.title) return;
-  const cat = GTA_CATS.find((c) => c[0] === t.category);
-  const accent = cat ? cat[3] : "#ff3d8b";
-  const card = $("#gta-card");
-  card.style.setProperty("--gta-accent", accent);
-  $("#gta-link").href = t.url;
-  $("#gta-art").innerHTML = gtaArtSvg(accent);
-  $("#gta-topic").textContent = `${t.emoji || "🌴"} ${t.label || "News"}`;
-  $("#gta-title").textContent = t.title;
-  $("#gta-teaser").textContent = t.teaser || "";
-  $("#gta-teaser").hidden = !t.teaser;
-  $("#gta-source").textContent = `Quelle: ${t.source}`;
-  $("#gta-age").textContent = t.published ? timeAgo(t.published) : "";
-  // Die Schwerpunkte im Wechsel, der heutige hervorgehoben
-  const cats = $("#gta-cats");
-  cats.replaceChildren(...GTA_CATS.map(([key, emoji, name]) => el("span", key === t.category ? "on" : null, `${emoji} ${name}`)));
-  card.hidden = false;
-  const on = cats.querySelector(".on");
-  if (on) cats.scrollLeft = on.offsetLeft - cats.offsetLeft - 14;
-  const more = d.more || [];
-  $("#gta-more").replaceChildren(
-    ...more.map((m) => {
-      const a = el("a");
-      a.href = m.url;
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.append(el("span", "gta-more-cat", `${m.emoji} ${m.label}`), el("span", "gta-more-title", m.title), el("span", "gta-more-src mono", m.source));
-      const li = el("li");
-      li.append(a);
-      return li;
+  if (!d.top || !d.top.title) return;
+  gta.data = d;
+  const cats = d.cats || {};
+  // Chips: Tipp des Tages und die sechs Schwerpunkte, jeder einzeln antippbar
+  $("#gta-cats").replaceChildren(
+    ...[["heute", "⭐", "Heute"], ...GTA_CATS].map(([key, emoji, name]) => {
+      const b = el("button", null, `${emoji} ${name}`);
+      b.type = "button";
+      b.dataset.k = key;
+      if (key !== "heute" && d.cats && !(cats[key] || []).length) b.classList.add("none");
+      if (key === d.focus) b.title = "Schwerpunkt heute";
+      b.addEventListener("click", () => selectGta(key));
+      return b;
     })
   );
-  $("#gta-more").hidden = !more.length;
+  if (gta.sel !== "heute" && !(cats[gta.sel] || []).length) gta.sel = "heute";
+  renderGta();
+  $("#gta-card").hidden = false;
 }
 
 // ---------- Status ----------
