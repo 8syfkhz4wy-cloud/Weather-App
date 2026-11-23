@@ -26,7 +26,8 @@ Fünf Bereiche über die Tab-Leiste (Wetter, Radar, Psalm, FCB, Warnungen):
   Artikel der Quelle.
 - **GTA 6 – Tipp des Tages:** Banner auf der Startseite mit einem Artikel zu GTA 6, jeden Tag
   mit anderem Schwerpunkt (Tipps & Tricks, Cheats, versteckte Orte, Autos, Waffen, Geld),
-  dazu je Schwerpunkt ein weiterer Artikel. `scripts/gta6_news.py` sammelt die Artikel aus
+  dazu je Schwerpunkt ein weiterer Artikel. Über die Themen-Chips (Heute, Tipps, Cheats, Orte,
+  Autos, Waffen, Geld) lässt sich jedes Thema einzeln antippen, mit bis zu fünf Artikeln. `scripts/gta6_news.py` sammelt die Artikel aus
   GameStar, GamePro, PC Games, Mein-MMO, IGN, GamesRadar+, PC Gamer, TheGamer, Game Rant und
   Google News. Der Tipp bleibt den ganzen Tag gleich und wiederholt sich am nächsten Tag
   nicht; Deals, Vorbestellungen und Livestreams werden aussortiert.

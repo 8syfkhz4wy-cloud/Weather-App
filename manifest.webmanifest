@@ -1,7 +1,7 @@
 {
   "name": "Wetter & Psalm",
   "short_name": "Wetter & Psalm",
-  "description": "Wetter mit Radar und Warnungen, Psalm des Tages, Fussball-News und FC Basel",
+  "description": "Wetter mit Radar und Warnungen, Psalm des Tages, Fussball-News, FC Basel und GTA-6-Tipps",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

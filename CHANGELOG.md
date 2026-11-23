@@ -1,5 +1,14 @@
 # Versionen
 
+## v2.1.1
+
+- **GTA 6 – Themen zum Antippen:** Heute, Tipps, Cheats, Orte, Autos, Waffen und Geld lassen sich einzeln antippen, mit bis zu fünf Artikeln pro Thema
+- **Bessere GTA-Tipps:** echte Ratgeber (Anleitungen, Fundorte, Cheats) statt Meldungen, in denen ein Stichwort nur nebenbei vorkommt
+- **Live-Ticker FCB zuverlässiger:** hängt der Teletext, läuft der Ticker trotzdem weiter
+- **Wetterwarnungen zuverlässiger:** bei kurzen Ausfällen des Wetterdienstes bis zu drei Versuche
+- **Chat mit Dani:** dieselbe Schlagzeile kommt nicht mehr doppelt
+- Kleinere Korrekturen für den Offline-Betrieb
+
 ## v2.1.0
 
 - **GTA 6 – Tipp des Tages:** neuer Banner auf der Startseite mit einem Artikel zu GTA 6 – jeden Tag ein anderer Schwerpunkt: Tipps & Tricks, Cheats, versteckte Orte, Autos, Waffen und Geld, dazu je Schwerpunkt ein weiterer Artikel aus GameStar, GamePro, IGN und weiteren Spielemagazinen

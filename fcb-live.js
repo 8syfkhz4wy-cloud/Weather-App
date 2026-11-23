@@ -15,7 +15,9 @@ const FcbLive = (() => {
   const teamName = (t) => TEAMS[t] || t;
 
   async function page(n) {
-    const res = await fetch(`${API}${n}`, { cache: "no-store" });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    const res = await fetch(`${API}${n}`, { cache: "no-store", signal: ctrl.signal }).finally(() => clearTimeout(timer));
     if (!res.ok) throw new Error(`Teletext ${n}: ${res.status}`);
     const d = await res.json();
     return (d.subpages || []).map((s) => (s.ep1Info && s.ep1Info.contentText) || "");

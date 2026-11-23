@@ -472,10 +472,12 @@ def chat_topics(news, rumors, squad, today):
             if len(last) >= 4:
                 surnames[last.lower()] = last
     topics = []
+    seen = set()
     for item, rumor in [(n, False) for n in news[:5]] + [(r, True) for r in list(rumors)[:3]]:
         title = item["title"]
-        if VIOLENCE.search(title):
+        if VIOLENCE.search(title) or title in seen:
             continue
+        seen.add(title)
         low = title.lower()
         words = [w for w in surnames if re.search(rf"\b{re.escape(w)}\b", low)]
         words += [short for name, short in CLUBS.items() if name in low and short not in words]

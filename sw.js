@@ -1,5 +1,5 @@
 // Offline-Unterstützung: App-Dateien und Psalmen werden zwischengespeichert.
-const CACHE = "wetter-psalm-v31";
+const CACHE = "wetter-psalm-v32";
 const ASSETS = [
   "./",
   "index.html",
@@ -43,6 +43,6 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE).then((c) => c.put(event.request, copy));
         return res;
       })
-      .catch(() => caches.match(event.request, { ignoreSearch: true }))
+      .catch(() => caches.match(event.request, { ignoreSearch: true }).then((hit) => hit || Response.error()))
   );
 });
