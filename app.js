@@ -1543,10 +1543,19 @@ function liveChanges(d) {
   }
 }
 
+// Anpfiff in der Ortszeit des Geräts. Steht das iPhone nicht auf Schweizer Zeit
+// (Ferien, Auswärtsfahrt), zusätzlich die Schweizer Zeit in Klammern.
+const HHMM = { hour: "2-digit", minute: "2-digit" };
+function kickoffTime(date) {
+  const local = date.toLocaleTimeString("de-CH", HHMM);
+  const swiss = date.toLocaleTimeString("de-CH", { ...HHMM, timeZone: FcbLive.TZ });
+  const sameDay = date.toLocaleDateString("de-CH") === date.toLocaleDateString("de-CH", { timeZone: FcbLive.TZ });
+  return local === swiss && sameDay ? `${local} Uhr` : `${local} Uhr (${swiss} Uhr Schweizer Zeit)`;
+}
+
 function fixtureWhen(date) {
   const day = date.toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "numeric" });
-  const time = date.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
-  return `${day}, ${time} Uhr`;
+  return `${day}, ${kickoffTime(date)}`;
 }
 
 function countdown(t) {
@@ -1578,7 +1587,7 @@ function renderLive(d) {
     }
     $("#sb-score").textContent = d.score ? `${d.score[0]}:${d.score[1]}` : "–:–";
     const half = fx.half ? ` · Halbzeit ${fx.half[0]}:${fx.half[1]}` : "";
-    if (d.live) status.textContent = `Spiel läuft${d.kickoff ? ` · Anpfiff ${new Date(d.kickoff).toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" })}` : ""}${half}`;
+    if (d.live) status.textContent = `Spiel läuft${d.kickoff ? ` · Anpfiff ${kickoffTime(new Date(d.kickoff))}` : ""}${half}`;
     else if (d.score) status.textContent = `Schlussresultat${half}`;
     else if (fx.kickoff) status.textContent = `${fixtureWhen(fx.kickoff)} · ${countdown(fx.kickoff.getTime())}`;
     else status.textContent = fx.note || "Noch kein Resultat";

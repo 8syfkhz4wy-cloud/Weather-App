@@ -14,6 +14,35 @@ const FcbLive = (() => {
   };
   const teamName = (t) => TEAMS[t] || t;
 
+  // Der Teletext nennt alle Zeiten in Schweizer Zeit. Damit Anpfiff, Countdown und
+  // Live-Erkennung auch auf einem iPhone mit anderer Zeitzone stimmen (Ferien, Auswärtsfahrt),
+  // wird jede Zeit ausdrücklich als Zeit in Europe/Zurich gelesen.
+  const TZ = "Europe/Zurich";
+  const zurichFmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric",
+  });
+
+  // Kalenderteile eines Zeitpunkts in Schweizer Zeit; Monat ab 0 wie bei Date
+  function zurichParts(date) {
+    const p = Object.fromEntries(zurichFmt.formatToParts(date).map((x) => [x.type, +x.value]));
+    return { y: p.year, mo: p.month - 1, d: p.day, h: p.hour % 24, mi: p.minute };
+  }
+
+  // Zeitpunkt zu Datum und Uhrzeit in Schweizer Zeit (Sommer- und Winterzeit inbegriffen)
+  function zurichDate(y, mo, d, h, mi) {
+    const wall = Date.UTC(y, mo, d, h, mi);
+    const offset = (t) => {
+      const p = zurichParts(new Date(t));
+      return Date.UTC(p.y, p.mo, p.d, p.h, p.mi) - t;
+    };
+    let t = wall - offset(wall);
+    t = wall - offset(t); // zweiter Schritt für Zeiten nahe der Zeitumstellung
+    return new Date(t);
+  }
+
+  // Wochentag eines Kalendertags (unabhängig von der Zeitzone des Geräts)
+  const weekdayOf = (y, mo, d) => new Date(Date.UTC(y, mo, d)).getUTCDay();
+
   async function page(n) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 12000);
@@ -26,27 +55,28 @@ const FcbLive = (() => {
   // Kopfzeile "FUSSBALL  09.11.26 13:29" = letzte Aktualisierung der Seite
   function stamp(text) {
     const m = text.match(/(\d{2})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})/);
-    return m ? new Date(2000 + +m[3], +m[2] - 1, +m[1], +m[4], +m[5]) : null;
+    return m ? zurichDate(2000 + +m[3], +m[2] - 1, +m[1], +m[4], +m[5]) : null;
   }
 
   // Datum des Anpfiffs: Wochentag innerhalb der Spanne im Seitentitel "(20.-22.11.)",
   // sonst der nächste passende Wochentag ab dem Datum der Seite
   function kickoffDate(text, base, weekday, hh, mm) {
+    const b = zurichParts(base);
+    // Kalendertag um "add" Tage verschieben (UTC-Rechnung, also ohne Zeitumstellung)
+    const at = (y, mo, d, add) => {
+      const day = new Date(Date.UTC(y, mo, d + add));
+      return zurichDate(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hh, mm);
+    };
     const r = text.match(/\((\d{1,2})\.(?:(\d{1,2})\.)?\s*-\s*(\d{1,2})\.(\d{1,2})\.\)/);
     if (r) {
       const endMonth = +r[4] - 1;
       const startMonth = r[2] ? +r[2] - 1 : endMonth;
-      let year = base.getFullYear();
-      if (startMonth < base.getMonth() - 6) year += 1; // Runde im neuen Jahr
-      const d = new Date(year, startMonth, +r[1], hh, mm);
+      const year = b.y + (startMonth < b.mo - 6 ? 1 : 0); // Runde im neuen Jahr
       for (let i = 0; i < 10; i++) {
-        if (d.getDay() === weekday) return d;
-        d.setDate(d.getDate() + 1);
+        if (weekdayOf(year, startMonth, +r[1] + i) === weekday) return at(year, startMonth, +r[1], i);
       }
     }
-    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hh, mm);
-    d.setDate(d.getDate() + ((weekday - d.getDay() + 7) % 7));
-    return d;
+    return at(b.y, b.mo, b.d, (weekday - weekdayOf(b.y, b.mo, b.d) + 7) % 7);
   }
 
   // Basel-Partie in einer Teletext-Seite finden: angesetzt ("SO 16.30 Uhr") oder mit Resultat ("2:1 (1:0)")
@@ -115,7 +145,7 @@ const FcbLive = (() => {
     return Boolean(fx.updated) && now - fx.updated.getTime() < 25 * 60000 && now - fx.updated.getTime() > -5 * 60000;
   }
 
-  return { page, parseFixture, parseTelegram, parseTable, isLive, teamName, DAY_NAMES };
+  return { page, parseFixture, parseTelegram, parseTable, isLive, teamName, zurichParts, zurichDate, DAY_NAMES, TZ };
 })();
 
 if (typeof module !== "undefined") module.exports = FcbLive;

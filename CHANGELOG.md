@@ -2,6 +2,8 @@
 
 ## v2.1.2
 
+- **FCB-Ticker auch im Ausland richtig:** Anpfiff, Countdown und Live-Ticker stimmen jetzt auf jedem iPhone, egal in welcher Zeitzone (Ferien, Auswärtsfahrt). Ausserhalb der Schweiz steht die Schweizer Zeit in Klammern dabei
+- **Geprüfte Qualität:** jede neue Version wird vor dem Veröffentlichen automatisch auf iPhone, iPad und Desktop getestet
 - **Ortssuche:** „Suchen“ auf der Tastatur schliesst die Suche nicht mehr, sondern zeigt die Treffer bzw. wählt den ersten
 - **Ortswechsel:** beim Laden eines neuen Orts steht nicht mehr kurz (oder offline dauerhaft) das Wetter des vorigen Orts da
 - **Schnellerer Start:** beim Folgen des Standorts wird das Wetter nur noch einmal geladen

@@ -3,7 +3,10 @@
 // Logik ohne Browser: Teletext-Auswertung (fcb-live.js) und Chat mit Dani (dani-chat.js)
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { spawnSync } = require("node:child_process");
+const path = require("node:path");
 const FcbLive = require("../fcb-live.js");
+const swiss = FcbLive.zurichParts;
 const DaniChat = require("../dani-chat.js");
 
 test("Teletext: Partie mit Resultat und Halbzeitstand", () => {
@@ -13,25 +16,45 @@ test("Teletext: Partie mit Resultat und Halbzeitstand", () => {
   assert.equal(fx.baselHome, true);
   assert.deepEqual(fx.score, [2, 1]);
   assert.deepEqual(fx.half, [1, 0]);
-  assert.equal(fx.updated.getFullYear(), 2026);
+  assert.equal(fx.updated.toISOString(), "2026-11-22T16:45:00.000Z"); // 17:45 Schweizer Winterzeit
 });
 
 test("Teletext: Auswärtsspiel mit Anpfiff im Titelbereich der Runde", () => {
   const fx = FcbLive.parseFixture("FUSSBALL 18.11.26 10:00 Super League (21.-23.11.) Lugano - Basel SO 16.30 Uhr Thun - GC SA 18.00 Uhr");
   assert.equal(fx.baselHome, false);
   assert.equal(fx.home, "Lugano");
-  assert.equal(fx.kickoff.getDay(), 0); // Sonntag
-  assert.equal(fx.kickoff.getDate(), 22); // 22.11.2026 ist ein Sonntag
-  assert.equal(fx.kickoff.getMonth(), 10);
-  assert.equal(fx.kickoff.getHours(), 16);
-  assert.equal(fx.kickoff.getMinutes(), 30);
+  assert.deepEqual(swiss(fx.kickoff), { y: 2026, mo: 10, d: 22, h: 16, mi: 30 }); // 22.11.2026 ist ein Sonntag
 });
 
 test("Teletext: Runde im neuen Jahr (Seite noch vom Dezember)", () => {
   const fx = FcbLive.parseFixture("FUSSBALL 20.12.26 10:00 Super League (30.1.-1.2.) Basel - Sion SA 18.00 Uhr");
-  assert.equal(fx.kickoff.getFullYear(), 2027);
-  assert.equal(fx.kickoff.getMonth(), 0);
-  assert.equal(fx.kickoff.getDay(), 6);
+  assert.deepEqual(swiss(fx.kickoff), { y: 2027, mo: 0, d: 30, h: 18, mi: 0 }); // Samstag, 30.1.2027
+});
+
+test("Teletext: Anpfiff am Tag der Umstellung auf Sommerzeit", () => {
+  const fx = FcbLive.parseFixture("FUSSBALL 27.03.27 12:00 Super League Basel - GC SO 16.30 Uhr");
+  assert.equal(fx.kickoff.toISOString(), "2027-03-28T14:30:00.000Z"); // 16:30 MESZ
+});
+
+// Wie ein iPhone in einer anderen Zeitzone (Ferien, Auswärtsfahrt): gleicher Zeitpunkt überall
+test("Teletext: Anpfiff stimmt in jeder Zeitzone des Geräts", () => {
+  const code = `
+    const F = require(${JSON.stringify(path.join(__dirname, "../fcb-live.js"))});
+    const D = require(${JSON.stringify(path.join(__dirname, "../dani-chat.js"))});
+    const a = F.parseFixture("FUSSBALL 18.11.26 10:00 Super League (21.-23.11.) Lugano - Basel SO 16.30 Uhr");
+    const b = F.parseFixture("FUSSBALL 20.12.26 23:30 Super League (30.1.-1.2.) Basel - Sion SA 18.00 Uhr");
+    const c = F.parseFixture("FUSSBALL 27.03.27 12:00 Super League Basel - GC SO 16.30 Uhr");
+    const live = { fx: { home: "Basel", away: "YB", baselHome: true, kickoff: new Date(Date.now() + 3 * 86400e3) }, events: [], table: [] };
+    const dani = D.reply("nächstes spiel", { live })[0];
+    console.log(JSON.stringify([a.kickoff, a.updated, b.kickoff, c.kickoff, dani.match(/um \\d\\d:\\d\\d/)[0]]));`;
+  const run = (tz) => {
+    const r = spawnSync(process.execPath, ["-e", code], { env: { ...process.env, TZ: tz }, encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr);
+    return r.stdout;
+  };
+  const zurich = run("Europe/Zurich");
+  for (const tz of ["UTC", "America/New_York", "Asia/Tokyo", "Pacific/Auckland"]) assert.equal(run(tz), zurich, tz);
+  assert.match(zurich, /"2026-11-22T15:30:00.000Z","2026-11-18T09:00:00.000Z","2027-01-30T17:00:00.000Z","2027-03-28T14:30:00.000Z"/);
 });
 
 test("Teletext: ohne Basel-Spiel keine Partie", () => {
@@ -60,20 +83,33 @@ test("Teletext: Tabelle", () => {
 
 // Kontext wie in der App: Spiel des FCB zur angegebenen Zeit
 const ctxWith = (kickoff, extra = {}) => ({ live: { fx: { home: "Basel", away: "YB", baselHome: true, kickoff }, events: [], table: [], ...extra } });
+// Heute bzw. morgen (Schweizer Kalender) um hh:mm Schweizer Zeit
+const swissDay = (add, hh, mm) => {
+  const s = swiss(new Date());
+  return FcbLive.zurichDate(s.y, s.mo, s.d + add, hh, mm);
+};
 
 test("Dani: Spiel heute Abend heisst «HÜT», auch wenn es noch über 12 Stunden dauert", (t) => {
-  const now = new Date();
-  if (now.getHours() >= 23) return t.skip("kurz vor Mitternacht nicht aussagekräftig");
-  const tonight = new Date(now);
-  tonight.setHours(23, 59, 0, 0);
+  if (swiss(new Date()).h >= 23) return t.skip("kurz vor Mitternacht nicht aussagekräftig");
+  const tonight = swissDay(0, 23, 59);
   assert.match(DaniChat.reply("nächstes spiel", ctxWith(tonight))[0], /HÜT/);
   assert.match(DaniChat.greeting(ctxWith(tonight))[1], /^HÜT/);
 });
 
 test("Dani: Spiel morgen früh heisst «MORN»", () => {
-  const tomorrow = new Date(Date.now() + 86400e3);
-  tomorrow.setHours(9, 0, 0, 0);
-  assert.match(DaniChat.reply("nächstes spiel", ctxWith(tomorrow))[0], /MORN/);
+  assert.match(DaniChat.reply("nächstes spiel", ctxWith(swissDay(1, 9, 0)))[0], /um 09:00\. Das isch scho MORN/);
+});
+
+test("Dani: Wetter zum Anpfiff aus der Stunde in Ortszeit des Wetterorts", () => {
+  const kickoff = swissDay(1, 18, 30);
+  // Wetterort in der Schweiz (UTC+1 im Winter, +2 im Sommer): Stundenwert der Ortszeit 18:00
+  const off = (Date.UTC(...(() => { const s = swiss(kickoff); return [s.y, s.mo, s.d, s.h, s.mi]; })()) - kickoff.getTime()) / 1000;
+  const s = swiss(kickoff);
+  const pad = (n) => String(n).padStart(2, "0");
+  const key = `${s.y}-${pad(s.mo + 1)}-${pad(s.d)}T18:00`;
+  const w = { utc_offset_seconds: off, current: { temperature_2m: 5, weather_code: 0 }, hourly: { time: ["x", key], temperature_2m: [0, 12.4], weather_code: [0, 61], precipitation_probability: [0, 80] } };
+  const out = DaniChat.reply("wetter fürs spiel", { ...ctxWith(kickoff), w, place: { name: "Basel" } })[0];
+  assert.match(out, /12 Grad, es schifft, Rägerisiko 80 %/);
 });
 
 test("Dani: Tabelle, Spieler, Wetter und Schutzregeln", () => {
