@@ -2,6 +2,7 @@
 
 ## v2.2.0
 
+- **Layout wie im Spiel:** Kopf wie ein HUD mit Temperatur und Fahndungssternen, Reiter oben wie im Pausenmenü, Statistiken mit Segmentbalken, Vers des Tages als Handy-Nachricht, Radar als Kartenbildschirm mit Legende, Psalm als Briefing, Warnungen als Fahndung mit grossen Sternen und Missionszielen, Ortssuche als Schnellreise – der FCB-Bereich behält seinen Inhalt in Rot-Blau
 - **Die ganze App im GTA-6-Look:** Abendhimmel mit Retro-Sonne, Skyline und Palmen, Neon-Gitterboden, violette Glasflächen mit Neonkanten, durchgehend kräftige kursive Schrift und eine dunkle Neon-Karte im Radar – der FCB-Bereich bleibt rot-blau
 - **Ladebildschirm wie im Spiel:** beim Öffnen kurz ein Bild mit Tipp zur App, antippen zum Überspringen
 - **Neon-Wettersymbole** statt Emojis – oben, in der Stundenleiste, bei den 7 Tagen und bei den Warnungen; der Mond zeigt seine echte Phase

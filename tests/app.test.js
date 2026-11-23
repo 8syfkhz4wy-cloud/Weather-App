@@ -265,7 +265,7 @@ for (const tz of ["Europe/Zurich", "America/New_York", "Asia/Tokyo"]) {
   });
 }
 
-test("GTA-Look in allen Bereichen ausser FCB, dort bleibt das rot-blaue Design", async () => {
+test("GTA-Look in allen Bereichen, der FCB-Inhalt bleibt rot-blau", async () => {
   const { ctx, page, errors } = await openApp();
   const look = () => page.evaluate(() => ({
     ortsname: getComputedStyle(document.querySelector("#place")).fontStyle,
@@ -277,13 +277,16 @@ test("GTA-Look in allen Bereichen ausser FCB, dort bleibt das rot-blaue Design",
     await page.click(`.tabbar [data-tab=${tab}]`);
     assert.deepEqual(await look(), { ortsname: "italic", szene: "block", palmen: 2, sonne: 1 }, tab);
   }
+  // FCB: Rahmen (Kopf, Reiter) im GTA-Layout, Inhalt und Hintergrund wie bisher
   await page.click(".tabbar [data-tab=fcb]");
-  assert.deepEqual(await look(), { ortsname: "normal", szene: "none", palmen: 2, sonne: 1 });
+  assert.deepEqual(await look(), { ortsname: "italic", szene: "none", palmen: 2, sonne: 1 });
   const fcb = await page.evaluate(() => ({
     akzent: getComputedStyle(document.body).getPropertyValue("--accent").trim(),
     flaeche: getComputedStyle(document.body).getPropertyValue("--panel").trim(),
+    panel: getComputedStyle(document.querySelector("#view-fcb .panel")).backgroundColor,
+    rand: getComputedStyle(document.querySelector("#view-fcb .panel")).borderTopColor,
   }));
-  assert.deepEqual(fcb, { akzent: "#ff3b4e", flaeche: "rgba(13, 20, 34, 0.66)" });
+  assert.deepEqual(fcb, { akzent: "#ff3b4e", flaeche: "rgba(13, 20, 34, 0.66)", panel: "rgba(13, 20, 34, 0.66)", rand: "rgba(120, 200, 255, 0.14)" });
   // zurück: wieder GTA
   await page.click(".tabbar [data-tab=wetter]");
   assert.equal((await look()).szene, "block");
@@ -318,6 +321,35 @@ test("GTA-Look: Neon-Symbole statt Emojis, Fahndungssterne, Ladebildschirm", asy
   assert.match(await page.evaluate(() => getComputedStyle(document.body).fontFamily), /^"Avenir Next"/);
   await page.click(".tabbar [data-tab=fcb]");
   assert.doesNotMatch(await page.evaluate(() => getComputedStyle(document.body).fontFamily), /Avenir Next/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("GTA-Layout: HUD-Kopf mit Reitern, Statistiken, Fahndung, Briefing", async () => {
+  const { ctx, page, errors } = await openApp({ net: { weather: { storm: true, hail: true, gust: 95 } } });
+  await page.waitForFunction(() => !document.querySelector(".intro"), null, { timeout: 5000 });
+  // Reiter oben im Kopf, HUD mit Temperatur und Fahndungssternen
+  assert.equal(await page.locator(".topbar .tabbar button").count(), 5);
+  assert.equal(await text(page, "#hud-temp"), await text(page, "#temp"));
+  assert.equal(await page.locator("#hud-stars").getAttribute("data-n"), "5");
+  const top = await page.evaluate(() => document.querySelector(".tabbar").getBoundingClientRect().top);
+  assert.ok(top < 150, `Reiterleiste oben (${top})`);
+  // Statistiken mit Segmentbalken
+  assert.equal(await page.locator("#gstats .gstat").count(), 10);
+  assert.equal(await page.locator("#gstats .gstat").first().locator(".gbar i").count(), 10);
+  assert.equal(await page.locator("#view-wetter .hero-stats").isVisible(), false);
+  // Warnungen: grosse Fahndungsanzeige
+  await page.click(".tabbar [data-tab=warn]");
+  assert.equal(await page.locator("#wanted").isVisible(), true);
+  assert.equal(await page.locator("#wanted-stars").getAttribute("data-n"), "5");
+  assert.match(await text(page, "#wanted-sub"), /5 von 5/);
+  // Psalm als Briefing: Menü über dem Text
+  await page.click(".tabbar [data-tab=psalm]");
+  const order = await page.evaluate(() => [document.querySelector("#psalm-prev").getBoundingClientRect().top, document.querySelector("#psalm-text").getBoundingClientRect().top]);
+  assert.ok(order[0] < order[1], "Menü über dem Psalm");
+  // Ortssuche als Schnellreise
+  await page.click("#btn-search");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector("#search-dialog"), "::before").content), '"SCHNELLREISE"');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

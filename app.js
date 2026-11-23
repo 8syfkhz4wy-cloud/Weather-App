@@ -617,6 +617,21 @@ function computeWarnings(w) {
   return out;
 }
 
+// Höchste Unwetterstufe im HUD oben und gross auf der Warnseite
+function setWanted(list) {
+  const n = list.length ? Math.max(...list.map((x) => +warnStars(x).dataset.n)) : 0;
+  const fill = (node) => {
+    node.replaceChildren("★".repeat(n), el("i", null, "★".repeat(5 - n)));
+    node.setAttribute("aria-label", `Unwetterstufe ${n} von 5`);
+    node.dataset.n = n;
+  };
+  fill($("#hud-stars"));
+  fill($("#wanted-stars"));
+  $("#wanted").classList.toggle("on", n > 0);
+  $("#wanted-label").textContent = n ? (list.length === 1 ? list[0].label : `${list.length} Warnungen`) : "Keine Unwetter";
+  $("#wanted-sub").textContent = `Unwetterstufe ${n} von 5`;
+}
+
 // Unwetterstufe als Fahndungssterne (GTA-Look): Warnung 2, Unwetter 4, extrem 5 von 5
 function warnStars(x) {
   const n = x.severe ? (/Orkan|Extrem|Sehr strenger|Hagel/.test(x.label) ? 5 : 4) : 2;
@@ -639,6 +654,7 @@ function renderWarnings(place, w) {
   const badge = $("#warn-badge");
   $("#warn-place").textContent = place.name;
 
+  setWanted(list);
   if (!list.length) {
     banner.hidden = true;
     badge.hidden = true;
@@ -736,6 +752,7 @@ function renderHero(w) {
   $("#h-max").textContent = `${round(Math.max(w.daily.temperature_2m_max[0], cur.temperature_2m))}°`;
   $("#h-min").textContent = `${round(Math.min(w.daily.temperature_2m_min[0], cur.temperature_2m))}°`;
   $("#h-feel").textContent = `${round(cur.apparent_temperature)}°`;
+  $("#hud-temp").textContent = `${round(cur.temperature_2m)}°`;
   // Regenwahrscheinlichkeit für den Rest des heutigen Tages (nicht für bereits vergangene Stunden)
   const h = w.hourly;
   const today = w.current.time.slice(0, 10);
@@ -743,6 +760,38 @@ function renderHero(w) {
   for (let i = nextHour(w); i < h.time.length && h.time[i].slice(0, 10) === today; i++) rest.push(h.precipitation_probability[i] ?? 0);
   if (h.time[nextHour(w)]?.slice(0, 10) !== today) rest.push(h.precipitation_probability[nextHour(w)] ?? 0);
   $("#h-rain").textContent = `${Math.max(0, ...rest)}%`;
+  renderStats(w, Math.max(0, ...rest));
+}
+
+// Statistiken wie die Fähigkeiten im Spiel: Wert als Balken aus 10 Segmenten
+function renderStats(w, rainPct) {
+  const cur = w.current;
+  const air = state.air && state.air.current;
+  const uv = Math.max(0, nowValue(w, "uv_index") ?? 0);
+  const rows = [
+    ["Jetzt", cur.temperature_2m, -10, 35, `${round(cur.temperature_2m)}°`],
+    ["Gefühlt", cur.apparent_temperature, -10, 35, `${round(cur.apparent_temperature)}°`],
+    ["Max", Math.max(w.daily.temperature_2m_max[0], cur.temperature_2m), -10, 35, `${round(Math.max(w.daily.temperature_2m_max[0], cur.temperature_2m))}°`],
+    ["Min", Math.min(w.daily.temperature_2m_min[0], cur.temperature_2m), -10, 35, `${round(Math.min(w.daily.temperature_2m_min[0], cur.temperature_2m))}°`],
+    ["Regen", rainPct, 0, 100, `${rainPct}%`],
+    ["Wind", cur.wind_speed_10m, 0, 100, `${round(cur.wind_speed_10m)} km/h`],
+    ["Böen", cur.wind_gusts_10m || 0, 0, 120, `${round(cur.wind_gusts_10m || 0)} km/h`],
+    ["Feuchte", cur.relative_humidity_2m, 0, 100, `${cur.relative_humidity_2m}%`],
+    ["UV", uv, 0, 11, uv.toFixed(1)],
+  ];
+  if (air && air.european_aqi != null) rows.push(["Luft", air.european_aqi, 0, 100, `${round(air.european_aqi)} AQI`]);
+  $("#gstats-list").replaceChildren(
+    ...rows.map(([label, v, lo, hi, text]) => {
+      const n = clamp(Math.round(((v - lo) / (hi - lo)) * 10), v > lo ? 1 : 0, 10);
+      const row = el("div", "gstat");
+      const bar = el("span", "gbar");
+      for (let k = 0; k < 10; k++) bar.append(el("i", k < n ? "on" : null));
+      bar.setAttribute("aria-hidden", "true");
+      row.append(el("span", "gl", label), bar, el("span", "gv", text));
+      return row;
+    })
+  );
+  $("#gstats").hidden = false;
 }
 
 function renderNowcast(w) {
@@ -1151,6 +1200,8 @@ function clearWeatherView() {
   $("#summary").textContent = "";
   ["#h-max", "#h-min", "#h-feel"].forEach((id) => ($(id).textContent = "--°"));
   $("#h-rain").textContent = "--%";
+  $("#hud-temp").textContent = "--°";
+  $("#gstats").hidden = true;
   $("#updated").textContent = "Lade …";
   $("#warn-banner").hidden = true;
   $("#warn-badge").hidden = true;
@@ -1861,6 +1912,10 @@ function setTab(tab) {
   WeatherFx.restyle?.();
   store("tab", tab);
   window.scrollTo(0, 0);
+  // Reiterleiste oben: den aktiven Reiter ins Bild schieben (schmale iPhones)
+  const strip = $(".topbar .tabbar");
+  const on = $(".topbar .tabbar .on");
+  if (strip && on) strip.scrollLeft = on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
   if (tab === "wetter") renderChart();
   if (tab === "radar") initRadar();
   else if (radar.timer) toggleRadarPlay(false);

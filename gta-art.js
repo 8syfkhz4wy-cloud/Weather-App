@@ -422,6 +422,8 @@ const GtaArt = (() => {
     "wi-flake": `<path d="${BIG_FLAKE}" stroke="#eaf9ff" stroke-width="2.6" stroke-linecap="round"/>`,
     "wi-ice": `<path d="M24 5 L40 14.5 V33.5 L24 43 L8 33.5 V14.5 Z" fill="rgba(61,220,255,0.18)" stroke="#9ff3ff" stroke-width="2.4" stroke-linejoin="round"/>
       <path d="M24 5 V24 M8 14.5 L24 24 L40 14.5 M24 24 V43" stroke="#9ff3ff" stroke-width="1.6" opacity="0.7"/><path d="M14 30 l4 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`,
+    "wi-book": `<path d="M24 13 C19 9.5 12 9 6 10 V36 C12 35 19 35.5 24 39 C29 35.5 36 35 42 36 V10 C36 9 29 9.5 24 13 Z" fill="url(#wiCloudG)" stroke="#fff0fa" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M24 13 V39 M11 17 H19 M11 23 H19 M29 17 H37 M29 23 H37" stroke="#fff0fa" stroke-width="2" stroke-linecap="round"/>`,
     "wi-ok": `<circle cx="24" cy="24" r="16" fill="rgba(61,255,176,0.14)" stroke="#3dffb0" stroke-width="2.6"/><path d="M16.5 24.5 l5 5 10 -11" fill="none" stroke="#3dffb0" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>`,
   };
 

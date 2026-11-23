@@ -1153,6 +1153,10 @@ body[data-tab="fcb"] { --accent: #ff3b4e; --accent-2: #2f6bff; }
    rot-blaue Design unverändert. Eigene Gestaltung, keine Logos oder
    Schriften aus dem Spiel.
    ===================================================================== */
+:root {
+  --display: "Avenir Next Condensed", "AvenirNextCondensed-Heavy", Futura, "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --sunset: linear-gradient(90deg, #ff3d8b, #ff7a59 55%, #ffb347);
+}
 body:not([data-tab="fcb"]) {
   --bg: #0a0418;
   --panel: rgba(28, 9, 48, 0.6);
@@ -1215,12 +1219,12 @@ body[data-sky$="night"] .bg-sundisc { opacity: 0; }
 .bg-scene .ga-palm { animation: gapalm 6s ease-in-out infinite alternate; }
 
 /* Kopfzeile: dunkles Glas mit Neonkante, Ortsname wie eine Ortseinblendung im Spiel */
-body:not([data-tab="fcb"]) .topbar {
+.topbar {
   background: linear-gradient(180deg, rgba(10, 4, 24, 0.94), rgba(10, 4, 24, 0.6));
   border-bottom: 1px solid transparent;
   border-image: linear-gradient(90deg, #ff3d8b, #b14dff 50%, #3ddcff) 1;
 }
-body:not([data-tab="fcb"]) .loc-name {
+.loc-name {
   padding-right: 6px;
   font-family: var(--display);
   font-size: 24px;
@@ -1234,13 +1238,13 @@ body:not([data-tab="fcb"]) .loc-name {
   color: transparent;
   filter: drop-shadow(0 0 10px rgba(255, 61, 139, 0.5));
 }
-body:not([data-tab="fcb"]) .icon-btn {
+.icon-btn {
   border-color: rgba(255, 61, 139, 0.5);
   background: rgba(255, 61, 139, 0.08);
   color: #ffd6ea;
   box-shadow: 0 0 12px -4px rgba(255, 61, 139, 0.9), inset 0 0 8px -4px rgba(255, 61, 139, 0.9);
 }
-body:not([data-tab="fcb"]) .status {
+.status {
   border-color: rgba(255, 61, 139, 0.5);
   background: rgba(26, 9, 46, 0.94);
   box-shadow: 0 0 18px -6px #ff3d8b;
@@ -1427,7 +1431,7 @@ body:not([data-tab="fcb"]) .psalm-ref {
 body:not([data-tab="fcb"]) .psalm-ref small { font-family: var(--sans); font-style: normal; text-transform: none; color: #d9c4f0; }
 body:not([data-tab="fcb"]) .psalm-text { font-family: var(--sans); font-weight: 500; line-height: 1.55; color: #fff4fb; }
 body:not([data-tab="fcb"]) .psalm-text sup { font-family: var(--display); font-size: 12px; font-style: italic; font-weight: 800; }
-body:not([data-tab="fcb"]) .loc-meta, body:not([data-tab="fcb"]) .tag-r { font-family: var(--display); font-style: italic; font-weight: 700; letter-spacing: 0.06em; }
+.loc-meta, body:not([data-tab="fcb"]) .tag-r { font-family: var(--display); font-style: italic; font-weight: 700; letter-spacing: 0.06em; }
 body:not([data-tab="fcb"]) .chart text { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 11px; }
 body:not([data-tab="fcb"]) .chart .val { font-size: 12px; font-weight: 800; }
 body:not([data-tab="fcb"]) .kv b, body:not([data-tab="fcb"]) .day-detail div { font-family: var(--display); font-style: italic; font-weight: 800; }
@@ -1439,36 +1443,16 @@ body:not([data-tab="fcb"]) .warn-list b { font-family: var(--display); font-size
 body:not([data-tab="fcb"]) .warn-list .lv { font-family: var(--mono); font-style: normal; }
 body:not([data-tab="fcb"]) .alerts-list .name { font-family: var(--display); font-size: 19px; font-style: italic; font-weight: 800; }
 
-/* Tab-Leiste: Neonkante, aktiver Bereich leuchtet pink */
-body:not([data-tab="fcb"]) .tabbar {
-  background: linear-gradient(180deg, rgba(22, 7, 40, 0.92), rgba(8, 3, 18, 0.97));
-  border-top: 1px solid transparent;
-  border-image: linear-gradient(90deg, #ff3d8b, #b14dff 50%, #3ddcff) 1;
-}
-body:not([data-tab="fcb"]) .tabbar button {
-  font-family: var(--display);
-  font-size: 11px;
-  font-style: italic;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #a993c9;
-}
-body:not([data-tab="fcb"]) .tabbar button.on { color: #ff5fa2; }
-body:not([data-tab="fcb"]) .tabbar button.on::before { width: 38px; height: 3px; background: var(--sunset); box-shadow: 0 0 12px #ff3d8b; }
-body:not([data-tab="fcb"]) .tabbar button.on svg { filter: drop-shadow(0 0 8px #ff3d8b); }
-body:not([data-tab="fcb"]) .badge { background: #ff3d8b; box-shadow: 0 0 10px #ff3d8b; font-family: var(--sans); font-style: normal; }
-
 /* Ortssuche */
-body:not([data-tab="fcb"]) .sheet { background: linear-gradient(180deg, #160530, #0a0418 55%); }
-body:not([data-tab="fcb"]) .sheet-head input { border-color: rgba(255, 61, 139, 0.45); }
-body:not([data-tab="fcb"]) .list { border-color: rgba(255, 61, 139, 0.25); }
-body:not([data-tab="fcb"]) .list li { background: rgba(30, 10, 52, 0.9); }
-body:not([data-tab="fcb"]) .list .name { font-family: var(--display); font-size: 20px; font-style: italic; font-weight: 800; }
-body:not([data-tab="fcb"]) .list-title { font-family: var(--display); font-size: 14px; font-style: italic; font-weight: 800; color: #ff5fa2; }
-body:not([data-tab="fcb"]) .gps-row { border-color: rgba(255, 61, 139, 0.45); background: linear-gradient(90deg, rgba(255, 61, 139, 0.18), rgba(177, 77, 255, 0.1)); }
-body:not([data-tab="fcb"]) .gps-row svg { stroke: #ff5fa2; }
-body:not([data-tab="fcb"]) .gps-row b { font-family: var(--display); font-size: 18px; font-style: italic; font-weight: 800; text-transform: uppercase; }
+.sheet { background: linear-gradient(180deg, #160530, #0a0418 55%); }
+.sheet-head input { border-color: rgba(255, 61, 139, 0.45); }
+.list { border-color: rgba(255, 61, 139, 0.25); }
+.list li { background: rgba(30, 10, 52, 0.9); }
+.list .name { font-family: var(--display); font-size: 20px; font-style: italic; font-weight: 800; }
+.list-title { font-family: var(--display); font-size: 14px; font-style: italic; font-weight: 800; color: #ff5fa2; }
+.gps-row { border-color: rgba(255, 61, 139, 0.45); background: linear-gradient(90deg, rgba(255, 61, 139, 0.18), rgba(177, 77, 255, 0.1)); }
+.gps-row svg { stroke: #ff5fa2; }
+.gps-row b { font-family: var(--display); font-size: 18px; font-style: italic; font-weight: 800; text-transform: uppercase; }
 
 @media (prefers-reduced-motion: reduce) {
   .bg-scene * { animation: none !important; }
@@ -1510,7 +1494,7 @@ body:not([data-tab="fcb"]) .gps-row b { font-family: var(--display); font-size: 
 .warn-banner .stars { flex: none; font-size: 14px; letter-spacing: 1px; }
 
 /* ---------- Meldungen im Stil der Spiel-Benachrichtigungen ---------- */
-body:not([data-tab="fcb"]) .status {
+.status {
   position: relative;
   padding: 10px 14px 10px 18px;
   border: 0;
@@ -1592,3 +1576,279 @@ body:not([data-tab="fcb"]) .status {
 }
 /* Im Hochformat würde vom Auto nur ein Rad hinter dem Titel hervorschauen */
 .intro-art .ga-car { display: none; }
+
+/* =====================================================================
+   GTA-6-LAYOUT
+   Rahmen (ganze App): Kopf wie das HUD im Spiel, Reiterleiste wie im Pausenmenü.
+   Inhalte (ausser FCB): Missionskarte, Statistik-Balken, Handy-Nachricht,
+   Kartenbildschirm, Briefing, Fahndung, Schnellreise.
+   ===================================================================== */
+
+/* ---------- HUD-Kopf ---------- */
+.topbar { flex-direction: column; align-items: stretch; gap: 8px; padding-bottom: 0; }
+.hud-row { display: flex; align-items: center; gap: 8px; }
+.hud-row .loc-name { font-size: 22px; }
+.hud { flex: none; display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
+.hud-temp {
+  padding-right: 3px;
+  font-family: var(--display);
+  font-size: 27px;
+  font-style: italic;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: -1.5px -1.5px 0 #12042a, 1.5px -1.5px 0 #12042a, -1.5px 1.5px 0 #12042a, 1.5px 1.5px 0 #12042a, 0 0 14px rgba(255, 61, 139, 0.7);
+}
+.hud-stars { margin-top: 4px; font-size: 13px; letter-spacing: 1px; }
+.hud-btns { flex: none; display: flex; gap: 4px; }
+.hud-btns .icon-btn { width: 31px; height: 31px; border-radius: 9px; }
+.hud-btns .icon-btn svg { width: 17px; height: 17px; }
+
+/* ---------- Reiterleiste wie im Pausenmenü ---------- */
+.topbar .tabbar {
+  position: static;
+  z-index: auto;
+  display: flex;
+  gap: 4px;
+  height: auto;
+  margin: 0;
+  padding: 0 0 9px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.topbar .tabbar::-webkit-scrollbar { display: none; }
+.topbar .tabbar button {
+  flex: 1 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 10px;
+  font-family: var(--display);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #d6c4ef;
+  background: rgba(255, 255, 255, 0.07);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  transition: background 0.2s, color 0.2s;
+}
+.topbar .tabbar button svg { display: none; }
+.topbar .tabbar button::before { display: none; }
+.topbar .tabbar button.on { color: #fff; background: linear-gradient(90deg, #ff3d8b, #b14dff); }
+/* Der FCB-Reiter leuchtet in den Vereinsfarben */
+.topbar .tabbar button.tab-fcb.on { background: linear-gradient(90deg, #e30613, #0a2d7a); }
+.topbar .badge { position: static; min-width: 17px; height: 17px; margin-left: 2px; line-height: 17px; font-style: normal; background: #ff3d8b; box-shadow: 0 0 10px #ff3d8b; }
+main { padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
+
+/* ---------- Ortssuche als Schnellreise ---------- */
+.sheet::before {
+  content: "SCHNELLREISE";
+  display: block;
+  margin: 2px 0 12px;
+  font-family: var(--display);
+  font-size: 34px;
+  font-style: italic;
+  font-weight: 800;
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sheet .link-btn { font-family: var(--display); font-style: italic; font-weight: 800; color: #ff5fa2; }
+.list li { position: relative; padding-right: 34px; }
+.list li:not(.empty)::after { content: "›"; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 24px; color: #ff5fa2; }
+.list li:has(.remove)::after { display: none; }
+
+/* ---------- Wetter: Missionskarte ---------- */
+body:not([data-tab="fcb"]) .hero { padding: 14px 8px 6px; }
+body:not([data-tab="fcb"]) .hero-main { flex-direction: column; gap: 2px; text-align: center; }
+body:not([data-tab="fcb"]) .hero-icon .wi { width: 104px; height: 104px; }
+body:not([data-tab="fcb"]) .temp { font-size: 104px; line-height: 0.9; }
+body:not([data-tab="fcb"]) .condition {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 16px;
+  font-size: 22px;
+  background: linear-gradient(90deg, transparent, rgba(255, 61, 139, 0.35) 20%, rgba(177, 77, 255, 0.35) 80%, transparent);
+}
+body:not([data-tab="fcb"]) .summary { margin: 8px auto 0; max-width: 30em; font-size: 14px; text-shadow: 0 1px 2px #12042a, 0 0 10px #12042a; }
+body:not([data-tab="fcb"]) .hero-stats { display: none; }
+
+/* ---------- Statistiken mit Segmentbalken ---------- */
+.gstats-list { display: grid; gap: 7px; }
+.gstat { display: grid; grid-template-columns: 74px 1fr 66px; align-items: center; gap: 10px; }
+.gl { font-family: var(--display); font-size: 14px; font-style: italic; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #ffd6ea; }
+.gbar { display: flex; gap: 3px; }
+.gbar i { flex: 1; height: 11px; background: rgba(255, 255, 255, 0.1); transform: skewX(-20deg); }
+.gbar i.on { background: linear-gradient(180deg, #ffb347, #ff3d8b); box-shadow: 0 0 6px rgba(255, 61, 139, 0.55); }
+.gv { font-family: var(--display); font-size: 15px; font-style: italic; font-weight: 800; text-align: right; white-space: nowrap; }
+
+/* ---------- Vers des Tages als Handy-Nachricht ---------- */
+.msg-avatar { display: none; }
+body:not([data-tab="fcb"]) .verse .panel-head { justify-content: flex-start; flex-wrap: nowrap; gap: 10px; }
+body:not([data-tab="fcb"]) .verse .tag-r { margin-left: auto; }
+body:not([data-tab="fcb"]) .msg-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff3d8b, #b14dff);
+  box-shadow: 0 0 14px -2px rgba(255, 61, 139, 0.8);
+}
+body:not([data-tab="fcb"]) .msg-avatar .wi { width: 24px; height: 24px; }
+body:not([data-tab="fcb"]) .verse-text {
+  margin: 0 0 10px 48px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px 18px 18px 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+body:not([data-tab="fcb"]) .verse-more { display: inline-block; margin-left: 48px; }
+
+/* ---------- Stundenleiste und 7 Tage ---------- */
+body:not([data-tab="fcb"]) .hour {
+  border: 0;
+  background: rgba(255, 255, 255, 0.07);
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+body:not([data-tab="fcb"]) .hour.now { background: linear-gradient(180deg, rgba(255, 61, 139, 0.5), rgba(177, 77, 255, 0.25)); box-shadow: none; }
+body:not([data-tab="fcb"]) .day-row { grid-template-columns: 70px 30px 38px 1fr; }
+body:not([data-tab="fcb"]) .day .n::before { content: "▸ "; color: #ff3d8b; }
+body:not([data-tab="fcb"]) .day:first-child .day-row { background: linear-gradient(90deg, rgba(255, 61, 139, 0.18), transparent 70%); }
+
+/* ---------- Knöpfe schräg wie im Spielmenü ---------- */
+body:not([data-tab="fcb"]) .btn { border: 0; border-radius: 0; background: rgba(255, 255, 255, 0.08); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+body:not([data-tab="fcb"]) .btn.accent { background: linear-gradient(90deg, #ff3d8b, #b14dff); box-shadow: none; }
+body:not([data-tab="fcb"]) .seg { border: 0; border-radius: 0; background: none; gap: 4px; padding: 0; }
+body:not([data-tab="fcb"]) .seg button { border-radius: 0; background: rgba(255, 255, 255, 0.08); clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
+body:not([data-tab="fcb"]) .seg button.on { box-shadow: none; }
+
+/* ---------- Radar als Kartenbildschirm ---------- */
+.map-legend { display: none; }
+body:not([data-tab="fcb"]) .radar-panel {
+  --map-h: max(360px, calc(100dvh - 190px - env(safe-area-inset-top)));
+  width: calc(100% + 32px);
+  margin: 0 -16px 8px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+body:not([data-tab="fcb"]) .radar-panel::before, body:not([data-tab="fcb"]) .radar-panel::after { display: none; }
+body:not([data-tab="fcb"]) .radar-panel .panel-head {
+  position: absolute;
+  z-index: 500;
+  top: 10px;
+  left: 12px;
+  right: 64px;
+  margin: 0;
+  padding: 6px 10px;
+  background: rgba(10, 3, 22, 0.82);
+  pointer-events: none;
+}
+body:not([data-tab="fcb"]) .radar-panel .tag-r { font-size: 13px; color: #fff; }
+body:not([data-tab="fcb"]) .map { height: var(--map-h); margin: 0; border: 0; }
+body:not([data-tab="fcb"]) .map-legend {
+  position: absolute;
+  z-index: 500;
+  top: 52px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  background: rgba(10, 3, 22, 0.82);
+  font-family: var(--display);
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 700;
+  pointer-events: none;
+}
+.map-legend b { font-weight: 800; letter-spacing: 0.08em; color: #ff5fa2; }
+.map-legend span { display: flex; align-items: center; gap: 7px; }
+.lg-me svg { display: block; width: 14px; height: 14px; fill: #fff; stroke: #ff3d8b; stroke-width: 2; }
+.lg-rain { display: inline-block; width: 44px; height: 8px; background: linear-gradient(90deg, #9be7ff, #3d8bff, #ffd34d, #ff3d6e); }
+body:not([data-tab="fcb"]) .radar-ctl {
+  position: absolute;
+  z-index: 500;
+  top: calc(var(--map-h) - 62px);
+  left: 12px;
+  right: 12px;
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(10, 3, 22, 0.85);
+}
+body:not([data-tab="fcb"]) #radar-msg { padding: 0 16px; }
+
+/* ---------- Psalm als Briefing ---------- */
+body:not([data-tab="fcb"]) #view-psalm { display: flex; flex-direction: column; }
+body:not([data-tab="fcb"]) #view-psalm .actions { order: -1; gap: 6px; margin-bottom: 8px; }
+body:not([data-tab="fcb"]) #view-psalm .actions .btn { padding: 9px 6px; font-size: 15px; }
+body:not([data-tab="fcb"]) .psalm-text p {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  margin: 0;
+  padding: 9px 0;
+  border-top: 1px solid rgba(255, 61, 139, 0.14);
+}
+body:not([data-tab="fcb"]) .psalm-text p:first-child { border-top: 0; }
+body:not([data-tab="fcb"]) .psalm-text sup { margin: 0; padding-top: 0.25em; text-align: right; vertical-align: baseline; font-size: 14px; line-height: 1; }
+
+/* ---------- Warnungen als Fahndung ---------- */
+.wanted { display: none; }
+body:not([data-tab="fcb"]) .wanted { display: block; padding: 10px 0 16px; text-align: center; }
+.wanted-stars { font-size: 42px; letter-spacing: 6px; }
+.wanted.on .wanted-stars { animation: wantedblink 1.4s steps(1) infinite; }
+@keyframes wantedblink { 50% { opacity: 0.45; } }
+.wanted-label {
+  margin-top: 6px;
+  font-family: var(--display);
+  font-size: 28px;
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(255, 61, 139, 0.6);
+}
+.wanted-sub { font-family: var(--display); font-size: 13px; font-style: italic; font-weight: 700; letter-spacing: 0.08em; color: #ff8fc8; text-transform: uppercase; }
+body:not([data-tab="fcb"]) .warn-list li {
+  margin-bottom: 8px;
+  padding: 12px;
+  border-top: 0;
+  border-left: 3px solid #ffb347;
+  background: rgba(255, 255, 255, 0.05);
+}
+body:not([data-tab="fcb"]) .warn-list li:last-child { margin-bottom: 0; }
+body:not([data-tab="fcb"]) .steps { counter-reset: ziel; padding-left: 0; list-style: none; }
+body:not([data-tab="fcb"]) .steps li { position: relative; padding-left: 34px; margin-bottom: 8px; }
+body:not([data-tab="fcb"]) .steps li::before {
+  counter-increment: ziel;
+  content: counter(ziel);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 22px;
+  font-family: var(--display);
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(90deg, #ff3d8b, #b14dff);
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wanted.on .wanted-stars { animation: none; }
+}

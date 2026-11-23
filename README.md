@@ -2,10 +2,12 @@
 
 Eine Wetter-App für das iPhone mit einem Psalm für jeden Tag.
 
-Design im Stil von GTA 6: Abendhimmel mit Retro-Sonne, Skyline, Palmen und Neon-Gitterboden,
-violette Glasflächen mit Neonkanten und kräftige kursive Schrift; die Leuchtfarben passen sich
-der Wetterlage an. Eigene Gestaltung ohne Logos oder Schriften aus dem Spiel. Der FCB-Bereich
-behält sein rot-blaues Design.
+Design und Layout im Stil von GTA 6: Kopf wie ein HUD (Ort, Temperatur, Fahndungssterne als
+Unwetterstufe) mit Reitern wie im Pausenmenü, Abendhimmel mit Retro-Sonne, Skyline, Palmen und
+Neon-Gitterboden, violette Glasflächen mit Neonkanten, Neon-Wettersymbole und kräftige kursive
+Schrift; Statistiken mit Segmentbalken, Vers als Handy-Nachricht, Radar als Kartenbildschirm,
+Psalm als Briefing, Warnungen als Fahndung, Ladebildschirm beim Start. Eigene Gestaltung ohne
+Logos oder Schriften aus dem Spiel. Der FCB-Bereich behält seinen Inhalt in Rot-Blau.
 Im Hintergrund läuft eine Animation des aktuellen Wetters (Regen, Schnee, Gewitter
 mit Blitzen, ziehende Wolken, Nebel, Sonnenstrahlen, Sterne und Windlinien), deren
 Stärke sich nach Niederschlag, Wind und Bewölkung richtet. Bei aktivierter Einstellung
