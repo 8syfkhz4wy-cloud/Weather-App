@@ -134,7 +134,8 @@ def send(topics, title, message, tags, priority=4):
 
 
 def main(places_file, test=False):
-    topics = [p["topic"] for p in json.load(open(places_file))["orte"] if p.get("topic")]
+    with open(places_file, encoding="utf-8") as f:
+        topics = [p["topic"] for p in json.load(f)["orte"] if p.get("topic")]
     fx, score, goals, reds = state()
     print("Partie:", fx and f"{fx['home']} - {fx['away']}", "| Anpfiff:", fx and fx["kickoff"], "| Stand:", score,
           "| Tore:", goals, "| Platzverweise:", reds)
@@ -149,7 +150,9 @@ def main(places_file, test=False):
         time.sleep(max(0, wait.total_seconds() - 300))
         end = kickoff + MATCH
         score = (0, 0)  # Anpfiff: ab jetzt zählt jede Änderung
+        played = False   # erst wenn ein Spielstand auf der Seite stand, gibt es einen Schlusspfiff
     else:
+        played = True
         # Spiel läuft schon (oder ist vorbei): nur weiterverfolgen, wenn die Seite frisch ist
         if now() - stamp(" ".join(page(202))) > timedelta(minutes=20):
             print("Kein laufendes FCB-Spiel.")
@@ -181,12 +184,14 @@ def main(places_file, test=False):
             print(now(), "Stand:", new)
         if new:
             score = new
+            played = True
         if len(reds) > seen_reds:
             r = reds[-1]
             send(topics, "🟥 Platzverweis", f"{r['min']}. Minute: {r['who']} · {names}", ["red_square"])
             print(now(), "Platzverweis:", r)
         seen_reds = max(seen_reds, len(reds))
-    if score and kickoff:
+    # Bei verschobenem oder abgesagtem Spiel (nie ein Spielstand) keine Meldung "0:0"
+    if score and kickoff and played:
         send(topics, "Schlusspfiff", f"{names} {score[0]}:{score[1]}", ["checkered_flag"], 3)
 
 

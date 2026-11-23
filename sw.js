@@ -1,5 +1,5 @@
 // Offline-Unterstützung: App-Dateien und Psalmen werden zwischengespeichert.
-const CACHE = "wetter-psalm-v34";
+const CACHE = "wetter-psalm-v35";
 const ASSETS = [
   "./",
   "index.html",
@@ -39,8 +39,11 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(event.request, { cache: "no-cache" })
       .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(event.request, copy));
+        // Fehlerseiten (z. B. 404) nicht speichern, sonst ersetzen sie offline die letzte gute Version
+        if (res.ok) {
+          const copy = res.clone();
+          event.waitUntil(caches.open(CACHE).then((c) => c.put(event.request, copy)));
+        }
         return res;
       })
       .catch(() => caches.match(event.request, { ignoreSearch: true }).then((hit) => hit || Response.error()))

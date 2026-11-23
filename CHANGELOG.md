@@ -1,5 +1,17 @@
 # Versionen
 
+## v2.1.2
+
+- **Ortssuche:** „Suchen“ auf der Tastatur schliesst die Suche nicht mehr, sondern zeigt die Treffer bzw. wählt den ersten
+- **Ortswechsel:** beim Laden eines neuen Orts steht nicht mehr kurz (oder offline dauerhaft) das Wetter des vorigen Orts da
+- **Schnellerer Start:** beim Folgen des Standorts wird das Wetter nur noch einmal geladen
+- **Aktualisieren-Knopf** bestimmt beim Folgen auch den Standort neu
+- **Radar** öffnet am richtigen Ort und lädt nach einem Fehler beim nächsten Öffnen neu
+- **Psalm des Tages** wechselt auch, wenn die App über Mitternacht offen bleibt
+- **Chat mit Dani:** „hüt“ und „morn“ stimmen jetzt immer
+- **FCB live:** keine Schlusspfiff-Meldung mehr bei verschobenen Spielen
+- Korrekturen: Tageslänge nie mehr „60 min“, Max/Min heute mit der aktuellen Temperatur, zuverlässigerer Offline-Betrieb
+
 ## v2.1.1
 
 - **GTA 6 – Themen zum Antippen:** Heute, Tipps, Cheats, Orte, Autos, Waffen und Geld lassen sich einzeln antippen, mit bis zu fünf Artikeln pro Thema
