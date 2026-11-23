@@ -2061,7 +2061,9 @@ fetch("version.json")
   .then((res) => res.json())
   .then((v) => {
     const date = new Date(v.date).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
-    $("#version").textContent = `${v.version ? `Version ${v.version.replace(/^v/, "")} · ` : ""}Stand ${date} · Neu: ${v.title}`;
+    // Interne Vermerke der Commit-Zeile nicht anzeigen: "[ohne Nachricht]", Nummer des Pull Requests "(#8)"
+    const title = String(v.title || "").replace(/\s*\[ohne Nachricht\]/gi, "").replace(/\s*\(#\d+\)\s*$/, "").trim();
+    $("#version").textContent = `${v.version ? `Version ${v.version.replace(/^v/, "")} · ` : ""}Stand ${date}${title ? ` · Neu: ${title}` : ""}`;
     $("#version").hidden = false;
   })
   .catch(() => {});

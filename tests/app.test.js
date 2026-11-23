@@ -57,7 +57,8 @@ test("Startseite: Wetter, Kacheln, News und GTA-Tipp ohne Fehler", async () => {
   assert.doesNotMatch(sun, /60 min/);
   assert.equal(await page.locator("#news-card").isVisible(), true);
   assert.equal(await page.locator("#gta-card").isVisible(), true);
-  assert.match(await text(page, "#version"), /Version 9\.9\.9/);
+  // Versionszeile ohne interne Vermerke der Commit-Nachricht
+  assert.match(await text(page, "#version"), /^Version 9\.9\.9 · Stand .+ · Neu: Testversion$/);
   assert.match(await text(page, "#verse-ref"), /^PS \d+,\d+$/);
   assert.deepEqual(errors, []);
   await ctx.close();
