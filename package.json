@@ -1,0 +1,11 @@
+{
+  "name": "wetter-psalm",
+  "private": true,
+  "description": "Tests für die Web-App Wetter & Psalm (die App selbst braucht keine Pakete)",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.js && python3 -m unittest discover -s tests -p 'test_*.py'"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

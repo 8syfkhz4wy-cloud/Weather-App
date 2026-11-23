@@ -117,3 +117,5 @@ const FcbLive = (() => {
 
   return { page, parseFixture, parseTelegram, parseTable, isLive, teamName, DAY_NAMES };
 })();
+
+if (typeof module !== "undefined") module.exports = FcbLive;

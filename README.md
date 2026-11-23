@@ -118,6 +118,29 @@ python3 -m http.server 8000
 # dann http://localhost:8000 im Browser öffnen
 ```
 
+## Tests
+
+Bei jedem Pull Request und vor jeder Veröffentlichung prüft der Ablauf
+`.github/workflows/tests.yml` die App automatisch. Schlägt ein Test fehl, bleibt die
+bisherige Version online. Geprüft werden:
+
+- **Browser** (`tests/app.test.js`): die App auf iPhone SE, iPhone 13, iPhone Pro Max, iPad
+  und Desktop – Wetter, Kacheln, Diagramm, Ortssuche, Psalm, FCB-Ticker, Chat, Radar,
+  Offline-Start und dass sich keine Seite seitlich verschieben lässt
+- **Logik** (`tests/logik.test.js`): Teletext-Auswertung und Chat mit Dani
+- **Daten** (`tests/daten.test.js`): Psalmen, Manifest, Offline-Liste, Veröffentlichung
+- **Push-Skripte** (`tests/test_skripte.py`): Wetterwarnungen (gleiche Schwellen wie in der
+  App), FCB-Live-Meldungen und Update-Nachrichten
+
+Alle Wetter-, Teletext- und Newsdaten sind in den Tests nachgebaut, sie brauchen kein Internet.
+Lokal ausführen:
+
+```sh
+npm ci
+npx playwright install chromium
+npm test
+```
+
 ## Datenquellen
 
 - Wetter, Luftqualität, Pollen: [Open-Meteo](https://open-meteo.com/) (kostenlos, ohne API-Schlüssel, CC BY 4.0)
