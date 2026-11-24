@@ -188,6 +188,13 @@ class DaniKommentar(unittest.TestCase):
         fcz = self.f.expert_comment([{"title": "FCB empfängt den FC Zürich"}], date(2026, 11, 2), [], [])["lines"]
         self.assertTrue(any(l.startswith("🙄 Apropos Züri:") for l in fcz))
 
+    def test_letztes_resultat(self):
+        from datetime import date
+        ticker = [{"title": "Basel verliert Krisenduell gegen Luzern", "source": "watson",
+                   "published": "2026-11-22T18:31:19+00:00", "score": ""}]
+        lines = self.f.expert_comment(self.news, date(2026, 11, 24), [], [], ticker)["lines"]
+        self.assertTrue(lines[1].startswith("⚽ Letschts Resultat (watson, So 22.11.): «Basel verliert Krisenduell gegen Luzern» – "))
+
     def test_chat_mit_quelle_und_datum(self):
         from datetime import date
         topics = self.f.chat_topics([{"title": "Lugano - FCB: Schmid trifft", "source": "Blick",

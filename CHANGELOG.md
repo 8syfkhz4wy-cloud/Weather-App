@@ -1,5 +1,10 @@
 # Versionen
 
+## v3.4.0
+
+- **Dani zur Lage in der Kurve:** oben im Kurven-Bereich sagt Dani jetzt, wie es steht – live während des Spiels, sonst zum letzten Resultat, zum nächsten Spiel und zur Tabelle, immer aus den aktuellen Daten
+- **Letztes Resultat im Kommentar:** Dani kommentiert den neuesten Spielbericht mit Quelle und Datum
+
 ## v3.3.1
 
 - **Dani genauer:** Kurven-Meldungen nur, solange sie aktuell sind, und mit der passenden Reaktion (Heimspiel bleibt Heimspiel), eigene Sprüche zur FCB-Krise, kein Satz doppelt im selben Kommentar, Schlagzeilen ohne doppelte Anführungszeichen
