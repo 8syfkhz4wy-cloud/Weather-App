@@ -334,6 +334,10 @@ test("GTA-Layout: HUD-Kopf mit Reitern, Statistiken, Fahndung, Briefing", async 
   assert.equal(await page.locator("#hud-stars").getAttribute("data-n"), "5");
   const top = await page.evaluate(() => document.querySelector(".tabbar").getBoundingClientRect().top);
   assert.ok(top < 150, `Reiterleiste oben (${top})`);
+  // Startseite nach Wichtigkeit: jetzt, Warnung, Regen gleich, Verlauf, 7 Tage, Vers, GTA, Fussball, Details
+  const ids = ["warn-banner", "nowcast", "chart", "daily", "verse-card", "gta-card", "news-card", "gstats", "tiles"];
+  const tops = await page.evaluate((list) => list.map((id) => document.getElementById(id).getBoundingClientRect().top), ids);
+  assert.deepEqual([...tops].sort((x, y) => x - y), tops, "Reihenfolge der Startseite");
   // Statistiken mit Segmentbalken
   assert.equal(await page.locator("#gstats .gstat").count(), 10);
   assert.equal(await page.locator("#gstats .gstat").first().locator(".gbar i").count(), 10);
