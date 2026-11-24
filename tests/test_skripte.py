@@ -220,6 +220,13 @@ class UpdateNachricht(unittest.TestCase):
             u.main(ORTE, "Neue Funktion\n\nDetails\nInfo: Das ist neu.\n")
         self.assertEqual(bodies[0]["title"], "✨ Update: Neue Funktion")
         self.assertTrue(bodies[0]["message"].startswith("Das ist neu."))
+        # Release im GTA-Stil: Titel unverändert, Highlights als Liste, höhere Priorität
+        bodies.clear()
+        with mock.patch.object(u.urllib.request, "urlopen", urlopen), mock.patch("builtins.print"):
+            u.main(ORTE, "★★★★★ MISSION ERFÜLLT – Version 3.3.1\nInfo: Neue Ware im Laden:\n▶ Dani genauer\nRESPEKT +100", True)
+        self.assertEqual(bodies[0]["title"], "★★★★★ MISSION ERFÜLLT – Version 3.3.1")
+        self.assertTrue(bodies[0]["message"].startswith("Neue Ware im Laden:\n▶ Dani genauer\nRESPEKT +100"))
+        self.assertEqual((bodies[0]["tags"], bodies[0]["priority"]), (["star", "palm_tree"], 4))
 
 
 if __name__ == "__main__":
