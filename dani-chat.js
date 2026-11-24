@@ -92,6 +92,30 @@ const DaniChat = (() => {
     return [`${us}:${them} gege ${opponent(fx)}.${extra} E Pünktli isch wie Bier ohni Schuum, aber besser als nyt.`];
   }
 
+  // Lage für den Kurven-Bereich: Spielstand oder letztes Resultat, nächstes Spiel, Tabelle –
+  // immer aus den aktuellen Daten der App (Teletext, Spielberichte), nie erfunden
+  function lage(ctx = {}) {
+    const d = ctx.live;
+    const out = [];
+    if (d && d.fx && d.score) {
+      out.push(`${d.live ? "🔴 LIVE" : "📺 Resultat"}: ${score(ctx)[0]}`);
+    } else {
+      const r = ((ctx.fcb && ctx.fcb.ticker) || [])[0];
+      if (r) {
+        const t = r.title.toLowerCase();
+        const mood = /verlier|verloren|niederlage|pleite|blamage|kassiert/.test(t) ? "Schissdräck, das tuet weh – aber mir stöhn hinter dene Jungs!"
+          : /sieg|gewinnt|gewonnen|siegt|schlägt|dreier|triumph/.test(t) ? "HUERE GEIL – so wämmer s!"
+          : /remis|unentschieden|punkt|torlos/.test(t) ? "E Pünktli – Bier ohni Schuum, gopfertelli."
+          : "Ych ha s glääse und bi immer no am Verdaue.";
+        out.push(`📺 Letschte Bricht: «${r.title}» (${r.source || "Medie"}${r.score ? `, ${r.score}` : ""}) – ${mood}`);
+      }
+    }
+    const fx = d && !d.live && [d.fx, d.next].find((f) => f && f.kickoff && f.kickoff.getTime() > Date.now());
+    if (fx) out.push(`📅 Nögscht Spiel: ${nextMatch(ctx).join(" ")}`);
+    if (d && (d.table || []).some((r) => r.team === "Basel")) out.push(`📊 Tabälle: ${table(ctx)[0]}`);
+    return out;
+  }
+
   // Wie man im Chat nach einem Team fragt → Name in der Teletext-Tabelle
   const TABLE_TEAMS = [
     [/\bgc\b|grasshopper|hoppers/, "GC"], [/\byb\b|young boys|bern|bärn/, "YB"], [/fcz|zürich|züri|zuerich/, "Zürich"],
@@ -522,7 +546,7 @@ const DaniChat = (() => {
     return [`${hello} – Schal um, Schnuure uf. 🧣`, second];
   }
 
-  return { reply, greeting, CHIPS };
+  return { reply, greeting, lage, CHIPS };
 })();
 
 if (typeof module !== "undefined") module.exports = DaniChat;

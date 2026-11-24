@@ -1714,6 +1714,7 @@ async function liveTick(full = false) {
     liveChanges(d);
     live.data = d;
     renderLive(d);
+    renderKurveLage();
   } catch (err) {
     if (!live.data) $("#match-status").textContent = "Spielstand gerade nicht abrufbar (SRF-Teletext nicht erreichbar).";
   } finally {
@@ -1823,6 +1824,13 @@ function renderFcb(d) {
     $("#kurve-bio").textContent = d.expert.bio;
     $("#kurve-lines").replaceChildren(...d.expert.lines.map((l) => el("p", null, l)));
   }
+  renderKurveLage();
+}
+
+// Dani zur aktuellen Lage (Spielstand, Resultat, nächstes Spiel, Tabelle) – live aus den App-Daten
+function renderKurveLage() {
+  if (typeof DaniChat === "undefined") return;
+  $("#kurve-lage").replaceChildren(...DaniChat.lage(chatCtx()).map((l) => el("p", null, l)));
 }
 
 async function loadFcb() {

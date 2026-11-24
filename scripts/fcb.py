@@ -503,7 +503,7 @@ def facts(item):
     return f" ({', '.join(parts)})" if parts else ""
 
 
-def expert_comment(news, today, kurve=(), rumors=()):
+def expert_comment(news, today, kurve=(), rumors=(), ticker=()):
     rnd = random.Random(today.isoformat())  # gleicher Kommentar den ganzen Tag
     lines = [rnd.choice(INTROS)]
     news = [n for n in news if not VIOLENCE.search(n["title"])]
@@ -514,6 +514,13 @@ def expert_comment(news, today, kurve=(), rumors=()):
         choice = rnd.choice([r for r in pool if r not in used] or pool)
         used.add(choice)
         return choice
+
+    # Letztes Resultat aus den Spielberichten: mit Quelle und Datum, emotional kommentiert
+    for item in [t for t in ticker if not VIOLENCE.search(t["title"])][:1]:
+        mood, pool = next(((m, r) for pattern, m, r in REACTIONS if re.search(pattern, item["title"], re.I)),
+                          ("neutral", GENERIC))
+        lines.append(f"⚽ Letschts Resultat{facts(item)}: {quoted(item['title'])} – {shout(fresh_choice(pool), rnd)}")
+        news = [n for n in news if n["title"] != item["title"]]
 
     for item in news[:2]:
         mood, pool = next(((m, r) for pattern, m, r in REACTIONS if re.search(pattern, item["title"], re.I)),
@@ -614,7 +621,8 @@ def main(out_file):
     print(f"Chat-Themen: {len(data['chat'])}")
     for c in data["chat"]:
         print(f"  - {', '.join(c['words'])}: {c['title']}")
-    data["expert"] = expert_comment(data["news"], datetime.now(timezone.utc).date(), data["kurve"], data["rumors"])
+    data["expert"] = expert_comment(data["news"], datetime.now(timezone.utc).date(), data["kurve"], data["rumors"],
+                                    data.get("ticker", []))
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
 

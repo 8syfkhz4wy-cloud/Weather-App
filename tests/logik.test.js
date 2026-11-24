@@ -188,3 +188,22 @@ test("Chat: Kurve mit Quelle, Datum und Inhalt der aktuellen Ankündigung", () =
   assert.match(first, /«Extrazug Uff Lugano» \(Telegram Muttenzerkurve, Di\.? 24\.11\.\) – Abfahrt Basel SBB 10:12/);
   assert.match(DaniChat.reply("muttenzerkurve", ctx)[0], /^Aktuell us dr Kurve: «Extrazug Uff Lugano»/);
 });
+
+test("Kurve: Dani zur Lage aus Teletext und Spielberichten", () => {
+  const kickoff = new Date(Date.now() + 2 * 86400000);
+  const ctx = {
+    live: { live: false, fx: null, next: { home: "Basel", away: "Lugano", baselHome: true, kickoff }, score: null, events: [],
+      table: [{ rank: 1, team: "Thun", played: 15, goals: "30:12", points: 35 }, { rank: 5, team: "Basel", played: 15, goals: "22:20", points: 22 }] },
+    fcb: { ticker: [{ title: "Basel verliert Krisenduell gegen Luzern", source: "watson", score: "" }] },
+  };
+  const lines = DaniChat.lage(ctx);
+  assert.match(lines[0], /^📺 Letschte Bricht: «Basel verliert Krisenduell gegen Luzern» \(watson\) – Schissdräck/);
+  assert.match(lines[1], /^📅 Nögscht Spiel: Gege .*Lugano.*dehai im Joggeli/);
+  assert.match(lines[2], /^📊 Tabälle: Mir sinn uf Platz 5 mit 22 Pünkt/);
+  // Während des Spiels: Spielstand statt Bericht, kein "nächstes Spiel"
+  const liveCtx = { live: { live: true, fx: { home: "Basel", away: "Lugano", baselHome: true, kickoff: new Date() }, score: [2, 1], events: [], table: [] } };
+  const live = DaniChat.lage(liveCtx);
+  assert.equal(live.length, 1);
+  assert.match(live[0], /^🔴 LIVE: ES LAUFT! Mir füere 2:1/);
+  assert.deepEqual(DaniChat.lage({}), []);
+});
