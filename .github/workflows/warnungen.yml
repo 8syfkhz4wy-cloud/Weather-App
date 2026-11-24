@@ -20,6 +20,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
@@ -30,8 +31,32 @@ jobs:
           key: warnungen-status-${{ github.run_id }}
           restore-keys: warnungen-status-
 
-      - name: Wetter prüfen und Warnungen senden
-        run: python3 scripts/warnungen.py warnungen/orte.json status.json ${{ inputs.test && '--test' || '' }}
+      # Wache: GitHub startet zeitgesteuerte Abläufe oft nur wenige Male am Tag (Lücken bis 12 Std.).
+      # Deshalb läuft dieser Ablauf gut 5 Stunden lang: alle 30 Minuten Warnungen prüfen, ein
+      # bevorstehendes FCB-Spiel rechtzeitig an fcb-live.yml übergeben und alle 2 Stunden die
+      # Fussball-News aktualisieren. Danach startet er seinen Nachfolger (unten).
+      - name: Wache (Warnungen, FCB-Spiele, News)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref_name }}
+          TEST: ${{ inputs.test && '--test' || '' }}
+        run: |
+          if [ -n "$TEST" ]; then python3 scripts/warnungen.py warnungen/orte.json status.json --test; exit; fi
+          end=$((SECONDS + 330 * 60)); round=0
+          while :; do
+            echo "::group::$(TZ=Europe/Zurich date '+%a %H:%M')"
+            python3 scripts/warnungen.py warnungen/orte.json status.json || echo "Warnungen: Fehler, nächster Versuch in 30 Min."
+            if python3 scripts/fcb_live.py warnungen/orte.json --bald; then
+              open=$(gh run list --repo "$REPO" --workflow fcb-live.yml --limit 10 --json status --jq '[.[] | select(.status != "completed")] | length' || echo 0)
+              if [ "$open" = "0" ]; then echo "FCB-Spiel steht an: Live-Ticker starten"; gh workflow run fcb-live.yml --repo "$REPO" --ref "$REF" || true; fi
+            fi
+            if [ $((round % 4)) = 0 ]; then gh workflow run pages.yml --repo "$REPO" --ref "$REF" || true; fi
+            round=$((round + 1))
+            echo "::endgroup::"
+            [ $SECONDS -ge $end ] && break
+            sleep 1800
+          done
 
       - uses: actions/cache/save@v4
         if: always()
@@ -50,13 +75,10 @@ jobs:
           gh api -X PUT "repos/${{ github.repository }}/actions/workflows/pages.yml/enable" || true
           gh api -X PUT "repos/${{ github.repository }}/actions/workflows/fcb-live.yml/enable" || true
 
-      # GitHub startet zeitgesteuerte Abläufe oft nur wenige Male am Tag. Deshalb stossen sich
-      # Warnungen und Veröffentlichung (Fussball-News) gegenseitig an. Nur bei geplanten Läufen,
-      # damit keine Endlosschleife entsteht.
-      - name: Fussball-News mit aktualisieren
-        if: github.event_name == 'schedule'
+      # Nachfolger starten, damit die Wache ohne Lücke weiterläuft. Ein Lauf, der schon
+      # wartet (concurrency), wird dabei ersetzt, so läuft immer nur eine Wache.
+      - name: Nächste Wache starten
+        if: ${{ !inputs.test }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh workflow run pages.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" || true
-          gh workflow run fcb-live.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" || true
+        run: gh workflow run warnungen.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" || true

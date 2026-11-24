@@ -1,5 +1,12 @@
 # Versionen
 
+## v3.2.0
+
+- **Windwarnung ab 50 km/h:** Push-Nachricht schon bei Windböen ab 50 km/h (bisher 60)
+- **Glätte genauer:** Warnung auch, wenn nasse Strassen nach Regen oder Schnee bei Frost überfrieren – Glatteis und Glättegefahr kommen als Push-Nachricht
+- **Push-Nachrichten zuverlässig:** Wetterwarnungen werden jetzt rund um die Uhr alle 30 Minuten geprüft (bisher teils nur zweimal am Tag)
+- **FCB live repariert:** der Ticker startet jetzt sicher vor dem Anpfiff – beim letzten Spiel begann er erst nach dem Schlusspfiff, darum kamen keine Tor-Nachrichten
+
 ## v3.1.1
 
 - **Alles eingeklappt:** auch 7 Tage und der Verlauf 24 Std. lassen sich auf- und zuklappen und starten zugeklappt – der Verlauf zeigt zugeklappt die Temperaturspanne und das Regenrisiko

@@ -9,6 +9,10 @@ Anpfiff und prüft dann bis zum Schlusspfiff alle 30 Sekunden. Meldungen gehen
 
     python3 scripts/fcb_live.py warnungen/orte.json
     python3 scripts/fcb_live.py warnungen/orte.json --test   # nur lesen und anzeigen
+    python3 scripts/fcb_live.py warnungen/orte.json --bald   # Exit 0, wenn bald ein Spiel beginnt
+
+GitHub startet zeitgesteuerte Abläufe oft Stunden zu spät. Deshalb prüft die Wache in
+.github/workflows/warnungen.yml alle 30 Minuten mit --bald und startet diesen Ablauf rechtzeitig.
 """
 import json
 import re
@@ -133,6 +137,15 @@ def send(topics, title, message, tags, priority=4):
             print(f"Senden fehlgeschlagen ({topic[:8]}…): {err}")
 
 
+def soon():
+    """Steht ein FCB-Spiel in den nächsten Stunden an (oder hat es gerade begonnen)?"""
+    fx = fixture(page(202))
+    if not fx or not fx["kickoff"]:
+        return False
+    wait = fx["kickoff"] - now()
+    return -timedelta(minutes=30) < wait <= LOOKAHEAD
+
+
 def main(places_file, test=False):
     with open(places_file, encoding="utf-8") as f:
         topics = [p["topic"] for p in json.load(f)["orte"] if p.get("topic")]
@@ -196,4 +209,10 @@ def main(places_file, test=False):
 
 
 if __name__ == "__main__":
+    if "--bald" in sys.argv:
+        try:
+            sys.exit(0 if soon() else 1)
+        except OSError as err:
+            print("Teletext nicht erreichbar:", err)
+            sys.exit(1)
     main(sys.argv[1], "--test" in sys.argv)

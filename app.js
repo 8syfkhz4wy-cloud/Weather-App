@@ -583,9 +583,9 @@ function computeWarnings(w) {
   }
 
   const gust = Math.max(...idx.map((i) => h.wind_gusts_10m[i] || 0));
-  if (gust >= 60) {
-    const label = gust >= 120 ? "Orkanböen" : gust >= 105 ? "Orkanartige Böen" : gust >= 90 ? "Schwere Sturmböen" : gust >= 75 ? "Sturmböen" : "Starke Windböen";
-    add("wi-wind", label, gust >= 90, first((i) => (h.wind_gusts_10m[i] || 0) >= 60), `Böen bis ${round(gust)} km/h.`);
+  if (gust >= 50) {
+    const label = gust >= 120 ? "Orkanböen" : gust >= 105 ? "Orkanartige Böen" : gust >= 90 ? "Schwere Sturmböen" : gust >= 75 ? "Sturmböen" : gust >= 60 ? "Starke Windböen" : "Windböen";
+    add("wi-wind", label, gust >= 90, first((i) => (h.wind_gusts_10m[i] || 0) >= 50), `Böen bis ${round(gust)} km/h.`);
   }
 
   const tmax = Math.max(...idx.map((i) => h.temperature_2m[i]));
@@ -606,12 +606,14 @@ function computeWarnings(w) {
       first((i) => (h.snowfall[i] || 0) > 0), `Etwa ${round(snow)} cm Neuschnee in 24 Stunden.`);
   }
 
+  const wet = (i) => (h.rain[i] || 0) + (h.showers[i] || 0) + (h.snowfall[i] || 0) > 0;
   const freezing = first((i) => [56, 57, 66, 67].includes(h.weather_code[i]));
   if (freezing) {
     add("wi-ice", "Glatteis", true, freezing, "Gefrierender Regen – Straßen können spiegelglatt werden.");
   } else {
     add("wi-ice", "Glättegefahr", false,
-      first((i) => h.temperature_2m[i] <= 1 && ((h.rain[i] || 0) + (h.showers[i] || 0) + (h.snowfall[i] || 0)) > 0),
+      // Niederschlag um den Gefrierpunkt oder Nässe der letzten 3 Stunden, die bei Frost überfriert
+      first((i) => (h.temperature_2m[i] <= 1 && wet(i)) || (h.temperature_2m[i] <= 0 && [1, 2, 3].some((k) => i - k >= 0 && wet(i - k)))),
       "Nässe oder Schnee um den Gefrierpunkt – Vorsicht auf Wegen.");
   }
   return out;
