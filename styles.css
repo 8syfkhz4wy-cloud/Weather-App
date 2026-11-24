@@ -1870,3 +1870,33 @@ body:not([data-tab="fcb"]) .radar-panel .tag-r { white-space: nowrap; }
   .warn-banner .stars { display: none; }
   body:not([data-tab="fcb"]) .warn-banner { font-size: 15px; }
 }
+
+/* ---------- Wettergruppen zum Aufklappen (unter dem Hauptwetter) ---------- */
+.wxgroups { display: grid; gap: 8px; margin-bottom: 12px; }
+.wxg.panel { margin: 0; padding: 0; }
+.wxg summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 14px;
+  list-style: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wxg summary::-webkit-details-marker { display: none; }
+.wxg summary::after { content: "›"; flex: none; font-size: 26px; line-height: 1; color: #ff5fa2; transition: transform 0.2s; }
+.wxg[open] summary::after { transform: rotate(90deg); }
+.wxg-ico .wi { width: 30px; height: 30px; }
+.wxg-t { flex: 1; min-width: 0; font-family: var(--display); font-size: 18px; font-style: italic; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.wxg-v { flex: none; font-family: var(--display); font-size: 15px; font-style: italic; font-weight: 700; color: #ffd6ea; white-space: nowrap; }
+.wxg > :not(summary) { margin: 0 14px; }
+.wxg > :last-child { margin-bottom: 14px; }
+.wxg .tiles { margin-top: 2px; }
+.wxg .tiles .panel { background: rgba(255, 255, 255, 0.04); box-shadow: none; }
+.wxg-hint { margin-top: -4px; font-size: 12px; color: var(--muted); }
+.wxg[open] summary { border-bottom: 1px solid rgba(255, 61, 139, 0.18); margin-bottom: 10px; }
+@media (max-width: 380px) {
+  .wxg-t { font-size: 16px; }
+  .wxg-v { font-size: 13px; }
+}
