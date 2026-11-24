@@ -1,5 +1,11 @@
 # Versionen
 
+## v3.0.1
+
+- **Startseite neu geordnet:** zuerst das Wetter jetzt, dann Warnung, Regen in den nächsten 2 Stunden, 24-Stunden-Verlauf und 7 Tage – danach Vers des Tages, GTA-Tipp, Fussball und ganz unten Statistiken und Details
+- Kompaktere Wetteranzeige oben, damit die Warnung gleich auf dem ersten Bildschirm steht
+- Bleibt es trocken, zeigt die Kurzfristvorhersage nur den Satz statt leerer Balken
+
 ## v3.0.0
 
 - **Layout wie im Spiel:** Kopf wie ein HUD mit Temperatur und Fahndungssternen, Reiter oben wie im Pausenmenü, Statistiken mit Segmentbalken, Vers des Tages als Handy-Nachricht, Radar als Kartenbildschirm mit Legende, Psalm als Briefing, Warnungen als Fahndung mit grossen Sternen und Missionszielen, Ortssuche als Schnellreise – der FCB-Bereich behält seinen Inhalt in Rot-Blau

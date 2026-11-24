@@ -830,6 +830,8 @@ function renderNowcast(w) {
   } else text = `${kind} ab etwa ${slots[firstWet].t} Uhr erwartet.`;
 
   $("#nowcast-text").replaceChildren(html("span", "nc-ico", wiSvg(ico)), document.createTextNode(text));
+  // Bleibt es trocken, reicht der Satz – keine leeren Balken
+  $("#nowcast").hidden = firstWet < 0;
   $("#nowcast-sum").textContent = `Σ ${sum.toFixed(1)} mm`;
   $("#nowcast").replaceChildren(
     ...slots.map((s, k) => {
