@@ -43,9 +43,12 @@ jobs:
           branch=$(gh api "repos/${{ github.repository }}" --jq .default_branch)
           gh workflow run pages.yml --repo "${{ github.repository }}" --ref "$branch"
 
+      # Push im GTA-Stil: neue Version als erfüllte Mission mit den Highlights aus CHANGELOG.md
       - name: Push-Nachricht senden
         run: |
           version="${TAG#v}"
-          python3 scripts/update_nachricht.py warnungen/orte.json "Version ${version} ist da 🎉
-
-          Info: Die neue Version ${version} von Wetter & Psalm ist veröffentlicht. Ganz unten auf der Wetter-Seite siehst du die Versionsnummer."
+          highlights=$(grep -o '\*\*[^*]*\*\*' notes.md | tr -d '*' | sed 's/:$//; s/^/▶ /' | head -4)
+          python3 scripts/update_nachricht.py warnungen/orte.json "★★★★★ MISSION ERFÜLLT – Version ${version}
+          Info: Neue Ware im Laden, Homie! Wetter & Psalm ${version} ist freigeschaltet:
+          ${highlights}
+          RESPEKT +100" --gta
