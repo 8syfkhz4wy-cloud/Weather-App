@@ -1,5 +1,9 @@
 # Versionen
 
+## v3.1.1
+
+- **Alles eingeklappt:** auch 7 Tage und der Verlauf 24 Std. lassen sich auf- und zuklappen und starten zugeklappt – der Verlauf zeigt zugeklappt die Temperaturspanne und das Regenrisiko
+
 ## v3.1.0
 
 - **Wetterwerte zum Aufklappen:** direkt unter dem Hauptwetter die Gruppen 7 Tage, Statistiken, Wind & Druck, Feuchte & Sicht, Sonne & Mond sowie Luft & Pollen – jede zeigt schon zugeklappt den wichtigsten Wert, die App merkt sich, was offen ist

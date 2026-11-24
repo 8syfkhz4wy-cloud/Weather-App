@@ -71,6 +71,8 @@ test("Startseite: Wetter, Kacheln, News und GTA-Tipp ohne Fehler", async () => {
 
 test("Diagramm, 7-Tage-Details und GTA-Themen reagieren auf Tippen", async () => {
   const { ctx, page, errors } = await openApp();
+  await page.click('.wxg[data-k="verlauf"] summary');
+  await page.click('.wxg[data-k="tage"] summary');
   for (const m of ["rain", "wind", "temp"]) {
     await page.click(`#chart-seg [data-m=${m}]`);
     assert.ok(await page.locator("#chart svg polyline, #chart svg rect").count() > 0, m);
@@ -335,7 +337,7 @@ test("GTA-Layout: HUD-Kopf mit Reitern, Statistiken, Fahndung, Briefing", async 
   const top = await page.evaluate(() => document.querySelector(".tabbar").getBoundingClientRect().top);
   assert.ok(top < 150, `Reiterleiste oben (${top})`);
   // Startseite nach Wichtigkeit: jetzt, Warnung, Regen gleich, Verlauf, 7 Tage, Vers, GTA, Fussball, Details
-  const ids = ["warn-banner", "tiles", "nowcast", "chart", "verse-card", "gta-card", "news-card"];
+  const ids = ["warn-banner", "tiles", "nowcast", "verlauf", "verse-card", "gta-card", "news-card"];
   const tops = await page.evaluate((list) => list.map((id) => document.getElementById(id).getBoundingClientRect().top), ids);
   assert.deepEqual([...tops].sort((x, y) => x - y), tops, "Reihenfolge der Startseite");
   // Statistiken mit Segmentbalken
@@ -361,7 +363,12 @@ test("GTA-Layout: HUD-Kopf mit Reitern, Statistiken, Fahndung, Briefing", async 
 test("Wettergruppen unter dem Hauptwetter: aufklappen, Vorschau, Zustand gemerkt", async () => {
   const { ctx, page, errors } = await openApp();
   const groups = await page.$$eval(".wxg", (g) => g.map((x) => [x.dataset.k, x.open]));
-  assert.deepEqual(groups, [["tage", true], ["stats", false], ["wind", false], ["feuchte", false], ["sonne", false], ["luft", false]]);
+  assert.deepEqual(groups, [["tage", false], ["stats", false], ["wind", false], ["feuchte", false], ["sonne", false], ["luft", false], ["verlauf", false]]);
+  assert.match(await text(page, "#sum-tage"), /^-?\d+° bis -?\d+°$/);
+  assert.match(await text(page, "#sum-verlauf"), /^-?\d+° bis -?\d+°/);
+  // Verlauf aufgeklappt: Diagramm in voller Breite
+  await page.click('.wxg[data-k="verlauf"] summary');
+  await page.waitForFunction(() => document.querySelector("#chart svg").viewBox.baseVal.width === document.querySelector("#chart").clientWidth);
   assert.match(await text(page, "#sum-wind"), /km\/h · \d+ hPa/);
   assert.match(await text(page, "#sum-luft"), /^AQI \d+/);
   // direkt unter dem Hauptwetter (und der Warnung)
@@ -371,7 +378,7 @@ test("Wettergruppen unter dem Hauptwetter: aufklappen, Vorschau, Zustand gemerkt
   await page.click('.wxg[data-k="wind"] summary');
   assert.equal(await page.locator("#grp-wind .panel").first().isVisible(), true);
   // das toggle-Ereignis kommt asynchron: warten, bis der Zustand gespeichert ist
-  await page.waitForFunction(() => (JSON.parse(localStorage.getItem("wxOpen") || "{}").wind) === true);
+  await page.waitForFunction(() => (JSON.parse(localStorage.getItem("wxOpen2") || "{}").wind) === true);
   await page.reload();
   await page.waitForFunction(() => document.querySelectorAll("#daily li").length === 7);
   assert.equal(await page.evaluate(() => document.querySelector('.wxg[data-k="wind"]').open), true);

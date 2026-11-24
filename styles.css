@@ -1900,3 +1900,6 @@ body:not([data-tab="fcb"]) .radar-panel .tag-r { white-space: nowrap; }
   .wxg-t { font-size: 16px; }
   .wxg-v { font-size: 13px; }
 }
+/* Verlauf 24 Std als eigene aufklappbare Gruppe */
+.wxg.wxg-solo { margin-bottom: 12px; }
+.wxg-solo .panel-head { justify-content: flex-end; }

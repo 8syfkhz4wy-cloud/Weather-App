@@ -123,9 +123,9 @@
         <div id="nowcast" class="nowcast"></div>
       </div>
 
-      <div class="panel">
+      <details class="wxg panel wxg-solo" data-k="verlauf" id="verlauf">
+        <summary><span class="wxg-ico"><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-heat"/></svg></span><span class="wxg-t">Verlauf 24 Std</span><span class="wxg-v" id="sum-verlauf"></span></summary>
         <div class="panel-head">
-          <span class="tag">VERLAUF 24 STD</span>
           <div class="seg" id="chart-seg">
             <button data-m="temp" class="on">Temp</button>
             <button data-m="rain">Regen</button>
@@ -134,7 +134,7 @@
         </div>
         <div id="chart" class="chart"></div>
         <div id="hourly" class="hourly"></div>
-      </div>
+      </details>
 
       <button class="panel verse" id="verse-card">
         <div class="panel-head"><span class="msg-avatar" aria-hidden="true"><svg class="wi" viewBox="0 0 48 48"><use href="#wi-book"/></svg></span><span class="tag">VERS DES TAGES</span><span id="verse-ref" class="tag-r mono"></span></div>
