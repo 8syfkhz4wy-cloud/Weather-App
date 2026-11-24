@@ -159,13 +159,34 @@ class DaniKommentar(unittest.TestCase):
         from datetime import date
         wirr = 0
         for d in range(30):
-            lines = self.f.expert_comment(self.news, date(2026, 11, 1) + timedelta(days=d), self.kurve, [])["lines"]
+            day = date(2026, 11, 1) + timedelta(days=d)
+            item = {**self.kurve[0], "published": f"{day.isoformat()}T10:00:00+00:00"}
+            lines = self.f.expert_comment(self.news, day, [item], [])["lines"]
             kurve = [l for l in lines if l.startswith("📣")][0]
-            self.assertIn("(Telegram Muttenzerkurve, Di 24.11.)", kurve)
+            self.assertIn(f"(Telegram Muttenzerkurve, {self.f.day_text(item['published'])})", kurve)
             self.assertIn("Abfahrt Basel SBB 10:12.", kurve)
             self.assertNotIn(kurve.split("– ", 1)[-1], self.f.KAFKA)
             wirr += any(l[2:] in self.f.KAFKA for l in lines if l.startswith("… "))
         self.assertTrue(3 <= wirr <= 20, wirr)
+
+    def test_kurve_heimspiel_alt_und_anfuehrungszeichen(self):
+        from datetime import date
+        heim = {"title": "Luzärn Dehai", "text": "Am Sunntig träffe mir uns am 14:00 uff dr Plattform.",
+                "source": "muttenzerkurve.ch", "published": "2026-11-17T08:00:00+00:00"}
+        lines = self.f.expert_comment([], date(2026, 11, 18), [heim], [])["lines"]
+        kurve = [l for l in lines if l.startswith("📣")][0]
+        self.assertNotIn("Usswärts", kurve)  # "Dehai" im Titel zählt vor "uff" im Text
+        self.assertFalse(any(l.startswith("📣") for l in self.f.expert_comment([], date(2026, 11, 24), [heim], [])["lines"]))
+        self.assertEqual(self.f.quoted("«David Degen ist nicht das Problem»"), "«David Degen ist nicht das Problem»")
+        self.assertEqual(self.f.quoted("«FORZA!»: FCB muss wechseln"), "««FORZA!»: FCB muss wechseln»")
+
+    def test_zueri_sprueche(self):
+        from datetime import date
+        days = [self.f.expert_comment(self.news, date(2026, 11, 1) + timedelta(days=d), [], [])["lines"] for d in range(30)]
+        zueri = sum(any(l.startswith("🙄 Apropos Züri:") for l in lines) for lines in days)
+        self.assertTrue(8 <= zueri <= 25, zueri)
+        fcz = self.f.expert_comment([{"title": "FCB empfängt den FC Zürich"}], date(2026, 11, 2), [], [])["lines"]
+        self.assertTrue(any(l.startswith("🙄 Apropos Züri:") for l in fcz))
 
     def test_chat_mit_quelle_und_datum(self):
         from datetime import date

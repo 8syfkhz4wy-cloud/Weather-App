@@ -1,5 +1,10 @@
 # Versionen
 
+## v3.3.1
+
+- **Dani genauer:** Kurven-Meldungen nur, solange sie aktuell sind, und mit der passenden Reaktion (Heimspiel bleibt Heimspiel), eigene Sprüche zur FCB-Krise, kein Satz doppelt im selben Kommentar, Schlagzeilen ohne doppelte Anführungszeichen
+- **Dani stichelt gegen Züri:** jeden zweiten Tag – und immer, wenn Zürich in den Schlagzeilen steht – ein dämlicher Spruch über Züri
+
 ## v3.3.0
 
 - **Dani noch emotionaler:** in den FCB-News flucht und brüllt er mehr – und manchmal verliert er sich in wirren, kafkaesken Gedanken
