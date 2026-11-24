@@ -370,6 +370,8 @@ test("Wettergruppen unter dem Hauptwetter: aufklappen, Vorschau, Zustand gemerkt
   // aufklappen zeigt die Kacheln, Zustand bleibt nach Neuladen
   await page.click('.wxg[data-k="wind"] summary');
   assert.equal(await page.locator("#grp-wind .panel").first().isVisible(), true);
+  // das toggle-Ereignis kommt asynchron: warten, bis der Zustand gespeichert ist
+  await page.waitForFunction(() => (JSON.parse(localStorage.getItem("wxOpen") || "{}").wind) === true);
   await page.reload();
   await page.waitForFunction(() => document.querySelectorAll("#daily li").length === 7);
   assert.equal(await page.evaluate(() => document.querySelector('.wxg[data-k="wind"]').open), true);
