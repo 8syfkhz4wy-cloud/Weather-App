@@ -417,6 +417,12 @@ REACTIONS = [
         "D Kurve isch unser Wohnstube, gopferdammi! Lut, rotblau und mit Härz – so mues es sy!",
         "Wenn s Joggeli bebt, zitter ych am ganze Lyb. Das verstoht kai Mensch, wo nit dört gstande isch!",
     ]),
+    (r"krise|problem|kritik|sorge|druck|unruhe|baustelle|fehlstart|tiefpunkt|pfiffe|debatte", "schlecht", [
+        "KRISE?! Ych ha kai Krise, ych ha Bluethochdruck, gopferdammi! Aber wär jetzt dr Schal an Nagel hänkt, isch kai Rotblaue!",
+        "Alli schwätze, kaine schafft – Herrgottsakramänt, das macht mi wahnsinnig! Uf em Platz mues es brenne, nit in de Kommentarspalte!",
+        "Ych ha das glääse und mi Kaffi isch vo sälber kalt worde, so frostig isch d Lag! Jetzt erscht rächt: alli is Joggeli!",
+        "Problem do, Problem dört – kruzitürke, mir sinn dr FCB, nit e Sorgetelefon! Zämmestoh und singe, bis s wieder lauft!",
+    ]),
     (r"zürich|fcz|gc\b|grasshopper|young boys|\byb\b", "neutral", [
         "GEGE DIE?! Do git s kai Pardon uf em Platz – die Pünkt ghöre uns, verreckt nomol!",
         "Ych ha jetzt scho Härzrase! Gege die wämmer gwinne, und zwar so dütlich, dass es bis an Bodesee ane z ghöre isch!",
@@ -446,7 +452,7 @@ RUMOR_REACTIONS = [
     "Grücht, Grücht … mi Bluetdruck goht scho wieder uffe! Wenn dä goht, denn nur für e Huufe Stutz!",
     "Jo spinnsch?! Wenn die üsi Beschte wäggchaufe wänn, denn sölle si zahle, bis es chlöpft!",
     "Ych glaub s erscht, wenn s unterschriibe isch. Bis denn: Gschnorr – aber spannends Gschnorr!",
-    "Gopferdammi, immer die Grüchtchuchi! Ych ha jetzt scho Ranzepfyffe, und es isch erscht Mäntig!",
+    "Gopferdammi, immer die Grüchtchuchi! Ych ha jetzt scho Ranzepfyffe, und d Wuche isch no lang!",
 ]
 
 GENERIC = [
@@ -471,6 +477,12 @@ def day_text(iso):
     return f"{['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][dt.weekday()]} {dt:%d.%m.}"
 
 
+def quoted(title):
+    """Schlagzeile in «»; ist sie schon ganz in Anführungszeichen, nicht doppelt."""
+    m = re.fullmatch(r'\s*[«"“„]([^«»"“”„]*)[»"”“]\s*', title)
+    return f"«{m[1] if m else title.strip()}»"
+
+
 def facts(item):
     """Quelle und Datum einer Meldung: "(SRF, Di 24.11.)"."""
     parts = [p for p in (item.get("source"), day_text(item.get("published") or "")) if p]
@@ -481,30 +493,42 @@ def expert_comment(news, today, kurve=(), rumors=()):
     rnd = random.Random(today.isoformat())  # gleicher Kommentar den ganzen Tag
     lines = [rnd.choice(INTROS)]
     news = [n for n in news if not VIOLENCE.search(n["title"])]
+    used = set()
+
+    def fresh_choice(pool):
+        """Zufällige Reaktion, aber nie zweimal dieselbe im selben Kommentar."""
+        choice = rnd.choice([r for r in pool if r not in used] or pool)
+        used.add(choice)
+        return choice
+
     for item in news[:2]:
-        mood, reaction = next(((m, rnd.choice(r)) for pattern, m, r in REACTIONS
-                               if re.search(pattern, item["title"], re.I)), ("neutral", rnd.choice(GENERIC)))
-        tail = f" {rnd.choice(NACHSAETZE[mood])}" if rnd.random() < 0.7 else ""
-        shouts = rnd.sample(AUSRUFE[mood], 2 if rnd.random() < 0.4 else 1)
-        lines.append(f"{' '.join(shouts)} «{item['title']}» – {shout(reaction, rnd)}{tail}")
+        mood, pool = next(((m, r) for pattern, m, r in REACTIONS if re.search(pattern, item["title"], re.I)),
+                          ("neutral", GENERIC))
+        reaction = fresh_choice(pool)
+        tail = f" {fresh_choice(NACHSAETZE[mood])}" if rnd.random() < 0.7 else ""
+        shouts = [fresh_choice(AUSRUFE[mood]) for _ in range(2 if rnd.random() < 0.4 else 1)]
+        lines.append(f"{' '.join(shouts)} {quoted(item['title'])} – {shout(reaction, rnd)}{tail}")
     # Etwa jeden dritten Tag verliert sich Dani in einem wirren Gedanken
     if news and rnd.random() < 0.35:
         lines.append(f"… {rnd.choice(KAFKA)}")
     if not news:
         lines.append("Hüt isch s ruhig um dr FCB. Viel z ruhig, gopferdammi – ych halt das nit us, ych bruuch Fuessball!")
     # Kurve: immer mit Fakten aus der aktuellen Ankündigung (Quelle, Datum, Inhalt), nie wirr
-    for item in list(kurve)[:1]:
-        reaction = next((rnd.choice(r) for pattern, r in KURVE_REACTIONS
-                         if re.search(pattern, item["title"] + " " + item.get("text", ""), re.I)),
+    # Nur Ankündigungen der letzten 6 Tage (ältere betreffen meist schon vergangene Spiele)
+    fresh = [k for k in kurve if (today - datetime.fromisoformat(k["published"]).date()).days < 6]
+    for item in fresh[:1]:
+        # Reaktion zuerst nach dem Titel wählen ("Luzärn Dehai" = Heimspiel), erst dann nach dem Text
+        reaction = next((rnd.choice(r) for text in (item["title"], item.get("text", ""))
+                         for pattern, r in KURVE_REACTIONS if re.search(pattern, text, re.I)),
                         "Läsed das, ihr Bebbi, und denn alli derby!")
         detail = item.get("text", "")
         if detail.lower().startswith(item["title"].lower()):
             detail = detail[len(item["title"]):].lstrip(" .!:–-")  # Titel nicht doppelt
         first = re.split(r"(?<=[.!?])\s", detail)[0][:160] if detail else ""
         detail = f" {first}" if first else ""
-        lines.append(f"📣 Us dr Kurve{facts(item)}: «{item['title']}»{detail} – {reaction}")
+        lines.append(f"📣 Us dr Kurve{facts(item)}: {quoted(item['title'])}{detail} – {reaction}")
     for item in list(rumors)[:2]:
-        lines.append(f"🍲 Grüchtchuchi: «{item['title']}» – {rnd.choice(RUMOR_REACTIONS)}")
+        lines.append(f"🍲 Grüchtchuchi: {quoted(item['title'])} – {fresh_choice(RUMOR_REACTIONS)}")
     lines.append(rnd.choice(OUTROS))
     return {**EXPERT, "lines": lines}
 
@@ -542,7 +566,7 @@ def chat_topics(news, rumors, squad, today):
             mood, pool = next(((m, r) for pattern, m, r in REACTIONS if re.search(pattern, title, re.I)),
                               ("neutral", GENERIC))
         # Im Chat immer mit Fakten: Quelle und Datum der Meldung, nie wirr
-        answers = [f"{rnd.choice(AUSRUFE[mood])} «{title}»{facts(item)} – {reaction}"
+        answers = [f"{rnd.choice(AUSRUFE[mood])} {quoted(title)}{facts(item)} – {reaction}"
                    for reaction in rnd.sample(pool, min(3, len(pool)))]
         topics.append({"title": title, "words": words[:4], "answers": answers})
     return topics
