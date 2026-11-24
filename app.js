@@ -950,6 +950,10 @@ function renderHourly(w) {
     items.push(item("hour", `${h.time[i].slice(11, 13)}h`, wmo(h.weather_code[i], h.is_day[i] === 1).wi, h.temperature_2m[i], h.precipitation_probability[i]));
   }
   $("#hourly").replaceChildren(...items);
+  // Vorschau in der zugeklappten Kopfzeile: Spanne der nächsten 24 Std. und Regenrisiko
+  const next = h.temperature_2m.slice(start, start + 24).concat(cur.temperature_2m);
+  const rain = Math.max(0, ...h.precipitation_probability.slice(start, start + 24));
+  $("#sum-verlauf").textContent = `${round(Math.min(...next))}° bis ${round(Math.max(...next))}°${rain >= 20 ? ` · Regen ${rain}%` : ""}`;
 }
 
 function renderDaily(w) {
@@ -2094,14 +2098,16 @@ function showIntro() {
 
 // ---------- Start ----------
 
-// Wettergruppen: offen/zu merken (anfangs nur "7 Tage" offen)
+// Wettergruppen: offen/zu merken (anfangs alle zu)
 {
-  const open = store("wxOpen") || { tage: true };
+  const open = store("wxOpen2") || {};
   $$(".wxg").forEach((g) => {
     g.open = Boolean(open[g.dataset.k]);
     g.addEventListener("toggle", () => {
       open[g.dataset.k] = g.open;
-      store("wxOpen", open);
+      store("wxOpen2", open);
+      // Diagramm braucht die echte Breite, die es erst aufgeklappt hat
+      if (g.dataset.k === "verlauf" && g.open) renderChart();
     });
   });
 }
