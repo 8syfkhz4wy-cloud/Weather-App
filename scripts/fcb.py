@@ -22,6 +22,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from zoneinfo import ZoneInfo
 
 UA = {"User-Agent": "wetter-psalm-app/1.0 (github.com/8syfkhz4wy-cloud/Weather-App)"}
 WOMEN = re.compile(r"\bfrauen|\bwomen|spielerinnen|fussballerinnen|fußballerinnen|\bu-?1[5-9]\b|\bu-?2[01]\b|"
@@ -308,6 +309,8 @@ def load_rumors(squad):
 # ---------- Kurven-Experte (erfundene Figur) ----------
 # Derb und emotional, aber: keine Gewaltaufrufe und keine Beleidigung echter,
 # namentlich genannter Personen. Geflucht wird über Situationen, nicht über Menschen.
+# In den News darf Dani überkochen und manchmal wirr werden (KAFKA); im Chat und bei der
+# Kurve bleibt er bei den Fakten (Quelle, Datum, Inhalt der aktuellen Meldung).
 
 EXPERT = {
     "name": "Dani «Joggeli» Meier",
@@ -323,6 +326,9 @@ INTROS = [
     "Jä nu, wo fang ych aa? Ah ja: BEIM FCB, wo susch, ihr Glünggi!",
     "Ych ha hüt scho drei Kaffi und e Gipfeli gha – und ych bi IMMER NO uf hundertachtzig!",
     "Mamme, mach s Radio lüter – dr Dani verzellt ebbis!",
+    "HERRGOTTSAKRAMÄNT, isch das e Wuche gsi! Setzed eu, ihr Bebbi, jetzt gits Füür!",
+    "Kruzitürke nomol, ych ha d ganzi Nacht nit gschloofe – wäge Fuessball, wäge wäm susch?!",
+    "Gopferdammi-Hueresiech-Verreckt, ych bi scho wieder voll im Saft! Uffpasse, jetzt chunnt s!",
 ]
 OUTROS = [
     "ALLEZ FCB, GOPFERDAMMI NOMOL!!! ❤️💙",
@@ -336,10 +342,13 @@ OUTROS = [
 # Ausrufe, mit denen die Emotionen hochkochen – passend zur Stimmung der Meldung
 AUSRUFE = {
     "gut": ["HUERE GEIL!!!", "JOOOOO!!!", "Gopferdammi, isch das schön!", "Ych flipp us!",
-            "Sauglatt, Lüt!", "Mamme, ych heul!", "HÖSCH, LUEG DAS AA!"],
+            "Sauglatt, Lüt!", "Mamme, ych heul!", "HÖSCH, LUEG DAS AA!", "HERRGOTTSAKRAMÄNT, JAAAA!!!",
+            "Ych ha Träne im Bier, gopferdammi!", "VERRECKT GEIL!!!"],
     "schlecht": ["Gopferdammi!", "Hueresiech nomol!", "Verreckt!", "Schissdräck!", "Ych drey dure!",
-                 "Mi Bluetdruck!!!", "Jesses Gott!", "So e Chabis!"],
-    "neutral": ["Gopfertelli!", "Hösch?!", "Ohni Seich jetzt!", "Jo spinnsch?!", "Jä nu …", "Lueg emol do!"],
+                 "Mi Bluetdruck!!!", "Jesses Gott!", "So e Chabis!", "Kruzitürke nomol!",
+                 "HERRGOTTSAKRAMÄNT!!!", "Gopferdammi-Hueresiech!", "Himmeltrurig, verreckt!"],
+    "neutral": ["Gopfertelli!", "Hösch?!", "Ohni Seich jetzt!", "Jo spinnsch?!", "Jä nu …", "Lueg emol do!",
+                "Heilandsack!", "Gopf nomol!"],
 }
 # Nachsätze, zufällig angehängt – damit Dani jeden Tag anders tönt
 NACHSAETZE = {
@@ -348,8 +357,26 @@ NACHSAETZE = {
     "schlecht": ["Ych chönnt grad in Rhy springe – aber nur zum abchüehle!", "Mi Grind platzt glyy!",
                  "Ych ha mi Schal fascht ufgfrässe vor Wuet!", "Dr Hund het sich unters Sofa verschloffe, so han ych brüelt!"],
     "neutral": ["Mol luege, was do no kunnt.", "Ych bi gspannt wie e Rägeschirm im Sturm!",
-                "Ych sag nyt meh – nai, ych sag doch no ebbis: HOPP FCB!"],
+                "Ych sag nyt meh – nai, ych sag doch no ebbis: HOPP FCB!",
+                "Gopferdammi, ych bi nervös wie e Chatz im Waschsalon!"],
 }
+# Ab und zu wird Dani wirr – kafkaesk, verloren in dr Bürokratie vom Fuessball. Nur in de News.
+KAFKA = [
+    "Ych bi hüt am Morge uffgwacht und ha nümm gwüsst, öb ych e Fan bi oder e Saisonabo. "
+    "D Geschäftsstell sait, my Fall wird bearbeitet. Vo wäm? Wo? Niemer waiss es, gopferdammi.",
+    "Ych ha am Igang zum Sektor gwartet. Dr Maa am Tor het gsait, dä Igang syg nur für mi gmacht – "
+    "und jetzt wärd er gschlosse. Ych stand immer no dört. Verreckt.",
+    "Ych ha e Formular übercho: «Antrag uf Jubel, Abschnitt C». Ohni Stempel darf ych erscht im "
+    "nächste Kwartal juble. Wär stämplet das? Dr Stämpler isch in de Ferie. Sit 1998.",
+    "Mängisch frog ych mi, öb s Joggeli überhaupt exischtiert – oder öb mir alli nur in ere "
+    "unendlige Warteschlange vor em Wurschtstand stöhn. Ych ha d Nummere 4711. Ufgruefe wird 12.",
+    "Hüt Nacht ha ych tröimt, ych syg e Trikotnummere. Niemer het mi aazoge. Ych bi in ere Schublade "
+    "uffgwacht, und d Schublade het mi aaglueget. Hueresiech, was isch das für e Saison?!",
+    "Ych ha bim Verband aagruefe, wäge däm Entscheid. Si händ gsait, dr Entscheid syg scho gfällt, "
+    "aber nonig mitteilt, und ych syg zwar betroffe, aber nit zueständig. Ych ha ufghänkt. Oder si.",
+    "Mys Bier het mi hüt gfrogt, wär ych bi. Ych ha kai Antwort gha. Jetzt sitz ych do und warte "
+    "uf e Bscheid vo dr obere Instanz. Bis denn: Hopp FCB, glaub ych.",
+]
 
 # (Muster in der Schlagzeile, Stimmung, Reaktionen)
 REACTIONS = [
@@ -432,7 +459,22 @@ GENERIC = [
 
 def shout(text, rnd):
     """Ab und zu kocht Dani ganz über: dann brüllt er den Satz."""
-    return text.upper() if rnd.random() < 0.18 else text
+    return text.upper() if rnd.random() < 0.25 else text
+
+
+def day_text(iso):
+    """"2026-11-24T18:00:00+00:00" -> "Di 24.11." (Schweizer Zeit)."""
+    try:
+        dt = datetime.fromisoformat(iso).astimezone(ZoneInfo("Europe/Zurich"))
+    except (TypeError, ValueError):
+        return ""
+    return f"{['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][dt.weekday()]} {dt:%d.%m.}"
+
+
+def facts(item):
+    """Quelle und Datum einer Meldung: "(SRF, Di 24.11.)"."""
+    parts = [p for p in (item.get("source"), day_text(item.get("published") or "")) if p]
+    return f" ({', '.join(parts)})" if parts else ""
 
 
 def expert_comment(news, today, kurve=(), rumors=()):
@@ -442,14 +484,25 @@ def expert_comment(news, today, kurve=(), rumors=()):
     for item in news[:2]:
         mood, reaction = next(((m, rnd.choice(r)) for pattern, m, r in REACTIONS
                                if re.search(pattern, item["title"], re.I)), ("neutral", rnd.choice(GENERIC)))
-        tail = f" {rnd.choice(NACHSAETZE[mood])}" if rnd.random() < 0.6 else ""
-        lines.append(f"{rnd.choice(AUSRUFE[mood])} «{item['title']}» – {shout(reaction, rnd)}{tail}")
+        tail = f" {rnd.choice(NACHSAETZE[mood])}" if rnd.random() < 0.7 else ""
+        shouts = rnd.sample(AUSRUFE[mood], 2 if rnd.random() < 0.4 else 1)
+        lines.append(f"{' '.join(shouts)} «{item['title']}» – {shout(reaction, rnd)}{tail}")
+    # Etwa jeden dritten Tag verliert sich Dani in einem wirren Gedanken
+    if news and rnd.random() < 0.35:
+        lines.append(f"… {rnd.choice(KAFKA)}")
     if not news:
         lines.append("Hüt isch s ruhig um dr FCB. Viel z ruhig, gopferdammi – ych halt das nit us, ych bruuch Fuessball!")
+    # Kurve: immer mit Fakten aus der aktuellen Ankündigung (Quelle, Datum, Inhalt), nie wirr
     for item in list(kurve)[:1]:
-        reaction = next((rnd.choice(r) for pattern, r in KURVE_REACTIONS if re.search(pattern, item["title"], re.I)),
-                        "Us dr Kurve git s Neis – läsed das, ihr Bebbi, und denn alli derby!")
-        lines.append(f"📣 Us dr Kurve: «{item['title']}» – {reaction}")
+        reaction = next((rnd.choice(r) for pattern, r in KURVE_REACTIONS
+                         if re.search(pattern, item["title"] + " " + item.get("text", ""), re.I)),
+                        "Läsed das, ihr Bebbi, und denn alli derby!")
+        detail = item.get("text", "")
+        if detail.lower().startswith(item["title"].lower()):
+            detail = detail[len(item["title"]):].lstrip(" .!:–-")  # Titel nicht doppelt
+        first = re.split(r"(?<=[.!?])\s", detail)[0][:160] if detail else ""
+        detail = f" {first}" if first else ""
+        lines.append(f"📣 Us dr Kurve{facts(item)}: «{item['title']}»{detail} – {reaction}")
     for item in list(rumors)[:2]:
         lines.append(f"🍲 Grüchtchuchi: «{item['title']}» – {rnd.choice(RUMOR_REACTIONS)}")
     lines.append(rnd.choice(OUTROS))
@@ -488,7 +541,9 @@ def chat_topics(news, rumors, squad, today):
         else:
             mood, pool = next(((m, r) for pattern, m, r in REACTIONS if re.search(pattern, title, re.I)),
                               ("neutral", GENERIC))
-        answers = [f"{rnd.choice(AUSRUFE[mood])} «{title}» – {reaction}" for reaction in rnd.sample(pool, min(3, len(pool)))]
+        # Im Chat immer mit Fakten: Quelle und Datum der Meldung, nie wirr
+        answers = [f"{rnd.choice(AUSRUFE[mood])} «{title}»{facts(item)} – {reaction}"
+                   for reaction in rnd.sample(pool, min(3, len(pool)))]
         topics.append({"title": title, "words": words[:4], "answers": answers})
     return topics
 

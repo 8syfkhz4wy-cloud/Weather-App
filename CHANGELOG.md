@@ -1,5 +1,10 @@
 # Versionen
 
+## v3.3.0
+
+- **Dani noch emotionaler:** in den FCB-News flucht und brüllt er mehr – und manchmal verliert er sich in wirren, kafkaesken Gedanken
+- **Kurve und Chat mit Fakten:** zu Ankündigungen der Kurve nennt Dani Quelle, Datum und Inhalt, im Chat stehen bei Schlagzeilen Quelle und Datum dabei
+
 ## v3.2.0
 
 - **Windwarnung ab 50 km/h:** Push-Nachricht schon bei Windböen ab 50 km/h (bisher 60)

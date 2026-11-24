@@ -181,3 +181,10 @@ test("Dani: jede Antwort ist nichtleerer Text", () => {
     for (const line of out) assert.ok(typeof line === "string" && line.trim().length > 5, `${chip}: ${line}`);
   }
 });
+
+test("Chat: Kurve mit Quelle, Datum und Inhalt der aktuellen Ankündigung", () => {
+  const ctx = { fcb: { kurve: [{ title: "Extrazug Uff Lugano", text: "Extrazug Uff Lugano. Abfahrt Basel SBB 10:12, Tickets im Fanlokal.", source: "Telegram Muttenzerkurve", published: "2026-11-24T10:00:00+00:00" }] } };
+  const [first] = DaniChat.reply("Us dr Kurve", ctx);
+  assert.match(first, /«Extrazug Uff Lugano» \(Telegram Muttenzerkurve, Di\.? 24\.11\.\) – Abfahrt Basel SBB 10:12/);
+  assert.match(DaniChat.reply("muttenzerkurve", ctx)[0], /^Aktuell us dr Kurve: «Extrazug Uff Lugano»/);
+});

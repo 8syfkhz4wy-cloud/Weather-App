@@ -147,6 +147,35 @@ class FcbLive(unittest.TestCase):
         self.assertEqual(self.simulate(False), [])
 
 
+class DaniKommentar(unittest.TestCase):
+    """News: emotional und manchmal wirr; Kurve und Chat: immer mit Quelle und Datum."""
+    def setUp(self):
+        self.f = load("fcb")
+        self.news = [{"title": "FCB siegt 3:1 gegen Lugano", "source": "SRF", "published": "2026-11-23T19:00:00+00:00"}]
+        self.kurve = [{"title": "Extrazug Uff Lugano", "text": "Extrazug Uff Lugano. Abfahrt Basel SBB 10:12.",
+                       "source": "Telegram Muttenzerkurve", "published": "2026-11-24T10:00:00+00:00"}]
+
+    def test_kurve_mit_fakten_und_manchmal_wirr(self):
+        from datetime import date
+        wirr = 0
+        for d in range(30):
+            lines = self.f.expert_comment(self.news, date(2026, 11, 1) + timedelta(days=d), self.kurve, [])["lines"]
+            kurve = [l for l in lines if l.startswith("📣")][0]
+            self.assertIn("(Telegram Muttenzerkurve, Di 24.11.)", kurve)
+            self.assertIn("Abfahrt Basel SBB 10:12.", kurve)
+            self.assertNotIn(kurve.split("– ", 1)[-1], self.f.KAFKA)
+            wirr += any(l[2:] in self.f.KAFKA for l in lines if l.startswith("… "))
+        self.assertTrue(3 <= wirr <= 20, wirr)
+
+    def test_chat_mit_quelle_und_datum(self):
+        from datetime import date
+        topics = self.f.chat_topics([{"title": "Lugano - FCB: Schmid trifft", "source": "Blick",
+                                      "published": "2026-11-24T08:00:00+00:00"}], [], {"groups": []}, date(2026, 11, 24))
+        for answer in topics[0]["answers"]:
+            self.assertIn("(Blick, Di 24.11.)", answer)
+            self.assertFalse(any(k in answer for k in self.f.KAFKA))
+
+
 class UpdateNachricht(unittest.TestCase):
     def test_titel_und_info_zeile(self):
         u = load("update_nachricht")
