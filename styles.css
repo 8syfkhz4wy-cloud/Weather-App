@@ -1852,3 +1852,21 @@ body:not([data-tab="fcb"]) .steps li::before {
 @media (prefers-reduced-motion: reduce) {
   .wanted.on .wanted-stars { animation: none; }
 }
+
+/* ---------- Feinschliff kleine iPhones ---------- */
+/* Warnbanner: Text darf umbrechen, Sterne und Pfeil bleiben sichtbar */
+.warn-banner .grow { min-width: 0; }
+.warn-banner .stars, .warn-banner > span:last-child { flex: none; }
+/* Radar-Steuerleiste: Schieberegler gibt Platz frei, Knopf passt immer */
+.radar-ctl input { min-width: 0; }
+body:not([data-tab="fcb"]) .radar-ctl .btn { padding: 0 12px; font-size: 14px; white-space: nowrap; }
+body:not([data-tab="fcb"]) .radar-panel .panel-head { flex-wrap: nowrap; }
+body:not([data-tab="fcb"]) .radar-panel .tag-r { white-space: nowrap; }
+@media (max-width: 380px) {
+  /* alle fünf Reiter ohne Wischen sichtbar */
+  .topbar .tabbar { gap: 3px; }
+  .topbar .tabbar button { padding: 0 7px; font-size: 11.5px; letter-spacing: 0.01em; }
+  /* die Sterne stehen schon oben im HUD; im Banner bleibt so Platz für den Text */
+  .warn-banner .stars { display: none; }
+  body:not([data-tab="fcb"]) .warn-banner { font-size: 15px; }
+}

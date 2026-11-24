@@ -392,6 +392,11 @@ for (const [name, opts] of SCREENS) {
         if (s) await page.click(`#fcb-seg [data-s=${s}]`);
         await page.waitForTimeout(150);
         const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        // nichts ragt aus Warnbanner, Radar-Steuerleiste oder HUD-Zeile heraus
+        const cut = await page.evaluate(() => [...document.querySelectorAll(".warn-banner, .radar-ctl, .hud-row")]
+          .filter((box) => box.offsetParent)
+          .flatMap((box) => [...box.children].filter((c) => c.getBoundingClientRect().right > box.getBoundingClientRect().right + 1).map((c) => `${box.className}>${c.className || c.tagName}`)));
+        assert.deepEqual(cut, [], `${tab}: abgeschnitten`);
         assert.ok(over <= 1, `${tab}${s ? `/${s}` : ""}: ${over}px zu breit`);
       }
     }

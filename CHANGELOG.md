@@ -1,5 +1,10 @@
 # Versionen
 
+## v3.0.2
+
+- **Kleine iPhones:** Warnbanner zeigt bei mehreren Warnungen wieder den ganzen Text, Radar-Steuerleiste mit vollständigem Knopf „Mehr Orte“, Reiterleiste kompakter
+- Radar-Uhrzeit bricht nicht mehr um
+
 ## v3.0.1
 
 - **Startseite neu geordnet:** zuerst das Wetter jetzt, dann Warnung, Regen in den nächsten 2 Stunden, 24-Stunden-Verlauf und 7 Tage – danach Vers des Tages, GTA-Tipp, Fussball und ganz unten Statistiken und Details
