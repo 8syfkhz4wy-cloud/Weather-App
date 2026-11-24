@@ -122,10 +122,27 @@ const DaniChat = (() => {
     return [`${base} Vorne isch ${team(first.team)}, ${gap} Pünkt vor uns. ${mood}`];
   }
 
+  // Fakten zu einer Kurven-Ankündigung: Quelle, Tag (Schweizer Zeit) und der erste Satz nach dem Titel
+  function kurveFacts(item) {
+    const d = item.published ? new Date(item.published) : null;
+    const day = d && !isNaN(d) ? new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", weekday: "short", day: "2-digit", month: "2-digit" }).format(d).replace(/,/g, "") : "";
+    const meta = [item.source, day].filter(Boolean).join(", ");
+    let text = item.text || "";
+    if (text.toLowerCase().startsWith(item.title.toLowerCase())) text = text.slice(item.title.length).replace(/^[\s.!:–-]+/, "");
+    const first = text.split(/(?<=[.!?])\s/)[0].slice(0, 160);
+    return `«${item.title}»${meta ? ` (${meta})` : ""}${first ? ` – ${first}` : "."}`;
+  }
+
+  // Bei Fragen zur Kurve zuerst die aktuelle Ankündigung (falls vorhanden)
+  function kurveNow(ctx) {
+    const item = ((ctx && ctx.fcb && ctx.fcb.kurve) || [])[0];
+    return item ? [`Aktuell us dr Kurve: ${kurveFacts(item)}`] : [];
+  }
+
   function kurveNews(ctx) {
     const items = (ctx.fcb && ctx.fcb.kurve) || [];
     if (!items.length) return ["Us dr Kurve git s grad nyt Neis. Aber kai Angscht: Sobald ebbis lauft, stoht s unter «Kurve»."];
-    return [`Us dr Kurve: «${items[0].title}».`, items[1] ? `Und no: «${items[1].title}». Alles drzue findsch unter «Kurve» – alli derby, ihr Bebbi!` : "Meh drzue findsch unter «Kurve» – alli derby, ihr Bebbi!"];
+    return [`Us dr Kurve: ${kurveFacts(items[0])}`, items[1] ? `Und no: ${kurveFacts(items[1])} Alles drzue findsch unter «Kurve» – alli derby, ihr Bebbi!` : "Meh drzue findsch unter «Kurve» – alli derby, ihr Bebbi!"];
   }
 
   function news(ctx) {
@@ -272,7 +289,7 @@ const DaniChat = (() => {
       "S Joggeli isch mi zwaiti Wohnig! Wenn s bebt, zitter ych am ganze Lyb. Das verstoht kai Mensch, wo nit dört gstande isch.",
       "St. Jakob-Park, schönscht Stadion vo dr Schwyz, fertig. Und d Wurscht isch au rächt, wenn d Schlange nit so lang wär!",
     ])]],
-    [/muttenzerkurve|kurve|ultra|choreo|fahne|trummle|trommel|capo|sektor/, () => [pick([
+    [/muttenzerkurve|kurve|ultra|choreo|fahne|trummle|trommel|capo|sektor/, (q, ctx) => [...kurveNow(ctx), pick([
       "D Kurve isch unseri Wohnstube: lut, rotblau und mit Härz. Nünzig Minute stoh und singe, egal was uf dr Tafele stoht!",
       "E Choreo isch Handwärk, Kolleeg: wuchelang mole, schnyde, chläbe – und denn drüü Minute Gänsehut. Jede Pinselstrich wärt!",
       "In dr Kurve bisch nie ellai. Linggs e Brueder, rächts e Schwöschter, vorne dr FCB. Was «Us dr Kurve» grad lauft, gsehsch unter «Kurve».",
@@ -417,6 +434,8 @@ const DaniChat = (() => {
     adieu: ["Tschau zämme! Und nit vergässe: Am Matchdaag isch Pflicht. ❤️💙", "Mach s guet! Ych gang jetzt e Fahne go bügle. ❤️💙"],
   };
   for (const [sample, lines] of Object.entries(MORE)) RULES.find(([pattern]) => pattern.test(sample)).more = lines;
+  // Zur Kurve immer zuerst die aktuelle Ankündigung, auch vor einem Spruch
+  RULES.find(([pattern]) => pattern.test("muttenzerkurve")).facts = kurveNow;
 
   const wordIn = (q, w) => ` ${q} `.includes(` ${w} `);
 
@@ -468,7 +487,7 @@ const DaniChat = (() => {
     if (!rule) return null;
     if (!banter) return rule[1](q, ctx);
     // Aus den Sprüchen der Regel und den zusätzlichen wählen, gewichtet nach Anzahl
-    return Math.random() < rule.more.length / (rule.more.length + 2) ? [pick(rule.more)] : rule[1](q, ctx);
+    return Math.random() < rule.more.length / (rule.more.length + 2) ? [...(rule.facts ? rule.facts(ctx) : []), pick(rule.more)] : rule[1](q, ctx);
   }
 
   function reply(text, ctx = {}) {
