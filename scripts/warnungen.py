@@ -56,7 +56,7 @@ def classify(value, levels):
 
 
 # Schwellen: (Wert, Bezeichnung), aufsteigend nach Schwere
-WIND_LEVELS = [(60, "Starke Windböen"), (75, "Sturmböen"), (90, "Schwere Sturmböen"),
+WIND_LEVELS = [(50, "Windböen"), (60, "Starke Windböen"), (75, "Sturmböen"), (90, "Schwere Sturmböen"),
                (105, "Orkanartige Böen"), (120, "Orkanböen")]
 HEAT_LEVELS = [(30, "Hitze"), (35, "Starke Hitze")]
 COLD_LEVELS = [(10, "Strenger Frost"), (15, "Sehr strenger Frost")]  # Grad unter null
@@ -121,8 +121,12 @@ def find_warnings(forecast):
         add("eis", (2, "Glatteis"), freezing,
             "Gefrierender Regen – Straßen und Gehwege können spiegelglatt werden.", ["ice_cube"], 4)
     else:
-        icy = first(lambda i: h["temperature_2m"][i] <= 1
-                    and ((h["rain"][i] or 0) + (h["showers"][i] or 0) > 0 or (h["snowfall"][i] or 0) > 0))
+        def wet(i):
+            return (h["rain"][i] or 0) + (h["showers"][i] or 0) + (h["snowfall"][i] or 0) > 0
+
+        # Niederschlag um den Gefrierpunkt oder Nässe der letzten 3 Stunden, die bei Frost überfriert
+        icy = first(lambda i: (h["temperature_2m"][i] <= 1 and wet(i))
+                    or (h["temperature_2m"][i] <= 0 and any(wet(j) for j in range(max(0, i - 3), i))))
         add("eis", (1, "Glättegefahr"), icy,
             "Nässe oder Schnee bei Temperaturen um den Gefrierpunkt – Vorsicht auf Straßen und Wegen.",
             ["ice_cube"], 3)

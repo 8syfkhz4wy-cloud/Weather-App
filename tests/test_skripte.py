@@ -45,7 +45,8 @@ class Warnungen(unittest.TestCase):
         self.assertEqual(self.labels(), [])
 
     def test_wind_stufen(self):
-        self.assertEqual(self.labels(gust=59), [])
+        self.assertEqual(self.labels(gust=49), [])
+        self.assertEqual(self.labels(gust=50), ["Windböen"])
         self.assertEqual(self.labels(gust=60), ["Starke Windböen"])
         self.assertEqual(self.labels(gust=80), ["Sturmböen"])
         self.assertEqual(self.labels(gust=125), ["Orkanböen"])
@@ -60,6 +61,18 @@ class Warnungen(unittest.TestCase):
         # 0.5 cm pro Stunde = 12 cm in 24 Stunden, bei Frost auch Glättegefahr
         self.assertEqual(self.labels(temp=-1, code=73, snow=0.5), ["Glättegefahr", "Starker Schneefall"])
         self.assertEqual(self.labels(temp=0, code=67, rain=1), ["Glatteis"])
+
+    def test_ueberfrierende_naesse(self):
+        # Regen bis 13 Uhr bei +3 °C, danach Frost: nasse Strassen frieren um 14 Uhr
+        fc = forecast(temp=3.0)
+        h = fc["hourly"]
+        for i in range(len(h["time"])):
+            h["rain"][i] = 0.5 if 10 <= i <= 13 else 0.0
+            h["temperature_2m"][i] = 3.0 if i <= 13 else -1.0
+        w = self.w.find_warnings(fc)
+        self.assertEqual([(x["label"], x["when"]) for x in w], [("Glättegefahr", "2026-11-23T14:00")])
+        # trocken und kalt: keine Glätte
+        self.assertEqual(self.labels(temp=-3), [])
 
     def test_zeitpunkt_ab_naechster_stunde(self):
         warnings = self.w.find_warnings(forecast(gust=70))
@@ -118,6 +131,13 @@ class FcbLive(unittest.TestCase):
              mock.patch("builtins.print"):
             self.f.main(ORTE)
         return sent
+
+    def test_bald(self):
+        sched = ["FUSSBALL 22.11.26 10:00 (21.-23.11.) Basel - YB SO 16.30 Uhr "]
+        for hh, mm, expect in [(12, 0, False), (13, 30, True), (16, 40, True), (17, 30, False)]:
+            with mock.patch.object(self.f, "now", lambda: datetime(2026, 11, 22, hh, mm, tzinfo=self.f.TZ)), \
+                 mock.patch.object(self.f, "page", lambda n: sched):
+                self.assertEqual(self.f.soon(), expect, f"{hh}:{mm}")
 
     def test_tor_und_schlusspfiff(self):
         self.assertEqual(self.simulate(True), ["⚽ TOR für Basel!: FC Basel – Young Boys 1:0",
