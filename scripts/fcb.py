@@ -455,6 +455,20 @@ RUMOR_REACTIONS = [
     "Gopferdammi, immer die Grüchtchuchi! Ych ha jetzt scho Ranzepfyffe, und d Wuche isch no lang!",
 ]
 
+# Dämliche Sprüche über Züri (über die Stadt und ihre Klubs, nie über einzelne Personen)
+ZUERI = [
+    "Wisst ihr, was s Schönschte an Züri isch? D Autobahn uf Basel. Gopferdammi, isch die schön!",
+    "In Züri hän si e Bahnhofstross us Gold – und trotzdäm kai Titel im Schaufänschter. Hahaha!",
+    "E Zürcher het mi hüt gfrogt, wo s Joggeli syg. Ych ha gsait: Dört, wo d Pokal sinn. Er isch nie aacho.",
+    "Was isch dr Unterschid zwüsche Züri und eme Kühlschrank? Im Kühlschrank isch wenigschtens ebbis Guets drin.",
+    "Z Züri sait me «Grüezi», z Basel sait me «HOPP FCB!» – und das tönt eifach besser, verreckt!",
+    "D Zürcher mache am Sächsilüte e Böögg aa, für z luege, wie dr Summer wird. Mir luege uf d Tabälle, das isch gnau.",
+    "Ych bi mol uf Züri gfahre. Dr Uetliberg isch so flach wie ihri Fangsäng. Ych bi grad wieder hai.",
+    "Weisch, warum d Zürcher so schnäll laufe? Si hoffe, si chöme vor em Gegetor no hai. Hahaha, gopferdammi!",
+    "Dr Zürisee isch schön, das muess me lo. Schad, dass er in Züri isch.",
+    "Zwai Zürcher Klubs, ai Stadt – und glych isch d Kurve bi uns lüter. Mathematik, Kolleeg!",
+]
+
 GENERIC = [
     "Ych waiss nit, öb ych lache oder brüele söll – aber s Härz brennt rotblau, gopferdammi!",
     "Ohni Seich: Am Wuchenänd zellt nur, was uf em Rase passiert. Alles anderi isch Gschnorr!",
@@ -527,6 +541,9 @@ def expert_comment(news, today, kurve=(), rumors=()):
         first = re.split(r"(?<=[.!?])\s", detail)[0][:160] if detail else ""
         detail = f" {first}" if first else ""
         lines.append(f"📣 Us dr Kurve{facts(item)}: {quoted(item['title'])}{detail} – {reaction}")
+    # Ein dämlicher Spruch über Züri: immer, wenn eine Schlagzeile Zürich erwähnt, sonst jeden zweiten Tag
+    if any(re.search(r"zürich|zürcher|fcz|\bgc\b|grasshopper", n["title"], re.I) for n in news[:2]) or rnd.random() < 0.5:
+        lines.append(f"🙄 Apropos Züri: {fresh_choice(ZUERI)}")
     for item in list(rumors)[:2]:
         lines.append(f"🍲 Grüchtchuchi: {quoted(item['title'])} – {fresh_choice(RUMOR_REACTIONS)}")
     lines.append(rnd.choice(OUTROS))

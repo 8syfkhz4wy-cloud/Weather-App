@@ -180,6 +180,14 @@ class DaniKommentar(unittest.TestCase):
         self.assertEqual(self.f.quoted("«David Degen ist nicht das Problem»"), "«David Degen ist nicht das Problem»")
         self.assertEqual(self.f.quoted("«FORZA!»: FCB muss wechseln"), "««FORZA!»: FCB muss wechseln»")
 
+    def test_zueri_sprueche(self):
+        from datetime import date
+        days = [self.f.expert_comment(self.news, date(2026, 11, 1) + timedelta(days=d), [], [])["lines"] for d in range(30)]
+        zueri = sum(any(l.startswith("🙄 Apropos Züri:") for l in lines) for lines in days)
+        self.assertTrue(8 <= zueri <= 25, zueri)
+        fcz = self.f.expert_comment([{"title": "FCB empfängt den FC Zürich"}], date(2026, 11, 2), [], [])["lines"]
+        self.assertTrue(any(l.startswith("🙄 Apropos Züri:") for l in fcz))
+
     def test_chat_mit_quelle_und_datum(self):
         from datetime import date
         topics = self.f.chat_topics([{"title": "Lugano - FCB: Schmid trifft", "source": "Blick",
