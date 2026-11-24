@@ -56,8 +56,8 @@ test("Startseite: Wetter, Kacheln, News und GTA-Tipp ohne Fehler", async () => {
   assert.equal(await page.locator("#hourly .hour").count(), 24);
   assert.equal(await page.locator("#nowcast .b").count(), 8);
   // Kacheln: Wind, Feuchte, Luftdruck, Sicht, UV, Mond, Sonne, Luftqualität, Pollen
-  assert.equal(await page.locator("#tiles > .panel").count(), 9);
-  const sun = await page.locator("#tiles .kv").first().innerText();
+  assert.equal(await page.locator("#tiles .tiles > .panel").count(), 9);
+  const sun = await page.locator("#tiles .kv").first().textContent();
   assert.match(sun, /9 h 0 min/);
   assert.doesNotMatch(sun, /60 min/);
   assert.equal(await page.locator("#news-card").isVisible(), true);
@@ -335,7 +335,7 @@ test("GTA-Layout: HUD-Kopf mit Reitern, Statistiken, Fahndung, Briefing", async 
   const top = await page.evaluate(() => document.querySelector(".tabbar").getBoundingClientRect().top);
   assert.ok(top < 150, `Reiterleiste oben (${top})`);
   // Startseite nach Wichtigkeit: jetzt, Warnung, Regen gleich, Verlauf, 7 Tage, Vers, GTA, Fussball, Details
-  const ids = ["warn-banner", "nowcast", "chart", "daily", "verse-card", "gta-card", "news-card", "gstats", "tiles"];
+  const ids = ["warn-banner", "tiles", "nowcast", "chart", "verse-card", "gta-card", "news-card"];
   const tops = await page.evaluate((list) => list.map((id) => document.getElementById(id).getBoundingClientRect().top), ids);
   assert.deepEqual([...tops].sort((x, y) => x - y), tops, "Reihenfolge der Startseite");
   // Statistiken mit Segmentbalken
@@ -354,6 +354,25 @@ test("GTA-Layout: HUD-Kopf mit Reitern, Statistiken, Fahndung, Briefing", async 
   // Ortssuche als Schnellreise
   await page.click("#btn-search");
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector("#search-dialog"), "::before").content), '"SCHNELLREISE"');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("Wettergruppen unter dem Hauptwetter: aufklappen, Vorschau, Zustand gemerkt", async () => {
+  const { ctx, page, errors } = await openApp();
+  const groups = await page.$$eval(".wxg", (g) => g.map((x) => [x.dataset.k, x.open]));
+  assert.deepEqual(groups, [["tage", true], ["stats", false], ["wind", false], ["feuchte", false], ["sonne", false], ["luft", false]]);
+  assert.match(await text(page, "#sum-wind"), /km\/h · \d+ hPa/);
+  assert.match(await text(page, "#sum-luft"), /^AQI \d+/);
+  // direkt unter dem Hauptwetter (und der Warnung)
+  const [hero, grp] = await page.evaluate(() => [document.querySelector(".hero").getBoundingClientRect().bottom, document.querySelector("#tiles").getBoundingClientRect().top]);
+  assert.ok(grp > hero && grp - hero < 200, `Gruppen unter dem Hauptwetter (${grp - hero}px)`);
+  // aufklappen zeigt die Kacheln, Zustand bleibt nach Neuladen
+  await page.click('.wxg[data-k="wind"] summary');
+  assert.equal(await page.locator("#grp-wind .panel").first().isVisible(), true);
+  await page.reload();
+  await page.waitForFunction(() => document.querySelectorAll("#daily li").length === 7);
+  assert.equal(await page.evaluate(() => document.querySelector('.wxg[data-k="wind"]').open), true);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

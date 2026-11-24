@@ -87,6 +87,36 @@
 
       <button id="warn-banner" class="warn-banner" hidden></button>
 
+      <!-- Wetterwerte als aufklappbare Gruppen direkt unter dem Hauptwetter -->
+      <div class="wxgroups" id="tiles">
+        <details class="wxg panel" data-k="tage">
+          <summary><span class="wxg-ico"><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-partly-day"/></svg></span><span class="wxg-t">7 Tage</span><span class="wxg-v" id="sum-tage"></span></summary>
+          <p class="wxg-hint">Tippe auf einen Tag für Details</p>
+          <ul id="daily" class="daily"></ul>
+        </details>
+        <details class="wxg panel" data-k="stats" id="gstats" hidden>
+          <summary><span class="wxg-ico"><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-ok"/></svg></span><span class="wxg-t">Statistiken</span><span class="wxg-v" id="sum-stats"></span></summary>
+          <div id="gstats-list" class="gstats-list"></div>
+        </details>
+        <details class="wxg panel" data-k="wind">
+          <summary><span class="wxg-ico"><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-wind"/></svg></span><span class="wxg-t">Wind & Druck</span><span class="wxg-v" id="sum-wind"></span></summary>
+          <div class="tiles" id="grp-wind"></div>
+        </details>
+        <details class="wxg panel" data-k="feuchte">
+          <summary><span class="wxg-ico"><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-drizzle"/></svg></span><span class="wxg-t">Feuchte & Sicht</span><span class="wxg-v" id="sum-feuchte"></span></summary>
+          <div class="tiles" id="grp-feuchte"></div>
+        </details>
+        <details class="wxg panel" data-k="sonne">
+          <summary><span class="wxg-ico"><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-sun"/></svg></span><span class="wxg-t">Sonne & Mond</span><span class="wxg-v" id="sum-sonne"></span></summary>
+          <div class="tiles" id="grp-sonne"></div>
+        </details>
+        <details class="wxg panel" data-k="luft">
+          <summary><span class="wxg-ico"><svg class="wi" viewBox="0 0 48 48" aria-hidden="true"><use href="#wi-fog"/></svg></span><span class="wxg-t">Luft & Pollen</span><span class="wxg-v" id="sum-luft"></span></summary>
+          <div class="tiles" id="grp-luft"></div>
+        </details>
+      </div>
+
+
       <div class="panel">
         <div class="panel-head"><span class="tag">NIEDERSCHLAG 2 STD</span><span id="nowcast-sum" class="tag-r mono"></span></div>
         <p id="nowcast-text" class="nowcast-text"></p>
@@ -104,11 +134,6 @@
         </div>
         <div id="chart" class="chart"></div>
         <div id="hourly" class="hourly"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><span class="tag">7 TAGE</span><span class="tag-r">Tippen für Details</span></div>
-        <ul id="daily" class="daily"></ul>
       </div>
 
       <button class="panel verse" id="verse-card">
@@ -152,12 +177,6 @@
         <div class="news-ticker" aria-hidden="true"><div id="news-ticker-track"></div></div>
       </a>
 
-      <div class="panel gstats" id="gstats" hidden>
-        <div class="panel-head"><span class="tag">STATISTIKEN</span><span class="tag-r">jetzt · heute</span></div>
-        <div id="gstats-list" class="gstats-list"></div>
-      </div>
-
-      <div class="tiles" id="tiles"></div>
 
       <p class="source">Wetter &amp; Luft: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</p>
       <p id="version" class="source mono" hidden></p>

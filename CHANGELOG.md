@@ -1,5 +1,9 @@
 # Versionen
 
+## v3.1.0
+
+- **Wetterwerte zum Aufklappen:** direkt unter dem Hauptwetter die Gruppen 7 Tage, Statistiken, Wind & Druck, Feuchte & Sicht, Sonne & Mond sowie Luft & Pollen – jede zeigt schon zugeklappt den wichtigsten Wert, die App merkt sich, was offen ist
+
 ## v3.0.2
 
 - **Kleine iPhones:** Warnbanner zeigt bei mehreren Warnungen wieder den ganzen Text, Radar-Steuerleiste mit vollständigem Knopf „Mehr Orte“, Reiterleiste kompakter

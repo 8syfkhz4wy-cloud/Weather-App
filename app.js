@@ -792,6 +792,7 @@ function renderStats(w, rainPct) {
     })
   );
   $("#gstats").hidden = false;
+  $("#sum-stats").textContent = `${round(cur.temperature_2m)}° · Regen ${rainPct}%`;
 }
 
 function renderNowcast(w) {
@@ -953,6 +954,7 @@ function renderHourly(w) {
 
 function renderDaily(w) {
   const d = w.daily;
+  $("#sum-tage").textContent = `${round(Math.min(...d.temperature_2m_min))}° bis ${round(Math.max(...d.temperature_2m_max))}°`;
   const min = Math.min(...d.temperature_2m_min);
   const max = Math.max(...d.temperature_2m_max);
   const span = Math.max(max - min, 1);
@@ -1056,14 +1058,15 @@ function renderTiles(w, air) {
   const d = w.daily;
   const h = w.hourly;
   const s = hourStart(w);
-  const tiles = [];
+  const groups = { wind: [], feuchte: [], sonne: [], luft: [] };
+  const put = (g, t) => groups[g].push(t);
 
   // Wind
   const wind = tile("WIND");
   wind.append(html("div", null, compassSvg(cur.wind_direction_10m)));
   wind.append(html("div", "tile-big", `${round(cur.wind_speed_10m)}<small> km/h</small>`));
   wind.append(el("div", "tile-sub", `Aus ${dirName(cur.wind_direction_10m)} · Böen ${round(cur.wind_gusts_10m)} km/h · ${beaufort(cur.wind_speed_10m)} Bft`));
-  tiles.push(wind);
+  put("wind", wind);
 
   // Luftfeuchte & Taupunkt
   const hum = tile("FEUCHTE");
@@ -1075,7 +1078,7 @@ function renderTiles(w, air) {
   meter.style.background = "linear-gradient(90deg,#ffb020,#3ddc97,#4da3ff)";
   hum.append(meter);
   hum.append(el("div", "tile-sub", `Bewölkung ${cur.cloud_cover} %`));
-  tiles.push(hum);
+  put("feuchte", hum);
 
   // Luftdruck mit Tendenz
   const press = tile("LUFTDRUCK");
@@ -1092,7 +1095,7 @@ function renderTiles(w, air) {
   const hint = diff <= -3 ? " · Wetterverschlechterung möglich" : nowP >= 1020 && diff > -1 ? " · Hochdruck" : nowP < 1000 ? " · Tiefdruck" : "";
   press.append(html("div", "tile-big", `${round(nowP)}<small> hPa</small>`));
   press.append(el("div", "tile-sub", `${trend} (${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)} hPa, ${span})${hint}`));
-  tiles.push(press);
+  put("wind", press);
 
   // Sichtweite
   const visM = nowValue(w, "visibility");
@@ -1102,7 +1105,7 @@ function renderTiles(w, air) {
     const kmText = km >= 10 ? round(km) : km.toFixed(1);
     vis.append(html("div", "tile-big", `${km < 1 ? round(km * 1000) : kmText}<small> ${km < 1 ? "m" : "km"}</small>`));
     vis.append(el("div", "tile-sub", km >= 20 ? "Sehr gute Fernsicht" : km >= 10 ? "Gute Sicht" : km >= 4 ? "Mäßige Sicht (Dunst)" : km >= 1 ? "Schlechte Sicht (Dunst)" : "Nebel – sehr schlechte Sicht"));
-    tiles.push(vis);
+    put("feuchte", vis);
   }
 
   // UV
@@ -1113,7 +1116,7 @@ function renderTiles(w, air) {
   uvT.append(html("div", "tile-big", `${uvNow.toFixed(1)}<small> jetzt</small>`));
   uvT.append(el("div", "tile-sub", `${uvLabel(uvNow)} · Max heute ${uvMax.toFixed(1)} (${uvLabel(uvMax)})${uvMax >= 3 ? " · Sonnenschutz empfohlen" : ""}`));
   uvT.append(html("div", "meter", `<i style="left:${clamp(uvNow / 11, 0, 1) * 100}%"></i>`));
-  tiles.push(uvT);
+  put("sonne", uvT);
 
   // Mond
   const moon = moonPhase();
@@ -1121,14 +1124,14 @@ function renderTiles(w, air) {
   const moonImg = typeof GtaArt !== "undefined" ? GtaArt.moonPhase(moon.phase) : moon.icon;
   moonT.append(html("div", "tile-big", `${moonImg} <small>${round(moon.illum * 100)} %</small>`));
   moonT.append(el("div", "tile-sub", `${moon.name}${moon.toFull > 0.5 ? ` · Vollmond in ${round(moon.toFull)} Tagen` : ""}`));
-  tiles.push(moonT);
+  put("sonne", moonT);
 
   // Sonne
   const sun = tile("SONNE", "wide");
   sun.append(html("div", null, sunArcSvg(w)));
   const [dlH, dlM] = hoursMinutes(d.daylight_duration[0]);
   sun.append(html("div", "kv", `<span>Aufgang</span><b>${fmtTime(d.sunrise[0])}</b><span>Untergang</span><b>${fmtTime(d.sunset[0])}</b><span>Tageslänge</span><b>${dlH} h ${dlM} min</b>`));
-  tiles.push(sun);
+  put("sonne", sun);
 
   // Luftqualität & Pollen
   if (air && air.current) {
@@ -1141,7 +1144,7 @@ function renderTiles(w, air) {
     aq.append(html("div", "meter", `<i style="left:${clamp(aqi / 120, 0, 1) * 100}%"></i>`));
     aq.append(html("div", "kv", `<span>Feinstaub PM2.5</span><b>${round(a.pm2_5 ?? 0)} µg/m³</b><span>Feinstaub PM10</span><b>${round(a.pm10 ?? 0)} µg/m³</b><span>Ozon O₃</span><b>${round(a.ozone ?? 0)} µg/m³</b><span>Stickstoffdioxid NO₂</span><b>${round(a.nitrogen_dioxide ?? 0)} µg/m³</b>`));
     aq.lastChild.style.marginTop = "12px";
-    tiles.push(aq);
+    put("luft", aq);
 
     const pollen = Object.entries(POLLEN).filter(([k]) => a[k] !== null && a[k] !== undefined);
     if (pollen.length) {
@@ -1163,11 +1166,20 @@ function renderTiles(w, air) {
       });
       if (active.length) pl.append(html("div", "kv", rows.join("")));
       else pl.append(el("div", "tile-sub", `Zurzeit kein Pollenflug (${pollen.map(([, name]) => name).join(", ")}).`));
-      tiles.push(pl);
+      put("luft", pl);
     }
   }
 
-  $("#tiles").replaceChildren(...tiles);
+  for (const [g, list] of Object.entries(groups)) {
+    $(`#grp-${g}`).replaceChildren(...list);
+    $(`.wxg[data-k="${g}"]`).hidden = !list.length;
+  }
+  // Vorschau in den Kopfzeilen der zugeklappten Gruppen
+  const sum = (k, text) => ($(`#sum-${k}`).textContent = text);
+  sum("wind", `${round(cur.wind_speed_10m)} km/h · ${round(cur.pressure_msl)} hPa`);
+  sum("feuchte", `${cur.relative_humidity_2m} %${visM != null ? ` · ${round(visM / 1000)} km` : ""}`);
+  sum("sonne", `UV ${uvNow.toFixed(1)} · ↓ ${fmtTime(d.sunset[0])}`);
+  sum("luft", air && air.current ? `AQI ${round(air.current.european_aqi ?? 0)}` : "");
 }
 
 function renderUpdated(t, live) {
@@ -2081,6 +2093,18 @@ function showIntro() {
 }
 
 // ---------- Start ----------
+
+// Wettergruppen: offen/zu merken (anfangs nur "7 Tage" offen)
+{
+  const open = store("wxOpen") || { tage: true };
+  $$(".wxg").forEach((g) => {
+    g.open = Boolean(open[g.dataset.k]);
+    g.addEventListener("toggle", () => {
+      open[g.dataset.k] = g.open;
+      store("wxOpen", open);
+    });
+  });
+}
 
 // GTA-Look: Neon-Symbole (Sprite) und Hintergrund mit Retro-Sonne, Skyline und Palmen
 // (im FCB-Tab ausgeblendet). Vor dem ersten Zeichnen, damit alle Symbole gleich erscheinen.
