@@ -386,6 +386,34 @@ test("Wettergruppen unter dem Hauptwetter: aufklappen, Vorschau, Zustand gemerkt
   await ctx.close();
 });
 
+test("Beim Zurückkehren in die App wird alles neu geladen (Wetter, Luft, News, FCB, Teletext)", async () => {
+  const { ctx, page, errors } = await openApp();
+  const seen = [];
+  page.on("request", (r) => seen.push(r.url()));
+  const wait = (re) => page.waitForRequest(re, { timeout: 5000 });
+  // App war eine Weile im Hintergrund: alle Daten älter als die Sperrzeit
+  await page.evaluate(() => { state.fetchedAt = Date.now() - 10 * 60000; feedsAt = 0; });
+  const reqs = [/api\.open-meteo\.com\/v1\/forecast/, /air-quality-api/, /news\.json/, /gta6\.json/, /fcb\.json/, /api\.teletext\.ch/].map(wait);
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await Promise.all(reqs);
+  // Gleich nochmals: nichts doppelt laden
+  const before = seen.length;
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.waitForTimeout(300);
+  assert.equal(seen.slice(before).filter((u) => /open-meteo\.com\/v1\/forecast|news\.json/.test(u)).length, 0);
+  // Wieder Netz nach Funkloch: sofort neu laden, auch wenn die Daten frisch sind
+  const again = [/api\.open-meteo\.com\/v1\/forecast/, /fcb\.json/].map(wait);
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await Promise.all(again);
+  // Luftqualität kurz weg: letzte Werte bleiben stehen
+  await page.route(/air-quality-api/, (r) => r.abort());
+  await page.click("#btn-refresh");
+  await page.waitForFunction(() => !document.querySelector("#btn-refresh").classList.contains("spin"));
+  assert.match(await page.locator("#sum-luft").textContent(), /^AQI \d+/);
+  assert.deepEqual(errors.filter((e) => !/air-quality|Failed to load resource/.test(e)), []);
+  await ctx.close();
+});
+
 test("Kein Ladebildschirm, wenn die App im FCB-Bereich startet", async () => {
   const { ctx, page, errors } = await openApp({ storage: { tab: "fcb" } });
   assert.equal(await page.evaluate(() => window.__intro || false), false);
