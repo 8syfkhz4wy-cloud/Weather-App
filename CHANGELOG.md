@@ -1,5 +1,13 @@
 # Versionen
 
+## v3.4.1
+
+- **Beim Öffnen immer aktuell:** Wetter, Luft und Pollen, Warnungen, Spielstand und Tabelle, News, GTA-Tipp und FCB-Daten laden beim Zurückkehren in die App sofort neu (bisher teils erst nach 5 bzw. 30 Minuten), auch wenn iOS die App aus dem Hintergrund holt
+- **Nach einem Funkloch** lädt die App automatisch alles neu, sobald wieder Netz da ist
+- **Radar** zeigt beim Zurückkehren die neuesten Bilder
+- **Kurve und Chat** laden Spielstand, Tabelle und Danis Lage beim Öffnen frisch
+- Wetterdaten nie mehr aus einem alten Zwischenspeicher des Browsers; fällt die Luftqualität kurz aus, bleiben die letzten Werte stehen
+
 ## v3.4.0
 
 - **Dani zur Lage in der Kurve:** oben im Kurven-Bereich sagt Dani jetzt, wie es steht – live während des Spiels, sonst zum letzten Resultat, zum nächsten Spiel und zur Tabelle, immer aus den aktuellen Daten

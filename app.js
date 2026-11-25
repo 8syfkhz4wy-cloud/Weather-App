@@ -494,7 +494,8 @@ const POLLEN = {
 function fetchT(url, ms = 15000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
-  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
+  // "no-store": nie eine alte Antwort aus dem Zwischenspeicher des Browsers (iOS hält sie sonst teils fest)
+  return fetch(url, { cache: "no-store", signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }
 
 async function fetchWeather(place) {
@@ -1255,7 +1256,8 @@ async function showPlace(place) {
 
   $("#btn-refresh").classList.add("spin");
   try {
-    const [w, air] = await Promise.all([fetchWeather(place), fetchAir(place).catch(() => null)]);
+    // Luftqualität kurz nicht erreichbar: die zuletzt geladenen Werte des Orts behalten
+    const [w, air] = await Promise.all([fetchWeather(place), fetchAir(place).catch(() => (cached && cached.air) || null)]);
     if (seq !== loadSeq) return; // inzwischen anderer Ort gewählt
     const t = Date.now();
     pruneWeatherCache(5, cacheKey);
@@ -1314,7 +1316,7 @@ function locate(silent = false) {
       const cur = state.place;
       // Gleicher Standort mit frischen (oder gerade ladenden) Daten: nichts neu laden
       const moved = !cur || !cur.gps || Math.abs(cur.lat - lat) > 0.005 || Math.abs(cur.lon - lon) > 0.005;
-      if (!moved && (Date.now() - (state.fetchedAt || 0) < 5 * 60 * 1000 || state.loading === placeKey(cur))) {
+      if (!moved && (Date.now() - (state.fetchedAt || 0) < 60 * 1000 || state.loading === placeKey(cur))) {
         if (!silent) hideStatus();
         return;
       }
@@ -1505,7 +1507,8 @@ function setFcbSection(name) {
   FCB_SECTIONS.forEach((s) => ($(`#fcb-${s}`).hidden = s !== name));
   if (name === "chat") openChat();
   store("fcbSection", name);
-  if (name === "ticker") {
+  // Ticker, Kurve und Chat zeigen Spielstand, Tabelle und Danis Lage: beim Öffnen frisch laden
+  if (name === "ticker" || name === "kurve" || name === "chat") {
     if (Date.now() - feedsAt > 60000) loadFcb().catch(() => {});
     liveTick(true);
   }
@@ -2247,14 +2250,25 @@ setInterval(() => {
   if (state.place) refresh();
 }, 15 * 60 * 1000);
 
-// Beim Zurückkehren in die App: Daten und Tagespsalm aktualisieren
-document.addEventListener("visibilitychange", () => {
+// Beim Öffnen bzw. Zurückkehren in die App alles auffrischen: Wetter, Luft und Pollen,
+// Warnungen, Spielstand und Tabelle, News, GTA-Tipp, FCB-Daten, Radar und Tagespsalm.
+// Kurze Sperrzeiten verhindern nur doppelte Abrufe direkt hintereinander.
+function resume() {
   if (document.visibilityState !== "visible") return;
-  liveTick();
-  if (Date.now() - feedsAt > 30 * 60 * 1000) loadFeeds();
   checkNewDay();
-  // Nur neu laden, wenn die Daten älter als 5 Minuten sind (schont Akku und Datenvolumen)
-  if (state.place && Date.now() - (state.fetchedAt || 0) > 5 * 60 * 1000) refresh();
+  liveTick();
+  if (Date.now() - feedsAt > 2 * 60 * 1000) loadFeeds();
+  if (state.place && !state.loading && Date.now() - (state.fetchedAt || 0) > 60 * 1000) refresh();
+  if (document.body.dataset.tab === "radar" && radar.map) loadRadarFrames(state.place || DEFAULT_PLACE).catch(() => {});
+}
+document.addEventListener("visibilitychange", resume);
+// iOS: App aus dem Hintergrund (bfcache) zurück, ohne dass "visibilitychange" kommt
+window.addEventListener("pageshow", (e) => e.persisted && resume());
+// Wieder Netz (z. B. aus dem Flugmodus oder Funkloch): sofort neu laden
+window.addEventListener("online", () => {
+  state.fetchedAt = 0;
+  feedsAt = 0;
+  resume();
 });
 
 if ("serviceWorker" in navigator) {
